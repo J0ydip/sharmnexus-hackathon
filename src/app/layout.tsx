@@ -1,19 +1,23 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { NavigationWrapper } from '@/components/common/NavigationWrapper';
 import Script from 'next/script';
 import './globals.css';
 
-const inter = Inter({
+const inter = Inter({ 
   subsets: ['latin'],
   variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
-  title: 'SahayaK - Cooperative Gig Services',
-  description: 'A cooperative-owned digital service marketplace connecting Labour Cooperative workers with households and institutions.',
+  title: 'SharmNexus - Professional Services',
+  description: 'Book verified professionals for your everyday needs.',
   manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#10b981',
 };
 
 export default function RootLayout({
@@ -22,8 +26,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="antialiased min-h-screen bg-gray-50 flex flex-col">
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" async />
+      </head>
+      <body className="antialiased min-h-screen">
         <NavigationWrapper>
           {children}
         </NavigationWrapper>
@@ -33,13 +44,18 @@ export default function RootLayout({
         <Script id="google-translate-init" strategy="afterInteractive" dangerouslySetInnerHTML={{
           __html: `
             function googleTranslateElementInit() {
-              new window.google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'hi,en', layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element');
+              new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,bn,mr,te,ta',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+              }, 'google_translate_element');
             }
           `
         }} />
         <Script 
-          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-          strategy="afterInteractive"
+          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" 
+          strategy="afterInteractive" 
         />
       </body>
     </html>

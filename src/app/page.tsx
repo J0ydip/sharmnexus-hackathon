@@ -1,38 +1,95 @@
-
 'use client';
+
+import React, { useEffect, useState } from 'react';
 import Script from 'next/script';
+import { createClient } from '@/lib/supabase/client';
+import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
 import './landing.css';
 
 export default function LandingPage() {
+  const [lang, setLang] = useState('en');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setIsAuthenticated(true);
+          const type = session.user.user_metadata?.user_type || 'customer';
+          setUserType(type);
+          if (type === 'worker') {
+            window.location.href = '/worker-dashboard';
+          }
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (e) {
+        setIsAuthenticated(false);
+      }
+    }
+    checkAuth();
+
+    const match = document.cookie.match(/googtrans=\/en\/([a-z]{2})/);
+    if (match) setLang(match[1]);
+  }, []);
+
+  // When logged in as a customer, render the rich Customer Dashboard & Service Discovery Experience
+  if (isAuthenticated === true && userType !== 'worker') {
+    return <CustomerDashboard />;
+  }
+
+  // If still checking authentication, show a clean loader instead of flashing the landing page
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <>
-      
+
     <div className="cursor-dot" aria-hidden="true"></div>
-    <nav className="navbar" aria-label="Main navigation">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200/80 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-2xs navbar" aria-label="Main navigation">
+      <div className="navbar-container">
         <a className="brand" href="#home" aria-label="SharmNexus home">
-            <span className="brand-mark" aria-hidden="true"><span></span><span></span></span>
-            <span>Sharm<span>Nexus</span></span>
+          <div className="brand-badge" aria-hidden="true">SN</div>
+          <div className="brand-content">
+            <span className="brand-title">Sharm<span className="brand-accent">Nexus</span></span>
+            <span className="brand-pill">SIH 26089</span>
+          </div>
         </a>
         <div className="nav-links">
-            <a href="#how-it-works" data-i18n="nav_how">How it works</a>
-            <a href="#services" data-i18n="nav_services">Services</a>
-            <a href="#communities" data-i18n="nav_communities">For communities</a>
-            <a href="#cooperatives" data-i18n="nav_cooperatives">For cooperatives</a>
+          <a href="#how-it-works" data-i18n="nav_how">How it works</a>
+          <a href="#services" data-i18n="nav_services">Services</a>
+          <a href="#communities" data-i18n="nav_communities">For communities</a>
+          <a href="#cooperatives" data-i18n="nav_cooperatives">For cooperatives</a>
         </div>
         <div className="nav-actions">
-            <select id="nav-language-select" aria-label="Choose language">
-                <option value="en">EN</option>
-                <option value="hi">हिंदी</option>
-                <option value="bn">বাংলা</option>
-                <option value="mr">मराठी</option>
-                <option value="ta">தமிழ்</option>
-                <option value="te">తెలుగు</option>
-            </select>
-            <a className="text-link" href="/auth/login" data-i18n="nav_login">Log in</a>
-            <a className="button button-dark button-small" href="/auth/login"><span data-i18n="nav_getstarted">Get started</span> <span>↗</span></a>
+          <select id="nav-language-select" aria-label="Choose language">
+            <option value="en">EN</option>
+            <option value="hi">हिंदी</option>
+            <option value="bn">বাংলা</option>
+            <option value="mr">मराठी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
+          </select>
+          <a className="text-link" href="/auth/login" data-i18n="nav_login">Log in</a>
+          <a className="button button-dark button-small" href="/auth/login">
+            <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
+          </a>
         </div>
-        <button className="menu-toggle" aria-label="Open menu"><span></span><span></span><span></span></button>
-    </nav>
+        <button className="menu-toggle" aria-label="Open menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </header>
 
     <main>
         <section className="hero" id="home">
@@ -41,8 +98,8 @@ export default function LandingPage() {
                 <h1 data-i18n-html="hero_h1">Trusted help for every home.<br /><em>Stronger opportunities</em> for every worker.</h1>
                 <p className="hero-lede" data-i18n="hero_lede">SharmNexus connects households with verified local professionals while helping labour cooperatives manage work, earnings, and welfare from one platform.</p>
                 <div className="hero-actions">
-                    <a className="button button-gold" href="/auth/login"><span data-i18n="hero_cta_find">Find a service</span> <span>↗</span></a>
-                    <a className="button button-ghost" href="/auth/login"><span data-i18n="hero_cta_join">Join as a worker</span> <span>↗</span></a>
+                    <a className="button button-gold" href="/services"><span data-i18n="hero_cta_find">Find a service</span> <span>↗</span></a>
+                    <a className="button button-ghost" href="/auth/worker-register"><span data-i18n="hero_cta_join">Join as a worker</span> <span>↗</span></a>
                 </div>
                 <div className="hero-proof">
                     <div className="avatar-stack"><span>PS</span><span>MK</span><span>RK</span><span>+</span></div>
@@ -78,7 +135,7 @@ export default function LandingPage() {
             <div className="transformation"><div className="before-card"><span className="card-tag">TODAY</span><h3>Great skills, disconnected</h3><ul><li>Unpredictable job opportunities</li><li>No portable digital reputation</li><li>Households unsure whom to trust</li><li>Limited access to welfare support</li></ul></div><div className="transform-arrow">→</div><div className="after-card"><span className="card-tag">WITH SHARMNEXUS</span><h3>A stronger local network</h3><ul><li>Verified worker profiles and ratings</li><li>Fair, transparent bookings</li><li>Cooperative-owned workforce data</li><li>Training, insurance, and welfare access</li></ul></div></div>
         </section>
 
-        <section className="services section-pad" id="services"><div className="section-kicker" data-i18n="services_kicker">EVERYDAY HELP, CLOSE TO HOME</div><div className="section-heading-row"><h2 data-i18n-html="services_h2">Whatever you need,<br /><em>someone nearby can help.</em></h2><a className="arrow-link" href="/auth/login"><span data-i18n="services_explore">Explore all services</span> ↗</a></div><div className="service-grid"><a className="service-card service-featured" href="/auth/login"><img src="./plumbing.jfif" alt="Plumbing repair service" /><div className="service-overlay"><span>01</span><h3 data-i18n="svc_plumbing_t">Plumbing</h3><p data-i18n="svc_plumbing_d">Repairs, fittings & maintenance</p></div></a><a className="service-card" href="/auth/login"><img src="./electral.jfif" alt="Electrical repair service" /><div className="service-overlay"><span>02</span><h3 data-i18n="svc_electrical_t">Electrical</h3><p data-i18n="svc_electrical_d">Repairs & installation</p></div></a><a className="service-card" href="/auth/login"><img src="./cleaning.jfif" alt="Home cleaning service" /><div className="service-overlay"><span>03</span><h3 data-i18n="svc_cleaning_t">Cleaning</h3><p data-i18n="svc_cleaning_d">Home & office care</p></div></a><a className="service-card" href="/auth/login"><img src="./caregiving.jfif" alt="Caregiving service" /><div className="service-overlay"><span>04</span><h3 data-i18n="svc_caregiving_t">Caregiving</h3><p data-i18n="svc_caregiving_d">Support when it matters</p></div></a><a className="service-card" href="/auth/login"><img src="./carpentry.jfif" alt="Carpentry and furniture service" /><div className="service-overlay"><span>05</span><h3 data-i18n="svc_carpentry_t">Carpentry</h3><p data-i18n="svc_carpentry_d">Furniture & repairs</p></div></a><a className="service-card" href="/auth/login"><img src="./driving.jfif" alt="Driving and delivery service" /><div className="service-overlay"><span>06</span><h3 data-i18n="svc_driving_t">Driving</h3><p data-i18n="svc_driving_d">Transport & delivery</p></div></a><a className="service-card" href="/auth/login"><img src="./gardening.jfif" alt="Gardening and landscaping service" /><div className="service-overlay"><span>07</span><h3 data-i18n="svc_gardening_t">Gardening</h3><p data-i18n="svc_gardening_d">Landscaping & maintenance</p></div></a><a className="service-card" href="/auth/login"><img src="./technician.jfif" alt="Technical repair and support service" /><div className="service-overlay"><span>08</span><h3 data-i18n="svc_technician_t">Technician</h3><p data-i18n="svc_technician_d">Tech repair & support</p></div></a></div></section>
+        <section className="services section-pad" id="services"><div className="section-kicker" data-i18n="services_kicker">EVERYDAY HELP, CLOSE TO HOME</div><div className="section-heading-row"><h2 data-i18n-html="services_h2">Whatever you need,<br /><em>someone nearby can help.</em></h2><a className="arrow-link" href="/services"><span data-i18n="services_explore">Explore all services</span> ↗</a></div><div className="service-grid"><a className="service-card service-featured" href="/services"><img src="https://images.unsplash.com/photo-1585704032915-c3400ca199e7?q=80&w=800&auto=format&fit=crop" alt="Plumbing repair service" /><div className="service-overlay"><span>01</span><h3 data-i18n="svc_plumbing_t">Plumbing</h3><p data-i18n="svc_plumbing_d">Repairs, fittings & maintenance</p></div></a><a className="service-card" href="/services"><img src="/electral.jfif" alt="Electrical repair service" /><div className="service-overlay"><span>02</span><h3 data-i18n="svc_electrical_t">Electrical</h3><p data-i18n="svc_electrical_d">Repairs & installation</p></div></a><a className="service-card" href="/services"><img src="/cleaning.jfif" alt="Home cleaning service" /><div className="service-overlay"><span>03</span><h3 data-i18n="svc_cleaning_t">Cleaning</h3><p data-i18n="svc_cleaning_d">Home & office care</p></div></a><a className="service-card" href="/services"><img src="/caregiving.jfif" alt="Caregiving service" /><div className="service-overlay"><span>04</span><h3 data-i18n="svc_caregiving_t">Caregiving</h3><p data-i18n="svc_caregiving_d">Support when it matters</p></div></a><a className="service-card" href="/services"><img src="/carpentry.jfif" alt="Carpentry and furniture service" /><div className="service-overlay"><span>05</span><h3 data-i18n="svc_carpentry_t">Carpentry</h3><p data-i18n="svc_carpentry_d">Furniture & repairs</p></div></a><a className="service-card" href="/services"><img src="/driving.jfif" alt="Driving and delivery service" /><div className="service-overlay"><span>06</span><h3 data-i18n="svc_driving_t">Driving</h3><p data-i18n="svc_driving_d">Transport & delivery</p></div></a><a className="service-card" href="/services"><img src="/gardening.jfif" alt="Gardening and landscaping service" /><div className="service-overlay"><span>07</span><h3 data-i18n="svc_gardening_t">Gardening</h3><p data-i18n="svc_gardening_d">Landscaping & maintenance</p></div></a><a className="service-card" href="/services"><img src="/technician.jfif" alt="Technical repair and support service" /><div className="service-overlay"><span>08</span><h3 data-i18n="svc_technician_t">Technician</h3><p data-i18n="svc_technician_d">Tech repair & support</p></div></a></div></section>
 
         <section className="service-map-section section-pad" id="nearby-services"><div className="map-heading"><div><div className="section-kicker" data-i18n="map_kicker">LIVE LOCAL NETWORK</div><h2 data-i18n="map_h2">Services around you.</h2><p data-i18n="map_p">Explore verified workers, active bookings, and areas with rising demand.</p></div><button className="map-location-button" id="use-location" type="button">⌖ <span data-i18n="map_locbtn">Use my location</span></button></div><div className="map-layout"><div className="map-card"><div id="service-map" aria-label="Interactive map showing SharmNexus services around Jaipur"></div><div className="map-attribution-note">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div></div><div className="map-legend" aria-label="Map filters"><button className="legend-item is-active" data-category="worker" type="button"><i className="legend-dot dot-green"></i><span data-i18n="legend_workers">Available workers</span><b>12</b></button><button className="legend-item is-active" data-category="booking" type="button"><i className="legend-dot dot-terracotta"></i><span data-i18n="legend_bookings">Active bookings</span><b>8</b></button><button className="legend-item is-active" data-category="demand" type="button"><i className="legend-dot dot-red"></i><span data-i18n="legend_demand">High-demand zones</span><b>3</b></button><button className="legend-item is-active" data-category="request" type="button"><i className="legend-dot dot-orange"></i><span data-i18n="legend_requests">Customer requests</span><b>6</b></button></div></div><div className="demand-zone"><span>📍 <b>Zone A</b></span><div><strong>High Demand Zone</strong><small>Plumbing demand +23%</small></div><span>Available workers: <b>8</b></span></div></section>
 
@@ -109,7 +166,7 @@ export default function LandingPage() {
 
         <section className="how section-pad" id="how-it-works"><div className="section-kicker" data-i18n="how_kicker">SIMPLE BY DESIGN</div><h2 data-i18n-html="how_h2">From “I need help”<br /><em>to “all sorted.”</em></h2><div className="steps"><div className="step"><span>01</span><div><h3 data-i18n="step1_t">Tell us what you need</h3><p data-i18n="step1_d">Describe a service in your own words, in your own language.</p></div></div><div className="step"><span>02</span><div><h3 data-i18n="step2_t">Get intelligently matched</h3><p data-i18n="step2_d">We find verified nearby workers by skill, rating, location, and availability.</p></div></div><div className="step"><span>03</span><div><h3 data-i18n="step3_t">Book with confidence</h3><p data-i18n="step3_d">Choose a time, track the service, pay securely, and leave a rating.</p></div></div><div className="step"><span>04</span><div><h3 data-i18n="step4_t">Help the network grow</h3><p data-i18n="step4_d">Every booking supports local workers and strengthens the cooperative behind them.</p></div></div></div></section>
 
-        <section className="communities section-pad" id="communities"><div className="section-kicker" data-i18n="communities_kicker">ONE PLATFORM. THREE COMMUNITIES.</div><h2 data-i18n-html="communities_h2">Shared prosperity,<br /><em>designed into every booking.</em></h2><div className="community-grid"><article className="community-card customer"><div className="community-number" data-i18n="comm1_num">01 / FOR HOUSEHOLDS</div><div className="community-icon">⌕</div><h3 data-i18n="comm1_h3">Find trusted help nearby.</h3><p data-i18n="comm1_p">Book skilled professionals you can trust, with transparent ratings, secure payments, and support when you need it most.</p><a href="/auth/login"><span data-i18n="comm1_link">Find a service</span> <span>↗</span></a></article><article className="community-card worker"><div className="community-number" data-i18n="comm2_num">02 / FOR WORKERS</div><div className="community-icon">✦</div><h3 data-i18n="comm2_h3">Turn your skills into opportunity.</h3><p data-i18n="comm2_p">Build a professional identity, discover better jobs, grow your reputation, and access cooperative welfare benefits.</p><a href="/auth/login"><span data-i18n="comm2_link">Join as a worker</span> <span>↗</span></a></article><article className="community-card cooperative" id="cooperatives"><div className="community-number" data-i18n="comm3_num">03 / FOR COOPERATIVES</div><div className="community-icon">◒</div><h3 data-i18n="comm3_h3">Coordinate with intelligence.</h3><p data-i18n="comm3_p">Manage your workforce, anticipate demand, allocate jobs, and measure impact from one cooperative-owned platform.</p><a href="/auth/login"><span data-i18n="comm3_link">Explore cooperatives</span> <span>↗</span></a></article></div></section>
+        <section className="communities section-pad" id="communities"><div className="section-kicker" data-i18n="communities_kicker">ONE PLATFORM. THREE COMMUNITIES.</div><h2 data-i18n-html="communities_h2">Shared prosperity,<br /><em>designed into every booking.</em></h2><div className="community-grid"><article className="community-card customer"><div className="community-number" data-i18n="comm1_num">01 / FOR HOUSEHOLDS</div><div className="community-icon">⌕</div><h3 data-i18n="comm1_h3">Find trusted help nearby.</h3><p data-i18n="comm1_p">Book skilled professionals you can trust, with transparent ratings, secure payments, and support when you need it most.</p><a href="/services"><span data-i18n="comm1_link">Find a service</span> <span>↗</span></a></article><article className="community-card worker"><div className="community-number" data-i18n="comm2_num">02 / FOR WORKERS</div><div className="community-icon">✦</div><h3 data-i18n="comm2_h3">Turn your skills into opportunity.</h3><p data-i18n="comm2_p">Build a professional identity, discover better jobs, grow your reputation, and access cooperative welfare benefits.</p><a href="/auth/worker-register"><span data-i18n="comm2_link">Join as a worker</span> <span>↗</span></a></article><article className="community-card cooperative" id="cooperatives"><div className="community-number" data-i18n="comm3_num">03 / FOR COOPERATIVES</div><div className="community-icon">◒</div><h3 data-i18n="comm3_h3">Coordinate with intelligence.</h3><p data-i18n="comm3_p">Manage your workforce, anticipate demand, allocate jobs, and measure impact from one cooperative-owned platform.</p><a href="/auth/login"><span data-i18n="comm3_link">Explore cooperatives</span> <span>↗</span></a></article></div></section>
 
         <section className="dashboard-section section-pad"><div className="dashboard-intro"><div className="section-kicker">FOR LABOUR COOPERATIVES</div><h2>Power your cooperative<br /><em>with a clearer view.</em></h2><p>Turn scattered activity into useful insight. SharmNexus gives federations and societies the tools to coordinate people, demand, and welfare more effectively.</p><a className="button button-gold" href="/auth/login">Explore the dashboard <span>↗</span></a></div><div className="dashboard"><div className="dashboard-top"><span>COOPERATIVE OVERVIEW</span><span className="live"><i></i> LIVE NETWORK</span></div><div className="metric-row"><div><small>WORKERS</small><strong>2,450</strong><span className="up">↑ 12.4%</span></div><div><small>JOBS TODAY</small><strong>734</strong><span className="up">↑ 8.1%</span></div><div><small>COMPLETION</small><strong>94.3%</strong><span className="up">↑ 3.6%</span></div></div><div className="dashboard-main"><div className="forecast"><div className="chart-heading"><div><small>DEMAND FORECAST</small><h3>Services this week</h3></div><span>Week 34⌄</span></div><div className="chart"><div className="chart-labels"><span>80</span><span>60</span><span>40</span><span>20</span><span>0</span></div><div className="chart-bars"><i style={{ height: '48%' }}></i><i style={{ height: '61%' }}></i><i style={{ height: '42%' }}></i><i style={{ height: '78%' }}></i><i style={{ height: '66%' }}></i><i style={{ height: '88%' }}></i><i style={{ height: '72%' }}></i></div></div><div className="chart-days"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div></div><div className="recommendation"><span className="rec-label">✦ AI RECOMMENDATION</span><h3>Prepare for higher demand in Zone A.</h3><p>Plumbing requests are expected to rise <b>23%</b> between 6–9 PM.</p><div className="rec-action"><span>12 additional plumbers recommended</span><span>→</span></div></div></div></div></section>
 
@@ -125,11 +182,13 @@ export default function LandingPage() {
         <section className="final-cta"><div className="cta-sun"></div><div className="section-kicker" data-i18n="final_kicker">READY WHEN YOU ARE</div><h2 data-i18n-html="final_h2">Your next service is just<br /><em>a few clicks away.</em></h2><p data-i18n="final_p">Find trusted professionals. Support skilled workers. Strengthen local cooperatives.</p><div className="hero-actions"><a className="button button-dark" href="/auth/login"><span data-i18n="hero_cta_find">Find a service</span> <span>↗</span></a><a className="button button-outline-dark" href="/auth/login"><span data-i18n="hero_cta_join">Join as a worker</span> <span>↗</span></a></div></section>
     </main>
 
-    <footer className="footer"><div className="footer-top"><a className="brand brand-light" href="#home"><span className="brand-mark"><span></span><span></span></span><span>Sharm<span>Nexus</span></span></a><p data-i18n-html="footer_tagline">Connecting skills.<br />Creating opportunities.</p><div className="footer-social"><strong>Follow Us</strong><div className="social-row"><a className="social-icon" href="#" aria-label="Facebook">f</a><a className="social-icon" href="#" aria-label="X (Twitter)">𝕏</a><a className="social-icon" href="#" aria-label="LinkedIn">in</a><a className="social-icon" href="#" aria-label="Email">✉</a></div></div><div className="footer-links"><div><strong>Platform</strong><a href="#services">Services</a><a href="#how-it-works">How it works</a><a href="#communities">For households</a></div><div><strong>Community</strong><a href="#communities">For workers</a><a href="#cooperatives">For cooperatives</a><a href="#about">Our mission</a></div><div><strong>Connect</strong><a href="/auth/login">Log in</a><a href="/auth/login">Get started</a><a href="mailto:hello@sharmnexus.example">Contact us</a></div></div></div><div className="footer-bottom"><span>© 2024 SharmNexus. Cooperative ownership, community impact.</span><span>Made for the people who keep communities moving.</span></div></footer>
+    <footer className="footer"><div className="footer-top"><a className="brand brand-light" href="#home" aria-label="SharmNexus home"><div className="brand-badge" aria-hidden="true">SN</div><div className="brand-content"><span className="brand-title">Sharm<span className="brand-accent">Nexus</span></span><span className="brand-pill">SIH 26089</span></div></a><p data-i18n-html="footer_tagline">Connecting skills.<br />Creating opportunities.</p><div className="footer-social"><strong>Follow Us</strong><div className="social-row"><a className="social-icon" href="#" aria-label="Facebook">f</a><a className="social-icon" href="#" aria-label="X (Twitter)">𝕏</a><a className="social-icon" href="#" aria-label="LinkedIn">in</a><a className="social-icon" href="#" aria-label="Email">✉</a></div></div><div className="footer-links"><div><strong>Platform</strong><a href="/services">Services</a><a href="#how-it-works">How it works</a><a href="#communities">For households</a></div><div><strong>Community</strong><a href="#communities">For workers</a><a href="#cooperatives">For cooperatives</a><a href="#about">Our mission</a></div><div><strong>Connect</strong><a href="/auth/login">Log in</a><a href="/auth/login">Get started</a><a href="mailto:hello@sharmnexus.example">Contact us</a></div></div></div><div className="footer-bottom"><span>© 2024 SharmNexus. Cooperative ownership, community impact.</span><span>Made for the people who keep communities moving.</span></div></footer>
 
 
 
-      <Script src="/js/script.js" strategy="lazyOnload" />
+
+      <div id="google_translate_element" style={{ display: 'none' }}></div>
+      <Script src="/js/script.js" strategy="afterInteractive" />
     </>
   );
 }

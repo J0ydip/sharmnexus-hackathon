@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SharmNexus — Interactive Website Preview (SIH 26089)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2pdf Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&family=Great+Vibes&display=swap" rel="stylesheet">
+  
+  <style>
+    /* BASE TAB STYLES */
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .brand-font { font-family: 'Plus+Jakarta+Sans', 'Inter', sans-serif; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .pill-active { background-color: #059669; color: white; }
+
+    /* BUGATTI CINEMATIC ANIMATIONS */
+    @keyframes cinematic-zoom {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.15); }
+    }
+    @keyframes fade-up-slow {
+      0% { opacity: 0; transform: translateY(40px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-bg-zoom { animation: cinematic-zoom 25s linear infinite alternate; }
+    .animate-fade-up { animation: fade-up-slow 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .font-script { font-family: 'Great Vibes', cursive; }
+
+    /* ACETERNITY ANIMATED BORDER BUTTON */
+    @keyframes spin-slow {
+      100% { transform: rotate(360deg); }
+    }
+    .animated-border-btn {
+      position: relative;
+      overflow: hidden;
+    }
+    .animated-border-btn::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%; width: 200%; height: 200%;
+      background: conic-gradient(transparent, rgba(239,68,68,1), transparent 30%);
+      animation: spin-slow 3s linear infinite;
+    }
+    .animated-border-btn-inner {
+      position: absolute;
+      inset: 2px; /* Border thickness */
+      background: white;
+      border-radius: inherit;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+  <!-- TOP APP HEADER -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-700 to-emerald-500 text-white flex items-center justify-center font-black text-sm shadow-xs">
+          SN
+        </div>
+        <div>
+          <span class="text-lg font-black tracking-tight text-gray-900">Sharm<span class="text-emerald-600">Nexus</span></span>
+          <span class="hidden sm:inline-block text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md ml-2 border border-emerald-200">
+            SIH 26089
+          </span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs & Language Switcher -->
+      <nav class="flex items-center gap-1 sm:gap-2">
+        <button onclick="showTab('home')" id="nav-home" class="nav-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">Home</button>
+        <button onclick="showTab('services')" id="nav-services" class="nav-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">Services</button>
+        <button onclick="showTab('booking')" id="nav-booking" class="nav-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">Booking Flow</button>
+        <button onclick="showTab('track')" id="nav-track" class="nav-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">Status Tracker</button>
+        <button onclick="showTab('emergency')" id="nav-emergency" class="nav-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors">⚡ Emergency SOS</button>
+        
+        <!-- 6-Language Dropdown -->
+        <select id="langPicker" onchange="changeLanguage(this.value)" class="ml-2 bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl px-2 py-1.5 outline-none hover:bg-gray-200 cursor-pointer transition-colors">
+          <option value="en">English</option>
+          <option value="hi">हिंदी (Hindi)</option>
+          <option value="bn">বাংলা (Bengali)</option>
+          <option value="mr">मराठी (Marathi)</option>
+          <option value="ta">தமிழ் (Tamil)</option>
+          <option value="te">తెలుగు (Telugu)</option>
+        </select>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- TAB 1: CUSTOMER DASHBOARD (HOME)                         -->
+  <!-- ======================================================== -->
+  <main id="tab-home" class="tab-content active flex-1 pb-16">
+    
+    <!-- Cinematic Luxury Hero Banner (Bugatti Style) -->
+    <div class="relative h-[85vh] min-h-[550px] w-full overflow-hidden bg-black flex items-center justify-center border-b border-gray-800">
+      
+      <!-- Background Image with Slow Cinematic Zoom -->
+      <div class="absolute inset-0 z-0">
+        <!-- Vignette/Gradient Overlays -->
+        <div class="absolute inset-0 bg-black/40 z-10"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black z-10"></div>
+        <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=2069" class="w-full h-full object-cover animate-bg-zoom opacity-50 grayscale" alt="Craftsman Background">
+      </div>
+
+     <!-- Centered Elegant Content --> 
+      <div class="relative z-20 text-center flex flex-col items-center justify-center px-4 w-full">
+        <!-- Badge -->
+        <div id="hero-badge" class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-5 py-2 rounded-full text-xs font-semibold text-emerald-300 mb-6 shadow-[0_0_15px_rgba(16,185,129,0.2)] animate-fade-up" style="opacity: 0;">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          Cooperative-Owned Verified Gig Workforce
+        </div>
+        
+        <!-- Script Title -->
+        <h1 id="hero-title" class="font-script text-white text-7xl sm:text-8xl md:text-[130px] leading-none mb-4 animate-fade-up drop-shadow-2xl" style="opacity: 0; animation-delay: 0.2s;">
+          What service do you need today?
+        </h1>
+        
+        <!-- Subtitle -->
+        <p id="hero-subtitle" class="text-gray-300 text-[10px] sm:text-xs tracking-[0.3em] uppercase font-semibold animate-fade-up mb-12 max-w-2xl leading-relaxed whitespace-pre-line" style="animation-delay: 0.4s; opacity: 0;">A story of verified craftsmanship.
+Cooperative-Owned Gig Workforce.</p>
+
+        <!-- Minimal Search Bar -->
+        <div class="animate-fade-up w-full max-w-xl" style="animation-delay: 0.6s; opacity: 0;">
+           <div class="bg-black/30 backdrop-blur-md border border-white/20 p-1.5 rounded-full flex items-center shadow-2xl transition-all focus-within:border-white/50 focus-within:bg-black/50">
+             <div class="pl-5 text-gray-400"><i data-lucide="search" class="w-5 h-5"></i></div>
+             <input type="text" id="home-search" class="w-full bg-transparent text-white placeholder-gray-500 text-sm px-4 outline-none" placeholder="What service do you need today?">
+             <button id="btn-book-hero" onclick="startBooking('Plumber', 'General Request')" class="bg-white text-black px-8 py-3 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors flex-shrink-0">
+               Book Service
+             </button>
+           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10 Categories Grid -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 space-y-8 relative z-20">
+      
+      <!-- Active Request Banner -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-200 shadow-xl flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+            <i data-lucide="calendar-clock" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="active-badge-label" class="text-xs font-bold uppercase tracking-wider text-emerald-700">Active Request</span>
+              <span id="active-status-label" class="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">Worker Assigned</span>
+            </div>
+            <h4 class="text-sm font-bold text-gray-900 mt-0.5">Plumber • Booking SN-2026-8941</h4>
+            <p class="text-xs text-gray-500">Assigned to Rajesh Kumar (Patna District Labour Society)</p>
+          </div>
+        </div>
+        <button id="active-track-btn" onclick="showTab('track')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs">
+          Track Live Status →
+        </button>
+      </div>
+
+      <!-- Categories Section -->
+      <div>
+        <h2 id="trades-heading" class="text-lg font-bold text-gray-900 mb-3">10 Verified Trades</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="categories-grid">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <!-- Recommended Workers Preview -->
+      <div class="bg-white rounded-2xl p-5 sm:p-6 border border-gray-200 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">SIH 26089 Algorithm</span>
+            <h3 id="recommended-heading" class="text-base sm:text-lg font-bold text-gray-900">Recommended Verified Craftsmen</h3>
+          </div>
+          <button id="view-all-btn" onclick="showTab('services')" class="text-xs font-bold text-emerald-600 hover:underline">View All ↗</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="home-workers-grid">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- TAB 2: SERVICES DISCOVERY                                -->
+  <!-- ======================================================== -->
+  <main id="tab-services" class="tab-content flex-1 pb-16">
+    <div class="bg-gradient-to-r from-emerald-900 to-teal-900 text-white py-8 px-4 sm:px-6">
+      <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl sm:text-3xl font-extrabold">All 10 Cooperative Service Trades</h1>
+        <p class="text-emerald-100 text-xs sm:text-sm mt-1">Browse trade rates, background certifications, and instant booking.</p>
+      </div>
+    </div>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 mt-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="all-services-grid">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- TAB 3: BOOKING FLOW & WORKER MATCHING                    -->
+  <!-- ======================================================== -->
+  <main id="tab-booking" class="tab-content flex-1 pb-16">
+    <div class="bg-white border-b border-gray-200 py-4 px-4 sticky top-16 z-40">
+      <div class="max-w-5xl mx-auto flex items-center justify-between">
+        <h1 class="text-base font-bold text-gray-900">Service Booking Journey</h1>
+        <div class="flex items-center gap-2 text-xs font-bold">
+          <span id="step-pill-1" class="px-3 py-1 rounded-full bg-emerald-600 text-white">1. Request Form</span>
+          <span class="text-gray-300">→</span>
+          <span id="step-pill-2" class="px-3 py-1 rounded-full bg-gray-100 text-gray-500">2. Match Workers</span>
+          <span class="text-gray-300">→</span>
+          <span id="step-pill-3" class="px-3 py-1 rounded-full bg-gray-100 text-gray-500">3. Confirmation</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+      <!-- Step 1: Request Form -->
+      <div id="booking-sub-1" class="space-y-4">
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+          <h2 class="text-base font-bold text-gray-900">1. Tell us what you need</h2>
+          <div>
+            <label class="text-xs font-bold text-gray-700 block mb-1">Selected Service</label>
+            <select id="booking-cat-select" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm font-semibold">
+              <option value="Plumber">Plumber (Base ₹300)</option>
+              <option value="Electrician">Electrician (Base ₹350)</option>
+              <option value="Carpenter">Carpenter (Base ₹400)</option>
+              <option value="Painter">Painter (Base ₹500)</option>
+              <option value="Cleaner">Cleaner (Base ₹250)</option>
+              <option value="Technician">Technician (Base ₹450)</option>
+              <option value="Driver">Driver (Base ₹300)</option>
+              <option value="Gardener">Gardener (Base ₹200)</option>
+              <option value="Caregiver">Caregiver (Base ₹600)</option>
+              <option value="Domestic Helper">Domestic Helper (Base ₹250)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-700 block mb-1">Problem Description</label>
+            <textarea id="booking-desc-input" rows="2" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">Kitchen sink pipe is leaking heavily under the counter.</textarea>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-700 block mb-1">Service Address</label>
+            <input type="text" id="booking-addr-input" value="Flat 402, Green Valley Apartments, Kankarbagh Main Rd, Patna" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-700 block mb-1">Urgency</label>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <button type="button" class="p-2.5 rounded-xl border border-emerald-600 bg-emerald-50 text-emerald-900 font-bold">Normal (Base Rate)</button>
+              <button type="button" class="p-2.5 rounded-xl border border-gray-200 hover:border-amber-400">Urgent (+25%)</button>
+              <button type="button" class="p-2.5 rounded-xl border border-gray-200 hover:border-red-400">Emergency (1.5x)</button>
+            </div>
+          </div>
+          <button onclick="goToBookingStep(2)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl shadow-md transition-transform hover:scale-[1.01]">
+            Find Verified Workers →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Worker Matching -->
+      <div id="booking-sub-2" class="space-y-4" style="display:none;">
+        <div class="bg-gradient-to-r from-emerald-900 to-teal-900 text-white p-5 rounded-2xl shadow-md">
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-300">Transparent Matching Algorithm</span>
+          <h2 class="text-lg font-bold">Verified Plumbers Near You (Ranked by Fair Allocation)</h2>
+          <p class="text-xs text-emerald-100 mt-0.5">Skills (35%), Proximity (20%), Availability (15%), Rating (10%), Workload (10%), Fairness (10%)</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="matched-workers-container">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <!-- Step 3: Confirmation -->
+      <div id="booking-sub-3" class="space-y-4" style="display:none;">
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+          <h2 class="text-base font-bold text-gray-900">Confirm Your Booking Details</h2>
+          <div class="p-4 bg-gray-50 rounded-xl space-y-2 text-xs">
+            <div class="flex justify-between"><span class="text-gray-500">Service:</span><strong id="conf-service">Plumber</strong></div>
+            <div class="flex justify-between"><span class="text-gray-500">Assigned Worker:</span><strong id="conf-worker">Rajesh Kumar (Patna District Labour Society)</strong></div>
+            <div class="flex justify-between"><span class="text-gray-500">Address:</span><span id="conf-addr">Flat 402, Green Valley Apartments, Kankarbagh</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Total Price:</span><strong class="text-base text-emerald-700 font-black">₹300 (Pay after service)</strong></div>
+          </div>
+          <button onclick="confirmBookingSuccess()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl shadow-md">
+            Confirm Booking & Generate Order
+          </button>
+        </div>
+      </div>
+
+      <!-- Success celebration -->
+      <div id="booking-sub-success" class="bg-white p-8 rounded-3xl border border-emerald-200 text-center space-y-4 shadow-xl" style="display:none;">
+        <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+          <i data-lucide="check-circle-2" class="w-10 h-10"></i>
+        </div>
+        <h2 class="text-2xl font-black text-gray-900">Booking Confirmed!</h2>
+        <p class="text-xs text-gray-500">Booking ID: <strong class="font-mono text-gray-900">SN-2026-8941</strong> | OTP Code: <strong class="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">4829</strong></p>
+        
+        <div class="pt-2 flex justify-center gap-3">
+          <button onclick="downloadSlip()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs">
+            📄 Download Slip
+          </button>
+          <button onclick="showTab('track')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs">
+            Track Live Status Timeline →
+          </button>
+          <button onclick="showTab('home')" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs px-5 py-2.5 rounded-xl">
+            Return to Dashboard
+          </button>
+        </div>
+
+        <!-- HIDDEN RECEIPT TEMPLATE -->
+        <div style="display: none;">
+          <div id="hidden-slip-container" style="padding: 40px; font-family: 'Inter', sans-serif; color: #111827; background: white;">
+            <div style="border-bottom: 2px solid #059669; padding-bottom: 20px; margin-bottom: 20px;">
+              <h1 style="color: #059669; font-size: 24px; margin: 0;">SharmNexus</h1>
+              <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Official Service Booking Receipt</p>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Booking ID:</strong></td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;" id="slip-booking">SN-2026-8941</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Date:</strong></td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;" id="slip-date"></td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Service:</strong></td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;" id="slip-service-name"></td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Assigned Worker:</strong></td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;" id="slip-worker-name"></td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Address:</strong></td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;" id="slip-address"></td>
+              </tr>
+            </table>
+
+            <div style="text-align: right; font-size: 20px;">
+              <strong>Total Amount: <span style="color: #059669;" id="slip-price"></span></strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- TAB 4: STATUS TRACKER                                    -->
+  <!-- ======================================================== -->
+  <main id="tab-track" class="tab-content flex-1 pb-16">
+    <div class="bg-gradient-to-r from-emerald-900 to-teal-900 text-white py-6 px-4">
+      <div class="max-w-5xl mx-auto flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold">Booking Status: SN-2026-8941</h1>
+          <p class="text-xs text-emerald-100">Assigned Craftsman: Rajesh Kumar (Patna District Labour Society)</p>
+        </div>
+        <button onclick="advanceTrackerStep()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 animate-pulse">
+          <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+          Simulate Next Status
+        </button>
+      </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="md:col-span-2 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">SIH 26089 Status Progression</h3>
+        <div class="space-y-4 pl-4 border-l-2 border-emerald-500" id="tracker-steps-list">
+          <div class="text-xs font-bold text-emerald-700">1. Requested ✓ (Broadcasted to cooperative network)</div>
+          <div class="text-xs font-bold text-emerald-700" id="track-step-2">2. Assigned ✓ (Worker assigned by society)</div>
+          <div class="text-xs font-bold text-gray-400" id="track-step-3">3. Accepted (Worker confirmed appointment)</div>
+          <div class="text-xs font-bold text-gray-400" id="track-step-4">4. On the Way / Started (Worker en route)</div>
+          <div class="text-xs font-bold text-gray-400" id="track-step-5">5. Completed &amp; Verified by OTP</div>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3 text-xs">
+        <h3 class="font-bold text-gray-700">Security Verification</h3>
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
+          <span class="text-[10px] text-gray-500 block uppercase font-bold">Share OTP on Arrival</span>
+          <span class="text-2xl font-black font-mono text-emerald-800">4829</span>
+        </div>
+        <div class="pt-2 border-t border-gray-100">
+          <span class="text-gray-500">Worker Phone:</span>
+          <strong class="block text-gray-900 font-mono mt-0.5">+91 98765 43210</strong>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- TAB 5: EMERGENCY SOS                                     -->
+  <!-- ======================================================== -->
+  <main id="tab-emergency" class="tab-content flex-1 pb-16">
+    <div class="bg-gradient-to-r from-red-800 via-rose-800 to-amber-900 text-white py-8 px-4">
+      <div class="max-w-5xl mx-auto">
+        <span class="text-xs font-bold bg-red-600 px-2.5 py-0.5 rounded-full uppercase">⚡ Immediate SOS Dispatch</span>
+        <h1 class="text-2xl sm:text-4xl font-black mt-2">Emergency Service Dispatch</h1>
+        <p class="text-red-100 text-xs sm:text-sm mt-1">15–25 minute guaranteed arrival with 1.5x emergency rate.</p>
+      </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 mt-6 bg-white p-6 rounded-2xl border border-red-200 shadow-md space-y-4">
+      <h3 class="text-base font-bold text-gray-900">Need Immediate Emergency Plumber / Electrician?</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl border border-red-200 bg-red-50/50 flex justify-between items-center">
+          <div>
+            <h4 class="font-bold text-gray-900 text-sm">Emergency Plumber</h4>
+            <span class="text-xs text-gray-500">ETA: ~15 mins • 2.4 km away</span>
+            <span class="block text-xs font-black text-red-700 mt-1">₹450 (1.5x Multiplier)</span>
+          </div>
+          <button onclick="showTab('track')" class="animated-border-btn rounded-xl shadow-lg w-32 h-10 transition-transform hover:scale-105">
+            <span class="animated-border-btn-inner flex items-center justify-center text-red-600 font-bold text-xs hover:bg-red-50 transition-colors">
+              Dispatch Now
+            </span>
+          </button>
+        </div>
+        <div class="p-4 rounded-xl border border-red-200 bg-red-50/50 flex justify-between items-center">
+          <div>
+            <h4 class="font-bold text-gray-900 text-sm">Emergency Electrician</h4>
+            <span class="text-xs text-gray-500">ETA: ~20 mins • 3.1 km away</span>
+            <span class="block text-xs font-black text-red-700 mt-1">₹525 (1.5x Multiplier)</span>
+          </div>
+          <button onclick="showTab('track')" class="animated-border-btn rounded-xl shadow-lg w-32 h-10 transition-transform hover:scale-105">
+            <span class="animated-border-btn-inner flex items-center justify-center text-red-600 font-bold text-xs hover:bg-red-50 transition-colors">
+              Dispatch Now
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white border-t border-gray-200 py-6 text-center text-xs text-gray-400">
+    SharmNexus © 2026. Built for SIH Problem Statement 26089 (Cooperative Gig Services Platform).
+  </footer>
+
+  <!-- SCRIPT LOGIC & 6-LANGUAGE DICTIONARY -->
+  <script>
+    // Multilingual Category Data
+    const categoriesData = [
+      { id: 'Plumber', price: 300, icon: 'droplet', names: { en: 'Plumber', hi: 'प्लम्बर', bn: 'প্লাম্বার', mr: 'प्लंबर', ta: 'பிளம்பர்', te: 'ప్లంబర్' } },
+      { id: 'Electrician', price: 350, icon: 'zap', names: { en: 'Electrician', hi: 'इलेक्ट्रीशियन', bn: 'ইলেকট্রিশিয়ান', mr: 'इलेक्ट्रिशियन', ta: 'எலக்ட்ரீஷியன்', te: 'ఎలక్ట్రీషియన్' } },
+      { id: 'Carpenter', price: 400, icon: 'hammer', names: { en: 'Carpenter', hi: 'बढ़ई', bn: 'ছুতোর', mr: 'सुतार', ta: 'தச்சர்', te: 'వడ్రంగి' } },
+      { id: 'Painter', price: 500, icon: 'paintbrush', names: { en: 'Painter', hi: 'पेंटर', bn: 'রংমিস্ত্রি', mr: 'पेंटर', ta: 'பெயிண்டர்', te: 'పెయింటర్' } },
+      { id: 'Cleaner', price: 250, icon: 'sparkles', names: { en: 'Cleaner', hi: 'सफाई', bn: 'পরিচ্ছন্নতাকর্মী', mr: 'सफाई कामगार', ta: 'துப்புரவாளர்', te: 'క్లీనర్' } },
+      { id: 'Technician', price: 450, icon: 'wrench', names: { en: 'Technician', hi: 'तकनीशियन', bn: 'টেকনিশিয়ান', mr: 'तंत्रज्ञ', ta: 'தொழில்நுட்ப வல்லுநர்', te: 'టెక్నీషియన్' } },
+      { id: 'Driver', price: 300, icon: 'car', names: { en: 'Driver', hi: 'ड्राइवर', bn: 'ড্রাইভার', mr: 'चालक', ta: 'டிரைவர்', te: 'డ్రైవర్' } },
+      { id: 'Gardener', price: 200, icon: 'leaf', names: { en: 'Gardener', hi: 'माली', bn: 'মালী', mr: 'माळी', ta: 'தோட்டக்காரர்', te: 'తోటమాలి' } },
+      { id: 'Caregiver', price: 600, icon: 'heart', names: { en: 'Caregiver', hi: 'देखभाल', bn: 'কেয়ারগিভার', mr: 'काळजीवाहू', ta: 'பராமரிப்பாளர்', te: 'సంరక్షకుడు' } },
+      { id: 'Domestic Helper', price: 250, icon: 'home', names: { en: 'Domestic Helper', hi: 'घरेलू सहायक', bn: 'গৃহকর্মী', mr: 'घरगुती मदतनीस', ta: 'வீட்டு உதவியாளர்', te: 'ఇంటి సహాయకుడు' } }
+    ];
+
+    const workersData = [
+      {
+        name: 'Rajesh Kumar', skill: 'Plumber', exp: 8, rating: 4.8, jobs: 126, dist: 2.4,
+        society: 'Patna District Labour Society', match: 94,
+        img: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=400&auto=format&fit=crop&q=80'
+      },
+      {
+        name: 'Priya Das', skill: 'Electrician', exp: 6, rating: 4.9, jobs: 98, dist: 3.1,
+        society: 'Patna District Labour Society', match: 92,
+        img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+      },
+      {
+        name: 'Dr. Anita Rao', skill: 'Caregiver', exp: 6, rating: 5.0, jobs: 72, dist: 2.2,
+        society: 'Bangalore Artisans Cooperative', match: 96,
+        img: 'https://images.unsplash.com/photo-1594824813583-0599a0709f19?w=400&auto=format&fit=crop&q=80'
+      }
+    ];
+
+    let currentLang = 'en';
+
+    const translations = {
+      en: {
+        navHome: "Home", navServices: "Services", navBooking: "Booking Flow", navTracker: "Status Tracker", navSOS: "⚡ Emergency SOS",
+        badge: "Cooperative-Owned Verified Gig Workforce",
+        heroTitle: "SharmNexus",
+        heroSub: "A story of verified craftsmanship.\nCooperative-Owned Gig Workforce.",
+        searchPlaceholder: "What service do you need today?",
+        bookBtn: "Book Service",
+        activeBadge: "Active Request", activeStatus: "Worker Assigned", activeTrack: "Track Live Status →",
+        tradesTitle: "10 Verified Trades", recommendedTitle: "Recommended Verified Craftsmen", viewAll: "View All ↗"
+      },
+      hi: {
+        navHome: "होम", navServices: "सेवाएं", navBooking: "बुकिंग", navTracker: "ट्रैकर", navSOS: "⚡ आपातकालीन SOS",
+        badge: "सहकारी-स्वामित्व वाली सत्यापित कार्यबल",
+        heroTitle: "शर्मनेक्सस",
+        heroSub: "सत्यापित शिल्प कौशल की एक कहानी।\nसहकारी-स्वामित्व वाला कार्यबल।",
+        searchPlaceholder: "आज आपको किस सेवा की आवश्यकता है?",
+        bookBtn: "सेवा बुक करें",
+        activeBadge: "सक्रिय अनुरोध", activeStatus: "कार्यकर्ता नियुक्त", activeTrack: "लाइव स्थिति देखें →",
+        tradesTitle: "10 सत्यापित ट्रेड्स", recommendedTitle: "अनुशंसित सत्यापित कारीगर", viewAll: "सभी देखें ↗"
+      },
+      bn: {
+        navHome: "হোম", navServices: "সেবাসমূহ", navBooking: "বুকিং", navTracker: "ট্র্যাকার", navSOS: "⚡ জরুরি এসওএস",
+        badge: "সমবায়-মালিকানাধীন যাচাইকৃত গিগ কর্মী",
+        heroTitle: "শর্মনেক্সাস",
+        heroSub: "যাচাইকৃত কারুকার্যের গল্প।\nসমবায়-মালিকানাধীন গিগ কর্মী।",
+        searchPlaceholder: "আজ আপনার কোন সেবার প্রয়োজন?",
+        bookBtn: "সেবা বুক করুন",
+        activeBadge: "চলমান অনুরোধ", activeStatus: "কর্মী নিযুক্ত", activeTrack: "লাইভ স্ট্যাটাস দেখুন →",
+        tradesTitle: "১০টি যাচাইকৃত ট্রেড", recommendedTitle: "সুপারিশকৃত দক্ষ কারিগর", viewAll: "সব দেখুন ↗"
+      },
+      mr: {
+        navHome: "मुख्यपृष्ठ", navServices: "सेवा", navBooking: "बुकिंग", navTracker: "ट्रॅकर", navSOS: "⚡ आपत्कालीन SOS",
+        badge: "सहकारी-मालकीचे पडताळणी केलेले कर्मचारी",
+        heroTitle: "शर्मनेक्सस",
+        heroSub: "पडताळणी केलेल्या कारागिरीची कथा.\nसहकारी मालकीचे कामगार.",
+        searchPlaceholder: "आज तुम्हाला कोणत्या सेवेची आवश्यकता आहे?",
+        bookBtn: "सेवा बुक करा",
+        activeBadge: "सक्रिय विनंती", activeStatus: "कर्मचारी नियुक्त", activeTrack: "स्थिती ट्रॅक करा →",
+        tradesTitle: "१० पडताळणी केलेले ट्रेड्स", recommendedTitle: "शिफारस केलेले कारागीर", viewAll: "सर्व पहा ↗"
+      },
+      ta: {
+        navHome: "முகப்பு", navServices: "சேவைகள்", navBooking: "முன்பதிவு", navTracker: "கண்காணிப்பு", navSOS: "⚡ அவசர SOS",
+        badge: "கூட்டுறவு ஆதரவு சரிபார்க்கப்பட்ட தொழிலாளர்கள்",
+        heroTitle: "ஷர்ம்நெக்ஸஸ்",
+        heroSub: "சரிபார்க்கப்பட்ட கைவினைத்திறனின் கதை.\nகூட்டுறவு கிக் பணியாளர்கள்.",
+        searchPlaceholder: "இன்று உங்களுக்கு என்ன சேவை தேவை?",
+        bookBtn: "சேவை முன்பதிவு",
+        activeBadge: "செயலில் உள்ள கோரிக்கை", activeStatus: "பணியாளர் நியமனம்", activeTrack: "நிலையை கண்காணிக்கவும் →",
+        tradesTitle: "10 சரிபார்க்கப்பட்ட தொழில்கள்", recommendedTitle: "பரிந்துரைக்கப்பட்ட கைவினைஞர்கள்", viewAll: "அனைத்தையும் காண்க ↗"
+      },
+      te: {
+        navHome: "హోమ్", navServices: "సేవలు", navBooking: "బుకింగ్", navTracker: "ట్రాకర్", navSOS: "⚡ ఎమర్జెన్సీ SOS",
+        badge: "సహకార యాజమాన్య ధృవీకృత కార్మికులు",
+        heroTitle: "షర్మ్‌నెక్సస్",
+        heroSub: "ధృవీకరించబడిన నైపుణ్యం యొక్క కథ.\nసహకార యాజమాన్య గిగ్ వర్క్‌ఫోర్స్.",
+        searchPlaceholder: "ఈరోజు మీకు ఏ సేవ కావాలి?",
+        bookBtn: "సర్వీస్ బుక్ చేయండి",
+        activeBadge: "యాక్టివ్ అభ్యర్థన", activeStatus: "వర్కర్ కేటాయించబడ్డారు", activeTrack: "స్థితిని ట్రాక్ చేయండి →",
+        tradesTitle: "10 ధృవీకరించబడిన ట్రేడ్స్", recommendedTitle: "సిఫార్సు చేయబడిన నిపుణులు", viewAll: "అన్నీ చూడండి ↗"
+      }
+    };
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      const t = translations[lang] || translations.en;
+
+      document.getElementById('nav-home').innerText = t.navHome;
+      document.getElementById('nav-services').innerText = t.navServices;
+      document.getElementById('nav-booking').innerText = t.navBooking;
+      document.getElementById('nav-track').innerText = t.navTracker;
+      document.getElementById('nav-emergency').innerText = t.navSOS;
+
+      const badgeEl = document.getElementById('hero-badge');
+      if (badgeEl) badgeEl.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> ${t.badge}`;
+      
+      document.getElementById('hero-title').innerText = t.heroTitle;
+      document.getElementById('hero-subtitle').innerText = t.heroSub;
+      document.getElementById('home-search').placeholder = t.searchPlaceholder;
+      document.getElementById('btn-book-hero').innerText = t.bookBtn;
+
+      const activeBadge = document.getElementById('active-badge-label');
+      if (activeBadge) activeBadge.innerText = t.activeBadge;
+      const activeStatus = document.getElementById('active-status-label');
+      if (activeStatus) activeStatus.innerText = t.activeStatus;
+      const activeTrack = document.getElementById('active-track-btn');
+      if (activeTrack) activeTrack.innerText = t.activeTrack;
+
+      const tradesHead = document.getElementById('trades-heading');
+      if (tradesHead) tradesHead.innerText = t.tradesTitle;
+      const recHead = document.getElementById('recommended-heading');
+      if (recHead) recHead.innerText = t.recommendedTitle;
+      const viewAll = document.getElementById('view-all-btn');
+      if (viewAll) viewAll.innerText = t.viewAll;
+
+      renderHome();
+    }
+
+    // SHADCN STYLE BENTO GRID WITH MULTILINGUAL DATA
+    function renderHome() {
+      const catGrid = document.getElementById('categories-grid');
+      catGrid.innerHTML = categoriesData.map(c => {
+        const localizedName = c.names[currentLang] || c.names.en;
+        const englishName = c.names.en;
+
+        return `
+          <div onclick="startBooking('${c.id}', 'Need general ${englishName} service')" class="group cursor-pointer bg-white p-4 rounded-2xl border border-slate-200 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col items-center justify-center relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-b from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="w-12 h-12 rounded-xl bg-slate-50 text-slate-700 group-hover:bg-emerald-100 group-hover:text-emerald-700 flex items-center justify-center font-bold mb-3 transition-colors duration-300 z-10">
+              <i data-lucide="${c.icon}" class="w-6 h-6"></i>
+            </div>
+            <span class="text-sm font-semibold text-slate-900 z-10">${localizedName}</span>
+            <span class="text-[10px] text-slate-400 z-10 mb-1">${currentLang === 'en' ? '' : englishName}</span>
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md z-10 mt-1">₹${c.price}</span>
+          </div>
+        `;
+      }).join('');
+
+      const workGrid = document.getElementById('home-workers-grid');
+      workGrid.innerHTML = workersData.map(w => `
+        <div class="p-4 rounded-2xl border border-gray-200 bg-white shadow-2xs space-y-3">
+          <div class="flex items-center gap-3">
+            <img src="${w.img}" class="w-12 h-12 rounded-xl object-cover">
+            <div>
+              <div class="flex items-center gap-1">
+                <strong class="text-sm text-gray-900">${w.name}</strong>
+                <span class="text-[10px] text-emerald-700 bg-emerald-100 font-bold px-1.5 py-0.2 rounded">✓</span>
+              </div>
+              <span class="text-xs text-gray-500">${w.skill} • ${w.exp} yrs exp</span>
+              <span class="text-[11px] text-emerald-700 block">${w.society}</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs pt-2 border-t border-gray-100">
+            <span class="font-bold text-emerald-800">Match: ${w.match}%</span>
+            <button onclick="startBooking('${w.skill}', 'Service with ${w.name}')" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xs">Book Now</button>
+          </div>
+        </div>
+      `).join('');
+
+      const allServGrid = document.getElementById('all-services-grid');
+      allServGrid.innerHTML = categoriesData.map(c => {
+        const localizedName = c.names[currentLang] || c.names.en;
+        return `
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between space-y-4">
+          <div>
+            <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center mb-3">
+              <i data-lucide="${c.icon}" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-base font-bold text-gray-900">${localizedName}</h3>
+            <p class="text-xs text-gray-500 mt-1">Verified background checks & cooperative standard pricing.</p>
+          </div>
+          <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+            <span class="text-base font-black text-gray-900">₹${c.price} base</span>
+            <button onclick="startBooking('${c.id}', 'Booking for ${c.id}')" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs">Book Service</button>
+          </div>
+        </div>
+      `}).join('');
+
+      lucide.createIcons();
+    }
+
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('pill-active'));
+
+      const activeTab = document.getElementById('tab-' + tabName);
+      if (activeTab) activeTab.classList.add('active');
+
+      const activeBtn = document.getElementById('nav-' + tabName);
+      if (activeBtn) activeBtn.classList.add('pill-active');
+
+      lucide.createIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function startBooking(serviceName, desc) {
+      showTab('booking');
+      document.getElementById('booking-cat-select').value = serviceName;
+      document.getElementById('booking-desc-input').value = desc;
+      goToBookingStep(1);
+    }
+
+    function goToBookingStep(stepNum) {
+      document.getElementById('booking-sub-1').style.display = stepNum === 1 ? 'block' : 'none';
+      document.getElementById('booking-sub-2').style.display = stepNum === 2 ? 'block' : 'none';
+      document.getElementById('booking-sub-3').style.display = stepNum === 3 ? 'block' : 'none';
+      document.getElementById('booking-sub-success').style.display = 'none';
+
+      if (stepNum === 2) {
+        const cont = document.getElementById('matched-workers-container');
+        cont.innerHTML = workersData.map(w => `
+          <div class="p-5 bg-white rounded-2xl border border-gray-200 shadow-xs space-y-3">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <img src="${w.img}" class="w-14 h-14 rounded-2xl object-cover">
+                <div>
+                  <h4 class="font-bold text-gray-900">${w.name} <span class="text-xs text-emerald-600 font-normal">✓ Verified</span></h4>
+                  <span class="text-xs text-gray-500">${w.skill} • ${w.exp} yrs exp • ★ ${w.rating}</span>
+                  <span class="text-[11px] text-emerald-700 block">${w.society}</span>
+                </div>
+              </div>
+              <span class="text-xs font-black bg-emerald-100 text-emerald-800 px-2 py-1 rounded-xl">Match: ${w.match}%</span>
+            </div>
+            <div class="p-2.5 bg-emerald-50 rounded-xl text-[11px] text-gray-700 space-y-1">
+              <div>✓ Verified NSDC Certificate</div>
+              <div>✓ Proximity: ${w.dist} km away (~20 min ETA)</div>
+              <div>✓ Optimal cooperative workload balance</div>
+            </div>
+            <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+              <span class="text-sm font-extrabold text-gray-900">₹300 / service</span>
+              <button onclick="goToBookingStep(3)" class="bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs">Select &amp; Confirm</button>
+            </div>
+          </div>
+        `).join('');
+      }
+      lucide.createIcons();
+    }
+
+    function confirmBookingSuccess() {
+      document.getElementById('booking-sub-1').style.display = 'none';
+      document.getElementById('booking-sub-2').style.display = 'none';
+      document.getElementById('booking-sub-3').style.display = 'none';
+      document.getElementById('booking-sub-success').style.display = 'block';
+      lucide.createIcons();
+    }
+
+    function downloadSlip() {
+      const serviceText = document.getElementById('conf-service').innerText;
+      const workerText = document.getElementById('conf-worker').innerText;
+      const addressText = document.getElementById('conf-addr').innerText;
+      const bookingId = 'SN-2026-8941'; 
+      
+      const selectEl = document.getElementById('booking-cat-select');
+      const priceMatch = selectEl.options[selectEl.selectedIndex].text.match(/₹(\d+)/);
+      const finalPrice = priceMatch ? `₹${priceMatch[1]}` : '₹300';
+
+      document.getElementById('slip-date').innerText = new Date().toLocaleDateString();
+      document.getElementById('slip-service-name').innerText = serviceText;
+      document.getElementById('slip-worker-name').innerText = workerText;
+      document.getElementById('slip-address').innerText = addressText;
+      document.getElementById('slip-price').innerText = finalPrice;
+
+      const slipElement = document.getElementById('hidden-slip-container');
+      const opt = {
+        margin: 0.5,
+        filename: `SharmNexus_Receipt_${bookingId}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(slipElement).save();
+    }
+
+    let trackStepCount = 2;
+    function advanceTrackerStep() {
+      trackStepCount++;
+      if (trackStepCount === 3) {
+        document.getElementById('track-step-3').className = 'text-xs font-bold text-emerald-700';
+        document.getElementById('track-step-3').innerHTML = '3. Accepted ✓ (Worker confirmed appointment)';
+      } else if (trackStepCount === 4) {
+        document.getElementById('track-step-4').className = 'text-xs font-bold text-emerald-700';
+        document.getElementById('track-step-4').innerHTML = '4. On the Way / Started ✓ (Worker en route)';
+      } else if (trackStepCount >= 5) {
+        document.getElementById('track-step-5').className = 'text-xs font-bold text-emerald-700';
+        document.getElementById('track-step-5').innerHTML = '5. Completed ✓ (Verified by OTP 4829)';
+      }
+    }
+
+    // Initialize
+    renderHome();
+    showTab('home');
+    lucide.createIcons();
+  </script>
+</body>
+</html>

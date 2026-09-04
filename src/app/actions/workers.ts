@@ -86,3 +86,61 @@ export async function registerWorker(workerData: any) {
   revalidatePath('/worker');
   return { success: true, data };
 }
+
+export async function createWorkerRegistration(data: {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  aadhaarNumber?: string;
+  address?: string;
+  serviceCategoryId: string;
+  yearsExperience?: number;
+  certificationName?: string;
+}) {
+  const supabase = await createClient();
+
+  // 1. Insert or update workers row
+  const { error: workerError } = await supabase
+    .from('workers')
+    .upsert({
+      id: data.id,
+      full_name: data.fullName,
+      phone: data.phone,
+      email: data.email,
+      aadhaar_number: data.aadhaarNumber || null,
+      address: data.address || null,
+      is_verified: true,
+      is_available: true,
+      verification_status: 'verified',
+      avg_rating: 4.8,
+      total_jobs_completed: 0,
+      profile_photo_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.fullName)}&background=0D8ABC&color=fff`
+    }, { onConflict: 'id' });
+
+  if (workerError) {
+    console.error('Error inserting worker record:', workerError);
+    return { error: workerError.message };
+  }
+
+  // 2. Insert into worker_skills
+  if (data.serviceCategoryId) {
+    const { error: skillError } = await supabase
+      .from('worker_skills')
+      .upsert({
+        worker_id: data.id,
+        service_category_id: data.serviceCategoryId,
+        years_experience: data.yearsExperience || 3,
+        certification_name: data.certificationName || 'Certified Professional',
+        is_verified: true
+      }, { onConflict: 'worker_id,service_category_id' });
+
+    if (skillError) {
+      console.warn('Worker skill insert notice:', skillError);
+    }
+  }
+
+  revalidatePath('/worker-dashboard');
+  revalidatePath('/worker-profile');
+  return { success: true };
+}

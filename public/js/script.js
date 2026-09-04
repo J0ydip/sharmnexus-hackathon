@@ -11,7 +11,7 @@
      7. Language switching (i18n)
    ========================================================= */
 
-document.addEventListener('DOMContentLoaded', () => {
+const initScript = () => {
 
   /* =====================================================
      1. CUSTOM CURSOR DOT
@@ -171,13 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* =====================================================
-     6. STICKY NAVBAR SHADOW
+     6. STICKY NAVBAR
      ===================================================== */
-  if (navbar) {
-    window.addEventListener('scroll', () => {
-      navbar.style.boxShadow = window.scrollY > 50 ? '0 10px 25px rgba(0,0,0,0.10)' : 'none';
-    });
-  }
+  // Handled via Tailwind utility classes directly
 
   /* =====================================================
      7. LANGUAGE SWITCHING (i18n)
@@ -580,4 +576,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (translations[savedLang]) applyLanguage(savedLang);
 
   console.log('✅ SharmNexus script.js loaded — cursor, counters, map, mobile nav, and 6-language switching are live.');
-});
+};
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScript);
+  } else {
+    setTimeout(initScript, 50);
+  }
+}

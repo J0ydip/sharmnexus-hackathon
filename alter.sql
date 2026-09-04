@@ -1,0 +1,1 @@
+﻿ALTER TABLE workers ADD COLUMN hourly_rate DECIMAL DEFAULT 300.00;

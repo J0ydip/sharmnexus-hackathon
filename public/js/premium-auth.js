@@ -1,17 +1,15 @@
 // ============================================================================
-// Premium Authentication System
+// SharmNexus Premium Authentication System
 // ============================================================================
 
 class PremiumAuth {
     constructor() {
         this.currentUser = null;
         this.isLoading = false;
+        this.selectedRole = 'customer'; // Default role
         this.init();
     }
 
-    // ========================================================================
-    // Initialization
-    // ========================================================================
     init() {
         this.cacheElements();
         this.setupEventListeners();
@@ -20,75 +18,73 @@ class PremiumAuth {
     }
 
     cacheElements() {
-        // Containers
         this.authContainer = document.getElementById('authContainer');
-        this.authLeft = document.getElementById('authLeft');
-        this.authRight = document.getElementById('authRight');
-
-        // Form Containers
         this.loginContainer = document.getElementById('loginContainer');
         this.signupContainer = document.getElementById('signupContainer');
 
-        // Forms
         this.loginForm = document.getElementById('loginForm');
         this.signupForm = document.getElementById('signupForm');
         this.resetForm = document.getElementById('resetForm');
 
-        // Login Form Fields
         this.loginEmail = document.getElementById('loginEmail');
         this.loginPassword = document.getElementById('loginPassword');
         this.rememberMe = document.getElementById('rememberMe');
         this.loginBtn = document.getElementById('loginBtn');
+        this.loginRoleText = document.getElementById('loginRoleText');
 
-        // Signup Form Fields
         this.fullName = document.getElementById('fullName');
         this.signupEmail = document.getElementById('signupEmail');
         this.signupPassword = document.getElementById('signupPassword');
         this.confirmPassword = document.getElementById('confirmPassword');
         this.termsCheckbox = document.getElementById('termsCheckbox');
         this.signupBtn = document.getElementById('signupBtn');
+        this.signupRoleText = document.getElementById('signupRoleText');
 
-        // Reset Form Fields
         this.resetEmail = document.getElementById('resetEmail');
         this.resetBtn = document.getElementById('resetBtn');
 
-        // Modals
         this.forgotPasswordModal = document.getElementById('forgotPasswordModal');
         this.modalOverlay = document.getElementById('modalOverlay');
         this.closeModal = document.getElementById('closeModal');
         this.resetSuccess = document.getElementById('resetSuccess');
 
-        // Success Modal
         this.successModal = document.getElementById('successModal');
         this.successTitle = document.getElementById('successTitle');
         this.successMessage = document.getElementById('successMessage');
     }
 
     setupEventListeners() {
-        // Form Submissions
-        this.loginForm.addEventListener('submit', (e) => this.handleLoginSubmit(e));
-        this.signupForm.addEventListener('submit', (e) => this.handleSignupSubmit(e));
-        this.resetForm.addEventListener('submit', (e) => this.handleResetSubmit(e));
+        this.loginForm?.addEventListener('submit', (e) => this.handleLoginSubmit(e));
+        this.signupForm?.addEventListener('submit', (e) => this.handleSignupSubmit(e));
+        this.resetForm?.addEventListener('submit', (e) => this.handleResetSubmit(e));
+
+        // Role Selector Buttons
+        document.querySelectorAll('.role-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const role = e.currentTarget.dataset.role;
+                this.setRole(role);
+            });
+        });
 
         // Form Switching
-        document.getElementById('switchToSignup').addEventListener('click', (e) => {
+        document.getElementById('switchToSignup')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.switchForms('signup');
         });
 
-        document.getElementById('switchToLogin').addEventListener('click', (e) => {
+        document.getElementById('switchToLogin')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.switchForms('login');
         });
 
         // Forgot Password
-        document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+        document.getElementById('forgotPasswordLink')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.openForgotPasswordModal();
         });
 
-        this.closeModal.addEventListener('click', () => this.closeForgotPasswordModal());
-        this.modalOverlay.addEventListener('click', () => this.closeForgotPasswordModal());
+        this.closeModal?.addEventListener('click', () => this.closeForgotPasswordModal());
+        this.modalOverlay?.addEventListener('click', () => this.closeForgotPasswordModal());
 
         // Password Visibility Toggles
         document.querySelectorAll('.toggle-password').forEach(btn => {
@@ -96,25 +92,10 @@ class PremiumAuth {
         });
 
         // Social Authentication
-        document.getElementById('googleLogin').addEventListener('click', () => this.handleSocialAuth('Google'));
-        document.getElementById('githubLogin').addEventListener('click', () => this.handleSocialAuth('GitHub'));
-        document.getElementById('googleSignup').addEventListener('click', () => this.handleSocialAuth('Google'));
-        document.getElementById('githubSignup').addEventListener('click', () => this.handleSocialAuth('GitHub'));
-
-        // Real-time Validation
-        this.loginEmail?.addEventListener('blur', () => this.validateEmail(this.loginEmail));
-        this.signupEmail?.addEventListener('blur', () => this.validateEmail(this.signupEmail));
-        this.resetEmail?.addEventListener('blur', () => this.validateEmail(this.resetEmail));
-        this.fullName?.addEventListener('blur', () => this.validateFullName());
-        this.confirmPassword?.addEventListener('input', () => this.validatePasswordMatch());
-
-        // Input Focus Effects
-        [this.loginEmail, this.loginPassword, this.signupEmail, this.signupPassword, this.confirmPassword, this.fullName, this.resetEmail].forEach(field => {
-            if (field) {
-                field.addEventListener('focus', (e) => this.onInputFocus(e));
-                field.addEventListener('blur', (e) => this.onInputBlur(e));
-            }
-        });
+        document.getElementById('googleLogin')?.addEventListener('click', (e) => this.handleSocialAuth('Google', e));
+        document.getElementById('githubLogin')?.addEventListener('click', (e) => this.handleSocialAuth('GitHub', e));
+        document.getElementById('googleSignup')?.addEventListener('click', (e) => this.handleSocialAuth('Google', e));
+        document.getElementById('githubSignup')?.addEventListener('click', (e) => this.handleSocialAuth('GitHub', e));
     }
 
     setupPasswordStrengthChecker() {
@@ -124,222 +105,58 @@ class PremiumAuth {
         });
     }
 
-    // ========================================================================
-    // Form Switching with Animation
-    // ========================================================================
+    setRole(role) {
+        this.selectedRole = role;
+        const formattedRole = role.charAt(0).toUpperCase() + role.slice(1);
+
+        document.querySelectorAll('.role-selector').forEach(selector => {
+            if (role === 'worker') {
+                selector.classList.add('worker-selected');
+            } else {
+                selector.classList.remove('worker-selected');
+            }
+        });
+
+        document.querySelectorAll('.role-btn').forEach(btn => {
+            if (btn.dataset.role === role) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        if (this.loginRoleText) this.loginRoleText.textContent = formattedRole;
+        if (this.signupRoleText) this.signupRoleText.textContent = formattedRole;
+    }
+
     switchForms(targetForm) {
-        const currentActive = this.loginContainer.classList.contains('active') ? this.loginContainer : this.signupContainer;
+        const currentActive = this.loginContainer?.classList.contains('active') ? this.loginContainer : this.signupContainer;
         const targetContainer = targetForm === 'signup' ? this.signupContainer : this.loginContainer;
 
-        // Exit animation
+        if (!currentActive || !targetContainer) return;
+
         currentActive.classList.add('exit');
 
         setTimeout(() => {
             currentActive.classList.remove('active', 'exit');
             targetContainer.classList.add('active');
 
-            // Scroll to top if mobile
             if (window.innerWidth < 768) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
-        }, 400);
+        }, 300);
     }
 
-    // ========================================================================
-    // Input Focus Effects
-    // ========================================================================
-    onInputFocus(e) {
-        const wrapper = e.target.closest('.input-wrapper');
-        if (wrapper) {
-            wrapper.classList.add('focused');
-            e.target.classList.remove('error');
-            const errorMsg = wrapper.querySelector('.error-message');
-            if (errorMsg) errorMsg.textContent = '';
-        }
-    }
-
-    onInputBlur(e) {
-        const wrapper = e.target.closest('.input-wrapper');
-        if (wrapper) {
-            wrapper.classList.remove('focused');
-        }
-    }
-
-    // ========================================================================
-    // Form Validation
-    // ========================================================================
-    validateEmail(field) {
-        const email = field.value.trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!email) {
-            this.showError(field, 'Email is required');
-            return false;
-        }
-
-        if (!emailRegex.test(email)) {
-            this.showError(field, 'Please enter a valid email address');
-            return false;
-        }
-
-        this.clearError(field);
-        return true;
-    }
-
-    validatePassword(field) {
-        const password = field.value;
-
-        if (!password) {
-            this.showError(field, 'Password is required');
-            return false;
-        }
-
-        if (password.length < 8) {
-            this.showError(field, 'Password must be at least 8 characters');
-            return false;
-        }
-
-        this.clearError(field);
-        return true;
-    }
-
-    validateSignupPassword() {
-        const password = this.signupPassword.value;
-        const strength = this.calculatePasswordStrength(password);
-
-        if (!password) {
-            this.showError(this.signupPassword, 'Password is required');
-            return false;
-        }
-
-        if (password.length < 8) {
-            this.showError(this.signupPassword, 'Password must be at least 8 characters');
-            return false;
-        }
-
-        if (strength === 'weak') {
-            this.showError(this.signupPassword, 'Password is too weak. Use uppercase, lowercase, numbers, and symbols');
-            return false;
-        }
-
-        this.clearError(this.signupPassword);
-        return true;
-    }
-
-    validatePasswordMatch() {
-        const password = this.signupPassword.value;
-        const confirmPassword = this.confirmPassword.value;
-
-        if (confirmPassword && password !== confirmPassword) {
-            this.showError(this.confirmPassword, 'Passwords do not match');
-            return false;
-        }
-
-        if (confirmPassword) {
-            this.clearError(this.confirmPassword);
-        }
-
-        return true;
-    }
-
-    validateFullName() {
-        const name = this.fullName.value.trim();
-
-        if (!name) {
-            this.showError(this.fullName, 'Full name is required');
-            return false;
-        }
-
-        if (name.length < 2) {
-            this.showError(this.fullName, 'Full name must be at least 2 characters');
-            return false;
-        }
-
-        if (!/^[a-zA-Z\s'-]+$/.test(name)) {
-            this.showError(this.fullName, 'Full name can only contain letters, spaces, hyphens, and apostrophes');
-            return false;
-        }
-
-        this.clearError(this.fullName);
-        return true;
-    }
-
-    validateTerms() {
-        if (!this.termsCheckbox.checked) {
-            const termsError = document.getElementById('termsError');
-            termsError.textContent = 'You must accept the Terms & Conditions';
-            return false;
-        }
-
-        document.getElementById('termsError').textContent = '';
-        return true;
-    }
-
-    validateLoginForm() {
-        let isValid = true;
-
-        if (!this.validateEmail(this.loginEmail)) isValid = false;
-        if (!this.validatePassword(this.loginPassword)) isValid = false;
-
-        return isValid;
-    }
-
-    validateSignupForm() {
-        let isValid = true;
-
-        if (!this.validateFullName()) isValid = false;
-        if (!this.validateEmail(this.signupEmail)) isValid = false;
-        if (!this.validateSignupPassword()) isValid = false;
-        if (!this.validatePasswordMatch()) isValid = false;
-        if (!this.validateTerms()) isValid = false;
-
-        return isValid;
-    }
-
-    validateResetEmail() {
-        return this.validateEmail(this.resetEmail);
-    }
-
-    // ========================================================================
-    // Error & Success Messages
-    // ========================================================================
-    showError(field, message) {
-        field.classList.add('error');
-        let errorElement = field.closest('.input-wrapper')?.querySelector('.error-message');
-        if (!errorElement) {
-            errorElement = document.getElementById(`${field.id}Error`);
-        }
-        if (errorElement) {
-            errorElement.textContent = message;
-        }
-    }
-
-    clearError(field) {
-        field.classList.remove('error');
-        let errorElement = field.closest('.input-wrapper')?.querySelector('.error-message');
-        if (!errorElement) {
-            errorElement = document.getElementById(`${field.id}Error`);
-        }
-        if (errorElement) {
-            errorElement.textContent = '';
-        }
-    }
-
-    // ========================================================================
-    // Password Strength
-    // ========================================================================
     calculatePasswordStrength(password) {
         if (!password) return 'empty';
-
         let strength = 0;
         if (password.length >= 8) strength++;
-        if (password.length >= 12) strength++;
         if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
         if (/\d/.test(password)) strength++;
         if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength++;
 
         if (strength <= 2) return 'weak';
-        if (strength <= 3) return 'medium';
+        if (strength === 3) return 'medium';
         return 'strong';
     }
 
@@ -349,6 +166,7 @@ class PremiumAuth {
         const strengthText = document.getElementById('strengthText');
 
         bars.forEach(bar => bar.classList.remove('weak', 'medium', 'strong'));
+        if (!strengthText) return;
 
         if (password.length === 0) {
             strengthText.textContent = 'Enter password';
@@ -357,12 +175,12 @@ class PremiumAuth {
         }
 
         if (strength === 'weak') {
-            bars[0].classList.add('weak');
+            if (bars[0]) bars[0].classList.add('weak');
             strengthText.textContent = 'Weak password';
             strengthText.className = 'strength-text weak';
         } else if (strength === 'medium') {
-            bars[0].classList.add('medium');
-            bars[1].classList.add('medium');
+            if (bars[0]) bars[0].classList.add('medium');
+            if (bars[1]) bars[1].classList.add('medium');
             strengthText.textContent = 'Medium password';
             strengthText.className = 'strength-text medium';
         } else if (strength === 'strong') {
@@ -372,142 +190,146 @@ class PremiumAuth {
         }
     }
 
-    // ========================================================================
-    // Password Visibility Toggle
-    // ========================================================================
     togglePasswordVisibility(e) {
         e.preventDefault();
-        const targetId = e.currentTarget.dataset.target;
+        const btn = e.currentTarget;
+        const targetId = btn.dataset.target;
         const field = document.getElementById(targetId);
+
+        if (!field) return;
+
+        // SVGs for Open Eye vs Closed/Slashed Eye
+        const openEyeSVG = `
+            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        `;
+
+        const closedEyeSVG = `
+            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+        `;
 
         if (field.type === 'password') {
             field.type = 'text';
-            e.currentTarget.classList.add('visible');
+            btn.innerHTML = closedEyeSVG;
+            btn.classList.add('visible');
         } else {
             field.type = 'password';
-            e.currentTarget.classList.remove('visible');
+            btn.innerHTML = openEyeSVG;
+            btn.classList.remove('visible');
         }
     }
+    validateEmail(field) {
+        if (!field) return false;
+        const email = field.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            this.showError(field, 'Enter a valid email address');
+            return false;
+        }
+        this.clearError(field);
+        return true;
+    }
 
-    // ========================================================================
-    // Form Submissions
-    // ========================================================================
+    validatePassword(field) {
+        if (!field || field.value.length < 8) {
+            this.showError(field, 'Min 8 characters required');
+            return false;
+        }
+        this.clearError(field);
+        return true;
+    }
+
+    validateFullName() {
+        if (!this.fullName || this.fullName.value.trim().length < 2) {
+            this.showError(this.fullName, 'Full name is required');
+            return false;
+        }
+        this.clearError(this.fullName);
+        return true;
+    }
+
+    validatePasswordMatch() {
+        if (!this.signupPassword || !this.confirmPassword) return false;
+        if (this.confirmPassword.value && this.signupPassword.value !== this.confirmPassword.value) {
+            this.showError(this.confirmPassword, 'Passwords do not match');
+            return false;
+        }
+        this.clearError(this.confirmPassword);
+        return true;
+    }
+
+    showError(field, message) {
+        if (!field) return;
+        field.classList.add('error');
+        const errorElement = field.closest('.input-wrapper')?.querySelector('.error-message') || document.getElementById(`${field.id}Error`);
+        if (errorElement) errorElement.textContent = message;
+    }
+
+    clearError(field) {
+        if (!field) return;
+        field.classList.remove('error');
+        const errorElement = field.closest('.input-wrapper')?.querySelector('.error-message') || document.getElementById(`${field.id}Error`);
+        if (errorElement) errorElement.textContent = '';
+    }
+
     async handleLoginSubmit(e) {
         e.preventDefault();
-
-        if (!this.validateLoginForm()) return;
+        if (!this.validateEmail(this.loginEmail) || !this.validatePassword(this.loginPassword)) return;
 
         this.setButtonLoading(this.loginBtn, true);
+        await new Promise(r => setTimeout(r, 1200));
 
-        try {
-            await this.simulateNetworkDelay(1500);
-
-            const user = {
-                id: Date.now(),
-                email: this.loginEmail.value,
-                type: 'user',
-                loginTime: new Date().toISOString(),
-                rememberMe: this.rememberMe.checked
-            };
-
-            this.currentUser = user;
-            this.saveSession(user);
-            this.showSuccessAnimation('Login Successful!', `Welcome back, ${user.email.split('@')[0]}!`);
-
-            setTimeout(() => this.handleAuthenticationSuccess(), 2000);
-        } catch (error) {
-            this.showError(this.loginEmail, 'Login failed. Please try again.');
-        } finally {
-            this.setButtonLoading(this.loginBtn, false);
-        }
+        this.currentUser = { email: this.loginEmail.value, role: this.selectedRole };
+        this.showSuccessAnimation('Login Successful!', `Welcome back (${this.selectedRole})!`);
+        setTimeout(() => this.handleAuthenticationSuccess(), 1800);
     }
 
     async handleSignupSubmit(e) {
         e.preventDefault();
-
-        if (!this.validateSignupForm()) return;
+        if (!this.validateFullName() || !this.validateEmail(this.signupEmail) || !this.validatePassword(this.signupPassword) || !this.validatePasswordMatch()) return;
 
         this.setButtonLoading(this.signupBtn, true);
+        await new Promise(r => setTimeout(r, 1200));
 
-        try {
-            await this.simulateNetworkDelay(1500);
-
-            const user = {
-                id: Date.now(),
-                fullName: this.fullName.value,
-                email: this.signupEmail.value,
-                type: 'user',
-                createdAt: new Date().toISOString()
-            };
-
-            this.currentUser = user;
-            this.saveSession(user);
-            this.showSuccessAnimation('Account Created!', `Welcome ${user.fullName}!`);
-
-            setTimeout(() => this.handleAuthenticationSuccess(), 2000);
-        } catch (error) {
-            this.showError(this.signupEmail, 'Signup failed. Please try again.');
-        } finally {
-            this.setButtonLoading(this.signupBtn, false);
-        }
+        this.currentUser = { fullName: this.fullName.value, role: this.selectedRole };
+        this.showSuccessAnimation('Account Created!', `Welcome to SharmNexus as a ${this.selectedRole}!`);
+        setTimeout(() => this.handleAuthenticationSuccess(), 1800);
     }
 
     async handleResetSubmit(e) {
         e.preventDefault();
-
-        if (!this.validateResetEmail()) return;
-
+        if (!this.validateEmail(this.resetEmail)) return;
         this.setButtonLoading(this.resetBtn, true);
-
-        try {
-            await this.simulateNetworkDelay(1500);
-
-            this.resetForm.style.display = 'none';
-            this.resetSuccess.style.display = 'block';
-
-            setTimeout(() => this.closeForgotPasswordModal(), 2000);
-        } catch (error) {
-            this.showError(this.resetEmail, 'Failed to send reset link. Please try again.');
-        } finally {
-            this.setButtonLoading(this.resetBtn, false);
-        }
+        await new Promise(r => setTimeout(r, 1000));
+        if (this.resetForm) this.resetForm.style.display = 'none';
+        if (this.resetSuccess) this.resetSuccess.style.display = 'block';
+        this.setButtonLoading(this.resetBtn, false);
     }
 
-    // ========================================================================
-    // Modal Management
-    // ========================================================================
     openForgotPasswordModal() {
-        this.forgotPasswordModal.classList.add('active');
-        this.resetForm.style.display = 'block';
-        this.resetSuccess.style.display = 'none';
-        this.resetForm.reset();
-        document.body.style.overflow = 'hidden';
+        if (this.forgotPasswordModal) this.forgotPasswordModal.classList.add('active');
+        if (this.resetForm) this.resetForm.style.display = 'block';
+        if (this.resetSuccess) this.resetSuccess.style.display = 'none';
+        this.resetForm?.reset();
     }
 
     closeForgotPasswordModal() {
-        this.forgotPasswordModal.classList.remove('active');
-        this.resetForm.style.display = 'block';
-        this.resetSuccess.style.display = 'none';
-        document.body.style.overflow = '';
+        this.forgotPasswordModal?.classList.remove('active');
     }
 
-    // ========================================================================
-    // Success Animation
-    // ========================================================================
     showSuccessAnimation(title, message) {
-        this.successTitle.textContent = title;
-        this.successMessage.textContent = message;
-        this.successModal.classList.add('active');
+        if (this.successTitle) this.successTitle.textContent = title;
+        if (this.successMessage) this.successMessage.textContent = message;
+        this.successModal?.classList.add('active');
     }
 
-    hideSuccessAnimation() {
-        this.successModal.classList.remove('active');
-    }
-
-    // ========================================================================
-    // Button States
-    // ========================================================================
     setButtonLoading(button, isLoading) {
+        if (!button) return;
         if (isLoading) {
             button.classList.add('loading');
             button.disabled = true;
@@ -517,94 +339,24 @@ class PremiumAuth {
         }
     }
 
-    setButtonSuccess(button) {
-        button.classList.add('success');
-        button.disabled = true;
-    }
-
-    // ========================================================================
-    // Social Authentication
-    // ========================================================================
-    handleSocialAuth(provider) {
-        const btn = event.target.closest('.btn-social');
+    handleSocialAuth(provider, e) {
+        const btn = e.target.closest('.btn-social');
         this.setButtonLoading(btn, true);
-
         setTimeout(() => {
-            alert(`${provider} OAuth flow would open here.\n\nIn a real app, you would be redirected to ${provider}'s login page.`);
+            alert(`${provider} OAuth authentication flow for ${this.selectedRole}.`);
             this.setButtonLoading(btn, false);
-        }, 1500);
-    }
-
-    // ========================================================================
-    // Session Management
-    // ========================================================================
-    saveSession(user) {
-        const sessionData = {
-            user: user,
-            timestamp: new Date().toISOString()
-        };
-
-        if (user.rememberMe) {
-            localStorage.setItem('authSession', JSON.stringify(sessionData));
-        } else {
-            sessionStorage.setItem('authSession', JSON.stringify(sessionData));
-        }
-    }
-
-    restoreSession() {
-        let sessionData = JSON.parse(localStorage.getItem('authSession')) ||
-                         JSON.parse(sessionStorage.getItem('authSession'));
-
-        if (sessionData && sessionData.user) {
-            this.currentUser = sessionData.user;
-            console.log('Session restored for:', this.currentUser.email);
-        }
-    }
-
-    logout() {
-        this.currentUser = null;
-        localStorage.removeItem('authSession');
-        sessionStorage.removeItem('authSession');
-    }
-
-    isAuthenticated() {
-        return this.currentUser !== null;
-    }
-
-    // ========================================================================
-    // Utilities
-    // ========================================================================
-    simulateNetworkDelay(ms = 1000) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        }, 1200);
     }
 
     handleAuthenticationSuccess() {
-        this.hideSuccessAnimation();
-        console.log('User authenticated:', this.currentUser);
-        alert(`Welcome ${this.currentUser.fullName || this.currentUser.email}!\n\nIn a real app, you would be redirected to the dashboard.`);
-        this.logout();
-        this.switchForms('login');
-        this.loginForm.reset();
-        this.signupForm.reset();
+        this.successModal?.classList.remove('active');
+        alert(`Successfully signed in as ${this.selectedRole.toUpperCase()}!`);
+        location.reload();
     }
+
+    restoreSession() {}
 }
 
-// ============================================================================
-// Initialize on DOM Load
-// ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    const auth = new PremiumAuth();
-    window.auth = auth;
-
-    // Optional: Auto-detect and apply theme
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.style.colorScheme = 'dark';
-    }
-
-    // Optional: Monitor for theme changes
-    if (window.matchMedia) {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            document.documentElement.style.colorScheme = e.matches ? 'dark' : 'light';
-        });
-    }
+    window.auth = new PremiumAuth();
 });
