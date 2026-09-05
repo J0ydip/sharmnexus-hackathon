@@ -13,6 +13,8 @@ import { Booking } from '@/lib/data/mockData';
 import { toast } from 'sonner';
 import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
 import { getBookingById as getBookingByIdAction } from '@/app/actions/bookings';
+import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
+import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
 import {
   ArrowLeft,
   Phone,
@@ -42,6 +44,8 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const router = useRouter();
 
   const { bookings, updateBookingStatus, getBookingById, workers } = useBookingStore();
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [paymentData, setPaymentData] = useState<any>(null);
 
   const booking =
     getBookingById(bookingId) ||
@@ -402,6 +406,38 @@ export default function BookingTrackingPage({ params }: PageProps) {
                   ₹{booking.final_price || booking.estimated_price}
                 </span>
               </div>
+
+              {booking.payment_status === 'completed' ? (
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    onClick={() => setIsReceiptOpen(true)}
+                    className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl border border-emerald-200 text-xs py-2 flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <Receipt className="w-3.5 h-3.5 text-emerald-700" />
+                    View Official Cooperative Receipt & QR Code
+                  </Button>
+                </div>
+              ) : (
+                <div className="pt-2 space-y-2">
+                  <RazorpayPaymentButton
+                    bookingId={booking.id}
+                    amount={booking.final_price || booking.estimated_price || 350}
+                    customerName={booking.customer_name}
+                    customerPhone={booking.customer_phone}
+                    serviceName={booking.service_name}
+                    className="w-full rounded-xl py-2.5 text-xs"
+                    onPaymentSuccess={(data) => {
+                      setPaymentData(data);
+                      updateBookingStatus(booking.id, 'completed');
+                      setIsReceiptOpen(true);
+                    }}
+                  />
+                  <p className="text-[10px] text-center text-gray-400">
+                    UPI, Cards, NetBanking • Protected by Cooperative Fair-Share Guarantee
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Safety & Help Note */}
@@ -417,6 +453,14 @@ export default function BookingTrackingPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+
+      {/* Official Cooperative Receipt & Invoice Modal */}
+      <CooperativeReceiptModal
+        isOpen={isReceiptOpen}
+        onClose={() => setIsReceiptOpen(false)}
+        booking={booking}
+        paymentData={paymentData}
+      />
     </div>
   );
 }

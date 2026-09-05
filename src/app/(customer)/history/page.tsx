@@ -17,6 +17,8 @@ import {
 import { toast } from 'sonner';
 import { submitRating, getCustomerBookings } from '@/app/actions/bookings';
 import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
+import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
+import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
 import {
   CalendarClock,
   ArrowRight,
@@ -35,6 +37,8 @@ export default function HistoryPage() {
   const [mounted, setMounted] = useState(false);
   const [dbBookings, setDbBookings] = useState<Booking[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
+  const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null);
+  const [receiptPaymentData, setReceiptPaymentData] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -401,12 +405,40 @@ export default function HistoryPage() {
 
                   {booking.status === 'completed' && (
                     <>
+                      {booking.payment_status === 'completed' ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setReceiptBooking(booking);
+                            setReceiptPaymentData(null);
+                          }}
+                          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200 font-bold text-xs h-9 px-3 rounded-xl flex items-center gap-1 shadow-xs"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Receipt</span>
+                        </Button>
+                      ) : (
+                        <RazorpayPaymentButton
+                          bookingId={booking.id}
+                          amount={booking.final_price || booking.estimated_price || 350}
+                          customerName={booking.customer_name}
+                          serviceName={booking.service_name}
+                          size="sm"
+                          className="h-9 px-3 rounded-xl text-xs"
+                          onPaymentSuccess={(data) => {
+                            setReceiptPaymentData(data);
+                            setReceiptBooking(booking);
+                            updateBookingStatus(booking.id, 'completed');
+                          }}
+                        />
+                      )}
                       <Link
                         href={`/track/${booking.id}`}
                         className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold text-xs h-9 px-3.5 rounded-xl flex items-center gap-1 transition-colors"
                       >
-                        <Receipt className="w-3.5 h-3.5" />
-                        <span>View Invoice</span>
+                        <Clock className="w-3.5 h-3.5 text-gray-500" />
+                        <span>Timeline</span>
                       </Link>
                       {!booking.rating && (
                         <Button
@@ -419,7 +451,7 @@ export default function HistoryPage() {
                           }}
                         >
                           <Star className="w-3.5 h-3.5 mr-1 fill-current" />
-                          Rate Worker
+                          Rate
                         </Button>
                       )}
                     </>
@@ -508,6 +540,14 @@ export default function HistoryPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Official Cooperative Receipt & Invoice Modal */}
+      <CooperativeReceiptModal
+        isOpen={!!receiptBooking}
+        onClose={() => setReceiptBooking(null)}
+        booking={receiptBooking}
+        paymentData={receiptPaymentData}
+      />
     </div>
   );
 }
