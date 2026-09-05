@@ -65,6 +65,7 @@ interface BookingStoreState {
   selectWorkerForBooking: (worker: WorkerProfile) => void;
   createBookingFromDraft: () => Booking;
   updateBookingStatus: (bookingId: string, newStatus: Booking['status']) => void;
+  setBookingPaymentStatus: (bookingId: string, paymentStatus: 'pending' | 'completed', method?: string) => void;
   rateBooking: (bookingId: string, rating: number, review: string) => void;
   getBookingById: (bookingId: string) => Booking | undefined;
   getMatchedWorkers: (categoryId?: string, urgency?: 'normal' | 'urgent' | 'emergency') => WorkerProfile[];

@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 
 export default function TrackingMap({ lat, lng, status }: { lat: number, lng: number, status: string }) {
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<any>(null);
 
   useEffect(() => {
     if (!mapRef.current) {

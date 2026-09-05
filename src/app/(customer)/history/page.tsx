@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 
 export default function HistoryPage() {
-  const { bookings, updateBookingStatus, rateBooking } = useBookingStore();
+  const { bookings, updateBookingStatus, setBookingPaymentStatus, rateBooking } = useBookingStore();
   const [mounted, setMounted] = useState(false);
   const [dbBookings, setDbBookings] = useState<Booking[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
@@ -46,50 +46,61 @@ export default function HistoryPage() {
       try {
         const { data } = await getCustomerBookings();
         if (data && data.length > 0) {
-          const mapped: Booking[] = data.map((b: any) => ({
-            id: b.id,
-            customer_id: b.customer_id,
-            customer_name: 'Customer',
-            customer_phone: '',
-            worker_id: b.worker_id || 'unassigned',
-            worker: b.worker ? {
-              id: b.worker.id,
-              full_name: b.worker.full_name,
-              phone: b.worker.phone || '',
-              society_name: 'Cooperative Society',
-              profile_photo_url: b.worker.profile_photo_url || '',
-              profession: b.service?.name || 'Service Professional',
-              avg_rating: b.worker.avg_rating || 4.8,
-              approx_distance_km: 2.5,
-              hourly_rate: 300,
-              is_verified: true,
-              verification_status: 'verified',
-              cooperative_member_id: 'MEM-001',
-              total_jobs_completed: 12,
-              skills: [b.service?.name || 'General'],
-              badges: ['Verified'],
-              availability: 'Immediate (within 45 mins)',
-              experience_years: 4,
-              rating_count: 15,
-            } : (bookings[0]?.worker || ({} as any)),
-            service_category_id: b.service_category_id || '',
-            service_name: b.service?.name || 'Service',
-            service_icon: b.service?.icon_url || 'Droplet',
-            booking_type: b.booking_type || 'scheduled',
-            status: b.status || 'requested',
-            urgency: 'normal',
-            description: b.description || '',
-            address: b.address || '',
-            city: 'Patna',
-            scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
-            time_slot: 'Scheduled',
-            estimated_price: b.estimated_price || 350,
-            final_price: b.final_price || b.estimated_price || 350,
-            otp: '4892',
-            payment_status: 'pending',
-            payment_method: 'Pay after service',
-            created_at: b.created_at,
-          }));
+          const mapped: (Booking & { payment_id?: string; payment_record?: any })[] = data.map((b: any) => {
+            const hasCompletedPayment =
+              (b.payments && b.payments.some((p: any) => p.status === 'completed')) ||
+              b.payment_status === 'completed';
+            const latestPayment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
+
+            return {
+              id: b.id,
+              customer_id: b.customer_id,
+              customer_name: 'Customer',
+              customer_phone: '',
+              worker_id: b.worker_id || 'unassigned',
+              worker: b.worker ? {
+                id: b.worker.id,
+                full_name: b.worker.full_name,
+                phone: b.worker.phone || '',
+                society_name: 'Cooperative Society',
+                profile_photo_url: b.worker.profile_photo_url || '',
+                profession: b.service?.name || 'Service Professional',
+                avg_rating: b.worker.avg_rating || 4.8,
+                approx_distance_km: 2.5,
+                hourly_rate: 300,
+                is_verified: true,
+                verification_status: 'verified',
+                cooperative_member_id: 'MEM-001',
+                total_jobs_completed: 12,
+                skills: [b.service?.name || 'General'],
+                badges: ['Verified'],
+                availability: 'Immediate (within 45 mins)',
+                experience_years: 4,
+                rating_count: 15,
+              } : (bookings[0]?.worker || ({} as any)),
+              service_category_id: b.service_category_id || '',
+              service_name: b.service?.name || 'Service',
+              service_icon: b.service?.icon_url || 'Droplet',
+              booking_type: b.booking_type || 'scheduled',
+              status: b.status || 'requested',
+              urgency: 'normal',
+              description: b.description || '',
+              address: b.address || '',
+              city: 'Patna',
+              scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
+              time_slot: 'Scheduled',
+              estimated_price: b.estimated_price || 350,
+              final_price: b.final_price || b.estimated_price || 350,
+              otp: '4892',
+              payment_status: hasCompletedPayment ? 'completed' : 'pending',
+              payment_method: hasCompletedPayment
+                ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
+                : (b.payment_method || 'Pay after service'),
+              payment_id: latestPayment?.razorpay_payment_id || latestPayment?.id,
+              payment_record: latestPayment,
+              created_at: b.created_at,
+            };
+          });
           setDbBookings(mapped);
         }
       } catch (err) {
@@ -318,7 +329,15 @@ export default function HistoryPage() {
                   </div>
                 </div>
 
-                <BookingStatusBadge status={booking.status} size="sm" />
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {booking.payment_status === 'completed' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-100/90 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                      Paid
+                    </span>
+                  )}
+                  <BookingStatusBadge status={booking.status} size="sm" />
+                </div>
               </div>
 
               {/* Worker & Location Details */}
@@ -389,16 +408,16 @@ export default function HistoryPage() {
                       <button
                         type="button"
                         onClick={() => handleCancelBooking(booking.id)}
-                        className="text-xs text-red-600 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 font-medium transition-colors"
+                        className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-1 transition-colors"
                       >
                         Cancel
                       </button>
                       <Link
                         href={`/track/${booking.id}`}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1.5 transition-transform hover:scale-[1.01]"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1"
                       >
-                        <span>Track Live Status</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Track Live</span>
                       </Link>
                     </>
                   )}
@@ -406,18 +425,38 @@ export default function HistoryPage() {
                   {booking.status === 'completed' && (
                     <>
                       {booking.payment_status === 'completed' ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setReceiptBooking(booking);
-                            setReceiptPaymentData(null);
-                          }}
-                          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200 font-bold text-xs h-9 px-3 rounded-xl flex items-center gap-1 shadow-xs"
-                        >
-                          <Receipt className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Receipt</span>
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setReceiptBooking(booking);
+                              setReceiptPaymentData(null);
+                            }}
+                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200 font-bold text-xs h-9 px-3 rounded-xl flex items-center gap-1 shadow-xs"
+                          >
+                            <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Receipt</span>
+                          </Button>
+                          <button
+                            type="button"
+                            title="Reset payment status to test Pay button again"
+                            onClick={() => {
+                              setDbBookings((prev) =>
+                                prev.map((item) =>
+                                  item.id === booking.id
+                                    ? { ...item, payment_status: 'pending' }
+                                    : item
+                                )
+                              );
+                              setBookingPaymentStatus(booking.id, 'pending');
+                              toast.info('Payment status reset to pending for testing.');
+                            }}
+                            className="text-[10px] text-gray-400 hover:text-emerald-700 underline px-1 cursor-pointer transition-colors"
+                          >
+                            ↺ Reset
+                          </button>
+                        </div>
                       ) : (
                         <RazorpayPaymentButton
                           bookingId={booking.id}
@@ -428,7 +467,31 @@ export default function HistoryPage() {
                           className="h-9 px-3 rounded-xl text-xs"
                           onPaymentSuccess={(data) => {
                             setReceiptPaymentData(data);
-                            setReceiptBooking(booking);
+                            const updated = {
+                              ...booking,
+                              payment_status: 'completed' as const,
+                              payment_method: data?.method || 'Online Razorpay / UPI',
+                              final_price: booking.final_price || booking.estimated_price || 350,
+                              payment_id: data?.paymentId,
+                              payment_record: data?.paymentRecord,
+                              status: 'completed' as const,
+                            };
+                            setReceiptBooking(updated);
+                            setDbBookings((prev) =>
+                              prev.map((item) =>
+                                item.id === booking.id
+                                  ? {
+                                      ...item,
+                                      status: 'completed',
+                                      payment_status: 'completed',
+                                      payment_method: data?.method || 'Online Razorpay / UPI',
+                                      payment_id: data?.paymentId,
+                                      payment_record: data?.paymentRecord,
+                                    }
+                                  : item
+                              )
+                            );
+                            setBookingPaymentStatus(booking.id, 'completed', data?.method || 'Online Razorpay / UPI');
                             updateBookingStatus(booking.id, 'completed');
                           }}
                         />

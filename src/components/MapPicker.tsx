@@ -20,12 +20,12 @@ interface MapPickerProps {
 }
 
 function LocationMarker({ onLocationSelect, defaultLocation }: MapPickerProps) {
-  const [position, setPosition] = useState<L.LatLng | null>(
+  const [position, setPosition] = useState<any>(
     defaultLocation ? new L.LatLng(defaultLocation[0], defaultLocation[1]) : null
   );
 
   useMapEvents({
-    click(e) {
+    click(e: any) {
       setPosition(e.latlng);
       onLocationSelect(e.latlng.lat, e.latlng.lng);
     },

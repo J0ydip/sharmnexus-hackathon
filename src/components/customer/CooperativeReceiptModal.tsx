@@ -53,6 +53,8 @@ export function CooperativeReceiptModal({
 
   const transactionId =
     paymentData?.paymentId ||
+    booking.payment_id ||
+    booking.payment_record?.razorpay_payment_id ||
     `pay_sn_${booking.id.replace(/[^a-zA-Z0-9]/g, '').slice(-8)}_${Date.now().toString().slice(-4)}`;
 
   const verificationUrl = typeof window !== 'undefined'

@@ -165,7 +165,8 @@ export async function getCustomerBookings(customerId?: string) {
     .select(`
       *,
       worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating),
-      service:service_category_id (id, name, name_hi, icon_url, base_price)
+      service:service_category_id (id, name, name_hi, icon_url, base_price),
+      payments:payments (id, amount, status, razorpay_payment_id, method, paid_at)
     `)
     .eq('customer_id', resolvedId)
     .order('created_at', { ascending: false });
@@ -189,7 +190,8 @@ export async function getBookingById(bookingId: string) {
     .select(`
       *,
       worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating),
-      service:service_category_id (id, name, name_hi, icon_url, base_price)
+      service:service_category_id (id, name, name_hi, icon_url, base_price),
+      payments:payments (id, amount, status, razorpay_payment_id, method, paid_at)
     `)
     .eq('id', bookingId)
     .single();
