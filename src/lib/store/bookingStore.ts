@@ -175,7 +175,20 @@ export const useBookingStore = create<BookingStoreState>()(
                   started_at: newStatus === 'in_progress' ? new Date().toISOString() : b.started_at,
                   completed_at: newStatus === 'completed' ? new Date().toISOString() : b.completed_at,
                   final_price: newStatus === 'completed' ? b.estimated_price : b.final_price,
-                  payment_status: newStatus === 'completed' ? 'completed' : b.payment_status,
+                }
+              : b
+          ),
+        }));
+      },
+
+      setBookingPaymentStatus: (bookingId: string, paymentStatus: 'pending' | 'completed', method?: string) => {
+        set((state) => ({
+          bookings: state.bookings.map((b) =>
+            b.id === bookingId
+              ? {
+                  ...b,
+                  payment_status: paymentStatus,
+                  payment_method: method || b.payment_method,
                 }
               : b
           ),

@@ -792,8 +792,8 @@ export const INITIAL_DEMO_BOOKINGS: Booking[] = [
     time_slot: 'Immediate (Emergency)',
     estimated_price: 450,
     otp: '4829',
-    payment_status: 'completed',
-    payment_method: 'UPI / Cash after service',
+    payment_status: 'pending',
+    payment_method: 'Pay after service (UPI / Card)',
     created_at: new Date(Date.now() - 86400000 - 3600000).toISOString(),
   },
   {

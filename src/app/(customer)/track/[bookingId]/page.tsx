@@ -43,7 +43,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const bookingId = resolvedParams.bookingId;
   const router = useRouter();
 
-  const { bookings, updateBookingStatus, getBookingById, workers } = useBookingStore();
+  const { bookings, updateBookingStatus, setBookingPaymentStatus, getBookingById, workers } = useBookingStore();
   const [mounted, setMounted] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
@@ -424,7 +424,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
               </div>
 
               {booking.payment_status === 'completed' ? (
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
                   <Button
                     type="button"
                     onClick={() => setIsReceiptOpen(true)}
@@ -433,6 +433,16 @@ export default function BookingTrackingPage({ params }: PageProps) {
                     <Receipt className="w-3.5 h-3.5 text-emerald-700" />
                     View Official Cooperative Receipt & QR Code
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingPaymentStatus(booking.id, 'pending');
+                      toast.info('Payment status reset to pending! You can now test the Pay button.');
+                    }}
+                    className="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold underline block mx-auto pt-1 cursor-pointer transition-colors"
+                  >
+                    ↺ Reset to Unpaid (Test Razorpay Button Again)
+                  </button>
                 </div>
               ) : (
                 <div className="pt-2 space-y-2">
@@ -445,7 +455,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                     className="w-full rounded-xl py-2.5 text-xs"
                     onPaymentSuccess={(data) => {
                       setPaymentData(data);
-                      updateBookingStatus(booking.id, 'completed');
+                      setBookingPaymentStatus(booking.id, 'completed', data?.method || 'Online Razorpay / UPI');
                       setIsReceiptOpen(true);
                     }}
                   />
