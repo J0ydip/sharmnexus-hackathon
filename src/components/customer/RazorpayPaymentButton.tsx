@@ -102,6 +102,11 @@ export function RazorpayPaymentButton({
           theme: {
             color: '#059669',
           },
+          modal: {
+            ondismiss: function () {
+              setLoading(false);
+            },
+          },
         };
 
         const rzp = new (window as any).Razorpay(options);

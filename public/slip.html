@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Slip — SharmNexus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="slip.css">
+</head>
+<body>
+    <div class="slip-wrapper">
+        <!-- Brand Header -->
+         <a class="brand" href="#home">
+                <img src="logo.png" alt="SharmNexus" class="nav-logo-img">
+                <span class="brand-text">Sharm<span>Nexus</span></span>
+            </a>
+       
+
+        <!-- Printable Slip Area -->
+        <main class="slip-card" id="printable-area">
+            <div class="slip-header">
+                <h2>Booking Confirmed</h2>
+                <p>Thank you for choosing SharmNexus.</p>
+                <div class="booking-id">Booking ID: <strong id="slip-id">SNX-XXXX</strong></div>
+            </div>
+
+            <div class="slip-divider"></div>
+
+            <div class="slip-body">
+                <div class="detail-section">
+                    <h3>Service Details</h3>
+                    <div class="detail-row">
+                        <span>Service</span>
+                        <strong id="slip-service">---</strong>
+                    </div>
+                    <div class="detail-row">
+                        <span>Professional</span>
+                        <strong id="slip-worker">---</strong>
+                    </div>
+                    <div class="detail-row">
+                        <span>Date</span>
+                        <strong id="slip-date">---</strong>
+                    </div>
+                    <div class="detail-row">
+                        <span>Time</span>
+                        <strong id="slip-time">---</strong>
+                    </div>
+                </div>
+
+                <div class="detail-section mt-4">
+                    <h3>Customer Details</h3>
+                    <div class="detail-row">
+                        <span>Name</span>
+                        <strong id="slip-name">---</strong>
+                    </div>
+                    <div class="detail-row">
+                        <span>Phone</span>
+                        <strong id="slip-phone">---</strong>
+                    </div>
+                    <div class="detail-row">
+                        <span>Address</span>
+                        <strong id="slip-address">---</strong>
+                    </div>
+                    <div class="detail-row req-row">
+                        <span>Requirements</span>
+                        <p id="slip-req">---</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="slip-footer">
+                <div class="qr-placeholder" aria-hidden="true">
+                    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                </div>
+                <p>Present this slip to your professional upon arrival.</p>
+            </div>
+        </main>
+
+        <!-- Action Buttons -->
+        <div class="slip-actions">
+            <button class="button button-gold" id="btn-print">Print Slip <span>🖨️</span></button>
+            <a class="button button-dark" href="index.html">Back to Home <span>↗</span></a>
+        </div>
+    </div>
+
+    <script src="slip.js"></script>
+</body>
+</html>

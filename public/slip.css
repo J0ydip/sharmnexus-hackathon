@@ -1,0 +1,210 @@
+/* =========================================
+   Variables & Base Settings (Inherited)
+========================================= */
+:root {
+  --ink: #24172f;
+  --ink-soft: #3d2b48;
+  --cream: #fbf7ef;
+  --cream-dark: #f0e7d9;
+  --gold: #e6aa3b;
+  --terracotta: #d96f4d;
+  --mint: #e2eee4;
+  --violet: #7c5cf0;
+  --text: #342d39;
+  --muted: #776e79;
+  --border: #e6dcd0;
+  --white: #fff;
+  --display: 'Playfair Display', Georgia, serif;
+  --sans: 'DM Sans', Arial, sans-serif;
+  --shadow-deep: 0 28px 80px rgba(36, 23, 47, 0.12);
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--cream);
+  color: var(--text);
+  line-height: 1.55;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+.nav-logo-img {
+    height: 40px; 
+    width: auto;
+    object-fit: contain;
+    border-radius: 8px; /* Softens the square edges of your image */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+a { text-decoration: none; color: inherit; }
+.mt-4 { margin-top: 1.5rem; }
+
+/* =========================================
+   Brand (Inherited from index)
+========================================= */
+.brand {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.65rem; color: var(--ink); font-weight: 700; font-size: 1.4rem;
+  letter-spacing: -0.04em; margin-bottom: 2rem;
+}
+.brand > span:last-child > span { color: var(--terracotta); }
+.brand-mark { position: relative; width: 31px; height: 31px; border-radius: 50%; background: var(--ink); display: inline-block; }
+.brand-mark:before, .brand-mark:after, .brand-mark span { content: ""; position: absolute; background: var(--gold); border-radius: 3px; }
+.brand-mark:before { height: 3px; width: 17px; top: 14px; left: 7px; }
+.brand-mark:after { height: 17px; width: 3px; top: 7px; left: 14px; }
+.brand-mark span:first-child { height: 23px; width: 3px; top: 4px; left: 14px; transform: rotate(45deg); opacity: 0.65; }
+.brand-mark span:last-child { height: 23px; width: 3px; top: 4px; left: 14px; transform: rotate(-45deg); opacity: 0.65; }
+
+/* =========================================
+   Slip Card Layout
+========================================= */
+.slip-wrapper {
+  width: 100%;
+  max-width: 500px;
+}
+
+.slip-card {
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: var(--shadow-deep);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+}
+
+.slip-header {
+  background: var(--ink);
+  color: var(--white);
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+}
+
+.slip-header h2 {
+  font-family: var(--display);
+  font-size: 2.2rem;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.slip-header p {
+  color: #c8bacb;
+  font-size: 0.9rem;
+}
+
+.booking-id {
+  display: inline-block;
+  background: rgba(255,255,255,0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.booking-id strong { color: var(--white); font-family: monospace; font-size: 1rem; margin-left: 0.5rem; }
+
+/* Dashed ticket separator */
+.slip-divider {
+  height: 20px;
+  background: var(--white);
+  position: relative;
+}
+.slip-divider:before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 20px;
+  right: 20px;
+  border-top: 2px dashed var(--border);
+}
+.slip-divider:after, .slip-divider::before {
+  /* Creating the cut-out circles on the edge */
+  content: "";
+  position: absolute;
+  width: 20px; height: 20px;
+  background: var(--cream);
+  border-radius: 50%;
+  top: 0;
+}
+.slip-divider:before { left: -10px; border: 1px solid var(--border); border-right-color: transparent; border-bottom-color: transparent; transform: rotate(-45deg); }
+.slip-divider:after { right: -10px; border: 1px solid var(--border); border-left-color: transparent; border-bottom-color: transparent; transform: rotate(45deg); }
+.slip-divider span { position: absolute; top: 9px; left: 15px; right: 15px; border-top: 2px dashed var(--border); z-index: 1;}
+
+.slip-body {
+  padding: 1.5rem 2.5rem;
+}
+
+.detail-section h3 {
+  font-size: 0.75rem;
+  color: var(--terracotta);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--cream-dark);
+  padding-bottom: 0.5rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+  font-size: 0.9rem;
+}
+
+.detail-row span { color: var(--muted); }
+.detail-row strong { color: var(--ink); text-align: right; max-width: 60%; }
+
+.req-row { flex-direction: column; }
+.req-row p { margin-top: 0.4rem; color: var(--ink); font-weight: 500; font-size: 0.85rem; background: var(--cream); padding: 0.8rem; border-radius: 8px; width: 100%; }
+
+.slip-footer {
+  background: #fcfbfa;
+  padding: 1.5rem;
+  text-align: center;
+  border-top: 1px solid var(--cream-dark);
+}
+
+.slip-footer p { font-size: 0.75rem; color: var(--muted); margin-top: 1rem; }
+
+.qr-placeholder {
+  display: inline-flex; flex-wrap: wrap; width: 40px; gap: 3px; justify-content: center;
+}
+.qr-placeholder i { width: 8px; height: 8px; background: var(--ink); border-radius: 1px; }
+.qr-placeholder i:nth-child(2n) { opacity: 0.5; }
+.qr-placeholder i:nth-child(3n) { background: var(--terracotta); }
+
+/* =========================================
+   Buttons
+========================================= */
+.slip-actions {
+  display: flex; gap: 1rem; margin-top: 2rem; justify-content: center;
+}
+.button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  border: 0; border-radius: 999px; padding: 1rem 1.5rem; font-size: 0.85rem;
+  font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+  font-family: var(--sans);
+}
+.button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+.button-gold { background: var(--gold); color: var(--ink); }
+.button-dark { background: var(--ink); color: var(--white); }
+
+/* =========================================
+   Print Styles
+========================================= */
+@media print {
+  body { background: white; padding: 0; align-items: flex-start; }
+  .slip-actions, .brand { display: none !important; }
+  .slip-card { box-shadow: none; border: 1px solid #000; border-radius: 0; max-width: 100%; width: 100%; }
+  .slip-header { background: white; color: black; border-bottom: 2px solid black; padding: 1.5rem; }
+  .slip-header h2 { color: black; }
+  .booking-id { background: #f0f0f0; color: black; border: 1px solid black; }
+  .booking-id strong { color: black; }
+  .slip-divider { display: none; }
+  .detail-section h3 { color: black; border-bottom-color: black; }
+}

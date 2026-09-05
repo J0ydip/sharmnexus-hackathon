@@ -14,10 +14,12 @@
 <body>
     <div class="cursor-dot" aria-hidden="true"></div>
     <nav class="navbar" aria-label="Main navigation">
+        <!-- FIXED NAV LOGO -->
         <a class="brand" href="#home" aria-label="SharmNexus home">
-            <span class="brand-mark" aria-hidden="true"><span></span><span></span></span>
-            <span>Sharm<span>Nexus</span></span>
+            <img src="logo.png" alt="SharmNexus" class="nav-logo-img">
+            <span class="brand-text">Sharm<span>Nexus</span></span>
         </a>
+        
         <div class="nav-links">
             <a href="#how-it-works" data-i18n="nav_how">How it works</a>
             <a href="#services" data-i18n="nav_services">Services</a>
@@ -83,7 +85,20 @@
             <div class="transformation"><div class="before-card"><span class="card-tag">TODAY</span><h3>Great skills, disconnected</h3><ul><li>Unpredictable job opportunities</li><li>No portable digital reputation</li><li>Households unsure whom to trust</li><li>Limited access to welfare support</li></ul></div><div class="transform-arrow">→</div><div class="after-card"><span class="card-tag">WITH SHARMNEXUS</span><h3>A stronger local network</h3><ul><li>Verified worker profiles and ratings</li><li>Fair, transparent bookings</li><li>Cooperative-owned workforce data</li><li>Training, insurance, and welfare access</li></ul></div></div>
         </section>
 
-        <section class="services section-pad" id="services"><div class="section-kicker" data-i18n="services_kicker">EVERYDAY HELP, CLOSE TO HOME</div><div class="section-heading-row"><h2 data-i18n-html="services_h2">Whatever you need,<br><em>someone nearby can help.</em></h2><a class="arrow-link" href="premium-auth.html"><span data-i18n="services_explore">Explore all services</span> ↗</a></div><div class="service-grid"><a class="service-card service-featured" href="premium-auth.html"><img src="./plumbing.jfif" alt="Plumbing repair service"><div class="service-overlay"><span>01</span><h3 data-i18n="svc_plumbing_t">Plumbing</h3><p data-i18n="svc_plumbing_d">Repairs, fittings & maintenance</p></div></a><a class="service-card" href="premium-auth.html"><img src="./electral.jfif" alt="Electrical repair service"><div class="service-overlay"><span>02</span><h3 data-i18n="svc_electrical_t">Electrical</h3><p data-i18n="svc_electrical_d">Repairs & installation</p></div></a><a class="service-card" href="premium-auth.html"><img src="./cleaning.jfif" alt="Home cleaning service"><div class="service-overlay"><span>03</span><h3 data-i18n="svc_cleaning_t">Cleaning</h3><p data-i18n="svc_cleaning_d">Home & office care</p></div></a><a class="service-card" href="premium-auth.html"><img src="./caregiving.jfif" alt="Caregiving service"><div class="service-overlay"><span>04</span><h3 data-i18n="svc_caregiving_t">Caregiving</h3><p data-i18n="svc_caregiving_d">Support when it matters</p></div></a><a class="service-card" href="premium-auth.html"><img src="./carpentry.jfif" alt="Carpentry and furniture service"><div class="service-overlay"><span>05</span><h3 data-i18n="svc_carpentry_t">Carpentry</h3><p data-i18n="svc_carpentry_d">Furniture & repairs</p></div></a><a class="service-card" href="premium-auth.html"><img src="./driving.jfif" alt="Driving and delivery service"><div class="service-overlay"><span>06</span><h3 data-i18n="svc_driving_t">Driving</h3><p data-i18n="svc_driving_d">Transport & delivery</p></div></a><a class="service-card" href="premium-auth.html"><img src="./gardening.jfif" alt="Gardening and landscaping service"><div class="service-overlay"><span>07</span><h3 data-i18n="svc_gardening_t">Gardening</h3><p data-i18n="svc_gardening_d">Landscaping & maintenance</p></div></a><a class="service-card" href="premium-auth.html"><img src="./technician.jfif" alt="Technical repair and support service"><div class="service-overlay"><span>08</span><h3 data-i18n="svc_technician_t">Technician</h3><p data-i18n="svc_technician_d">Tech repair & support</p></div></a></div></section>
+        <section class="services section-pad" id="services">
+            <div class="section-kicker" data-i18n="services_kicker">EVERYDAY HELP, CLOSE TO HOME</div>
+            <div class="section-heading-row"><h2 data-i18n-html="services_h2">Whatever you need,<br><em>someone nearby can help.</em></h2><a class="arrow-link" href="premium-auth.html"><span data-i18n="services_explore">Explore all services</span> ↗</a></div>
+            <div class="service-grid">
+                <div class="service-card service-featured" role="button" tabindex="0" data-service="plumbing"><img src="./plumbing.jfif" alt="Plumbing repair service"><div class="service-overlay"><span>01</span><h3 data-i18n="svc_plumbing_t">Plumbing</h3><p data-i18n="svc_plumbing_d">Repairs, fittings & maintenance</p></div></div>
+                <div class="service-card" role="button" tabindex="0" data-service="electrical"><img src="./electral.jfif" alt="Electrical repair service"><div class="service-overlay"><span>02</span><h3 data-i18n="svc_electrical_t">Electrical</h3><p data-i18n="svc_electrical_d">Repairs & installation</p></div></div>
+                <div class="service-card" role="button" tabindex="0" data-service="cleaning"><img src="./cleaning.jfif" alt="Home cleaning service"><div class="service-overlay"><span>03</span><h3 data-i18n="svc_cleaning_t">Cleaning</h3><p data-i18n="svc_cleaning_d">Home & office care</p></div></div>
+                <div class="service-card" role="button" tabindex="0" data-service="caregiving"><img src="./caregiving.jfif" alt="Caregiving service"><div class="service-overlay"><span>04</span><h3 data-i18n="svc_caregiving_t">Caregiving</h3><p data-i18n="svc_caregiving_d">Support when it matters</p></div></div>
+                <div class="service-card" role="button" tabindex="0" data-service="carpentry"><img src="./carpentry.jfif" alt="Carpentry and furniture service"><div class="service-overlay"><span>05</span><h3 data-i18n="svc_carpentry_t">Carpentry</h3><p data-i18n="svc_carpentry_d">Furniture & repairs</p></div></div>
+                <div class="service-card" role="button" tabindex="0" data-service="driving"><img src="./driving.jfif" alt="Driving and delivery service"><div class="service-overlay"><span>06</span><h3 data-i18n="svc_driving_t">Driving</h3><p data-i18n="svc_driving_d">Transport & delivery</p></div></div>
+                <div class="service-card" role="button" tabindex="0" data-service="gardening"><img src="./gardening.jfif" alt="Gardening and landscaping service"><div class="service-overlay"><span>07</span><h3 data-i18n="svc_gardening_t">Gardening</h3><p data-i18n="svc_gardening_d">Landscaping & maintenance</p></div></div>
+                <div class="service-card" role="button" tabindex="0" data-service="technician"><img src="./technician.jfif" alt="Technical repair and support service"><div class="service-overlay"><span>08</span><h3 data-i18n="svc_technician_t">Technician</h3><p data-i18n="svc_technician_d">Tech repair & support</p></div></div>
+            </div>
+        </section>
 
         <section class="service-map-section section-pad" id="nearby-services"><div class="map-heading"><div><div class="section-kicker" data-i18n="map_kicker">LIVE LOCAL NETWORK</div><h2 data-i18n="map_h2">Services around you.</h2><p data-i18n="map_p">Explore verified workers, active bookings, and areas with rising demand.</p></div><button class="map-location-button" id="use-location" type="button">⌖ <span data-i18n="map_locbtn">Use my location</span></button></div><div class="map-layout"><div class="map-card"><div id="service-map" aria-label="Interactive map showing SharmNexus services around Jaipur"></div><div class="map-attribution-note">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div></div><div class="map-legend" aria-label="Map filters"><button class="legend-item is-active" data-category="worker" type="button"><i class="legend-dot dot-green"></i><span data-i18n="legend_workers">Available workers</span><b>12</b></button><button class="legend-item is-active" data-category="booking" type="button"><i class="legend-dot dot-terracotta"></i><span data-i18n="legend_bookings">Active bookings</span><b>8</b></button><button class="legend-item is-active" data-category="demand" type="button"><i class="legend-dot dot-red"></i><span data-i18n="legend_demand">High-demand zones</span><b>3</b></button><button class="legend-item is-active" data-category="request" type="button"><i class="legend-dot dot-orange"></i><span data-i18n="legend_requests">Customer requests</span><b>6</b></button></div></div><div class="demand-zone"><span>📍 <b>Zone A</b></span><div><strong>High Demand Zone</strong><small>Plumbing demand +23%</small></div><span>Available workers: <b>8</b></span></div></section>
 
@@ -128,9 +143,101 @@
             </div></section>
 
         <section class="final-cta"><div class="cta-sun"></div><div class="section-kicker" data-i18n="final_kicker">READY WHEN YOU ARE</div><h2 data-i18n-html="final_h2">Your next service is just<br><em>a few clicks away.</em></h2><p data-i18n="final_p">Find trusted professionals. Support skilled workers. Strengthen local cooperatives.</p><div class="hero-actions"><a class="button button-dark" href="premium-auth.html"><span data-i18n="hero_cta_find">Find a service</span> <span>↗</span></a><a class="button button-outline-dark" href="premium-auth.html"><span data-i18n="hero_cta_join">Join as a worker</span> <span>↗</span></a></div></section>
+
+        <!-- Dynamic Service Booking Modal -->
+        <div id="service-booking-modal" class="modal-overlay" aria-hidden="true">
+            <div class="modal-container" role="dialog" aria-modal="true">
+                <button class="modal-close" aria-label="Close modal">✕</button>
+                
+                <!-- Service Details View -->
+                <div id="modal-view-details" class="modal-view">
+                    <div class="modal-header">
+                        <img id="modal-service-img" src="" alt="Service">
+                        <div class="modal-title-wrap">
+                            <h2 id="modal-service-title">Service Name</h2>
+                            <p id="modal-service-desc">Description</p>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-worker-profile">
+                        <h3>Available Professional</h3>
+                        <div class="worker-card">
+                            <div class="worker-avatar" id="modal-worker-avatar">RK</div>
+                            <div class="worker-info">
+                                <h4 id="modal-worker-name">Name</h4>
+                                <p class="worker-rating" id="modal-worker-rating">★ 4.8</p>
+                                <p class="worker-exp" id="modal-worker-exp">Experience: 5 years</p>
+                            </div>
+                            <div class="worker-price">
+                                <small>Approx.</small>
+                                <strong id="modal-worker-price">₹500</strong>
+                            </div>
+                        </div>
+                        <p class="worker-loc" id="modal-worker-loc">⌖ 2.1 km away</p>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="button button-gold w-100" id="btn-proceed-book">Book Now <span>↗</span></button>
+                    </div>
+                </div>
+
+                <!-- Booking Form View -->
+                <div id="modal-view-form" class="modal-view" style="display: none;">
+                    <h2>Book Service</h2>
+                    <button class="text-link btn-back" id="btn-back-details">← Back to details</button>
+                    <form id="service-booking-form">
+                        <div class="form-group">
+                            <label for="b-name">Name</label>
+                            <input type="text" id="b-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="b-phone">Phone Number</label>
+                            <input type="tel" id="b-phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="b-address">Address</label>
+                            <input type="text" id="b-address" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="b-date">Preferred Date</label>
+                                <input type="date" id="b-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="b-time">Preferred Time</label>
+                                <input type="time" id="b-time" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="b-req">Service Requirements</label>
+                            <textarea id="b-req" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="button button-dark w-100">Confirm Booking</button>
+                    </form>
+                </div>
+
+                <!-- Success View -->
+                <div id="modal-view-success" class="modal-view" style="display: none; text-align: center; padding: 3rem 1rem;">
+                    <div class="success-icon">✓</div>
+                    <h2>Booking request submitted successfully!</h2>
+                    <p class="mt-2">We will contact you shortly to confirm your booking details.</p>
+                    <button class="button button-ghost mt-2" id="btn-close-success">Close Window</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
-    <footer class="footer"><div class="footer-top"><a class="brand brand-light" href="#home"><span class="brand-mark"><span></span><span></span></span><span>Sharm<span>Nexus</span></span></a><p data-i18n-html="footer_tagline">Connecting skills.<br>Creating opportunities.</p><div class="footer-social"><strong>Follow Us</strong><div class="social-row"><a class="social-icon" href="#" aria-label="Facebook">f</a><a class="social-icon" href="#" aria-label="X (Twitter)">𝕏</a><a class="social-icon" href="#" aria-label="LinkedIn">in</a><a class="social-icon" href="#" aria-label="Email">✉</a></div></div><div class="footer-links"><div><strong>Platform</strong><a href="#services">Services</a><a href="#how-it-works">How it works</a><a href="#communities">For households</a></div><div><strong>Community</strong><a href="#communities">For workers</a><a href="#cooperatives">For cooperatives</a><a href="#about">Our mission</a></div><div><strong>Connect</strong><a href="premium-auth.html">Log in</a><a href="premium-auth.html">Get started</a><a href="mailto:hello@sharmnexus.example">Contact us</a></div></div></div><div class="footer-bottom"><span>© 2024 SharmNexus. Cooperative ownership, community impact.</span><span>Made for the people who keep communities moving.</span></div></footer>
+    <footer class="footer">
+        <div class="footer-top">
+            <!-- FIXED FOOTER LOGO -->
+            <a class="brand brand-light" href="#home">
+                <img src="logo.png" alt="SharmNexus" class="nav-logo-img">
+                <span class="brand-text">Sharm<span>Nexus</span></span>
+            </a>
+            <p data-i18n-html="footer_tagline">Connecting skills.<br>Creating opportunities.</p>
+            <div class="footer-social"><strong>Follow Us</strong><div class="social-row"><a class="social-icon" href="#" aria-label="Facebook">f</a><a class="social-icon" href="#" aria-label="X (Twitter)">𝕏</a><a class="social-icon" href="#" aria-label="LinkedIn">in</a><a class="social-icon" href="#" aria-label="Email">✉</a></div></div><div class="footer-links"><div><strong>Platform</strong><a href="#services">Services</a><a href="#how-it-works">How it works</a><a href="#communities">For households</a></div><div><strong>Community</strong><a href="#communities">For workers</a><a href="#cooperatives">For cooperatives</a><a href="#about">Our mission</a></div><div><strong>Connect</strong><a href="premium-auth.html">Log in</a><a href="premium-auth.html">Get started</a><a href="mailto:hello@sharmnexus.example">Contact us</a></div></div></div><div class="footer-bottom"><span>© 2024 SharmNexus. Cooperative ownership, community impact.</span><span>Made for the people who keep communities moving.</span></div>
+    </footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="script.js" defer></script>
 </body>

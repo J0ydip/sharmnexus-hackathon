@@ -28,11 +28,7 @@
             <!-- Left Panel - Branding & Cooperative Network Illustration -->
             <div class="auth-panel auth-left" id="authLeft">
                 <div class="branding">
-                    <div class="logo-circle">
-                        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L2 7V12C2 18.627 12 23 12 23C12 23 22 18.627 22 12V7L12 2Z" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
+                    <img src="logo.png" alt="SharmNexus Logo" class="auth-logo-img">
                     <h1 class="brand-title">SharmNexus</h1>
                     <p class="brand-tagline">COOPERATIVE-POWERED SERVICE NETWORK</p>
                 </div>
@@ -206,7 +202,6 @@
                             </div>
                         </div>
 
-                        <!-- Added Confirm Password Field -->
                         <div class="form-group">
                             <div class="input-wrapper">
                                 <label for="confirmPassword">Confirm Password</label>
@@ -227,7 +222,25 @@
                             </div>
                         </div>
 
-                        <label class="checkbox-label">
+                        <!-- Dynamic Worker Fields (Hidden by default) -->
+                        <div id="workerExtraFields" style="display: none;">
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <label for="aadharNumber">Aadhaar Number</label>
+                                    <input type="text" id="aadharNumber" name="aadharNumber" placeholder="[Aadhaar Redacted]">
+                                    <span class="error-message" id="aadharNumberError"></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <label for="panNumber">PAN Number</label>
+                                    <input type="text" id="panNumber" name="panNumber" placeholder="Enter PAN Number">
+                                    <span class="error-message" id="panNumberError"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="checkbox-label" style="margin-top: 8px;">
                             <input type="checkbox" id="termsCheckbox" name="terms" required>
                             <span class="checkbox-custom"></span>
                             <span>I agree to the <a href="#" class="link">Terms & Conditions</a></span>
@@ -282,7 +295,7 @@
         <div class="success-content">
             <div class="success-icon-large">✓</div>
             <h2 id="successTitle">Success!</h2>
-            <p id="successMessage">Redirecting to your dashboard...</p>
+            <p id="successMessage">Redirecting...</p>
         </div>
     </div>
 
