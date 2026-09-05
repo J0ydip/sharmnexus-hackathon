@@ -100,4 +100,54 @@ export async function getCustomerBookings(customerId: string) {
   return { data: bookings, error: null };
 }
 
+export async function submitRating(data: {
+  bookingId: string;
+  workerId?: string;
+  score: number;
+  review?: string;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user) {
+    return { error: 'Authentication required' };
+  }
+
+  const { data: rating, error } = await supabase
+    .from('ratings')
+    .insert([
+      {
+        booking_id: data.bookingId,
+        customer_id: user.id,
+        worker_id: data.workerId || null,
+        score: data.score,
+        review: data.review || null,
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error submitting rating:', error);
+    return { error: error.message };
+  }
+
+  // Re-calculate and update worker avg_rating if workerId is present
+  if (data.workerId) {
+    const { data: workerRatings } = await supabase
+      .from('ratings')
+      .select('score')
+      .eq('worker_id', data.workerId);
+
+    if (workerRatings && workerRatings.length > 0) {
+      const avg = workerRatings.reduce((acc, curr) => acc + curr.score, 0) / workerRatings.length;
+      await supabase
+        .from('workers')
+        .update({ avg_rating: parseFloat(avg.toFixed(1)) })
+        .eq('id', data.workerId);
+    }
+  }
+
+  revalidatePath('/history');
+  return { success: true, data: rating };
+}
