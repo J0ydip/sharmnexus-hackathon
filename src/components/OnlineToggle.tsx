@@ -2,25 +2,23 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
+import { updateWorkerAvailability } from '@/app/actions/workers';
 
 export default function OnlineToggle({ workerId, initialStatus }: { workerId: string, initialStatus: boolean }) {
   const [isOnline, setIsOnline] = useState(initialStatus);
-  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
 
   const toggleStatus = async () => {
     const newStatus = !isOnline;
     setIsOnline(newStatus);
+    setLoading(true);
     
-    // Save to database
-    const { error } = await supabase
-      .from('workers')
-      .update({ is_available: newStatus })
-      .eq('id', workerId);
+    const res = await updateWorkerAvailability(workerId, newStatus);
+    setLoading(false);
 
-    if (error) {
-      setIsOnline(isOnline); // Revert
-      toast.error('Failed to update status');
+    if (res?.error) {
+      setIsOnline(!newStatus); // Revert
+      toast.error('Failed to update status: ' + res.error);
       return;
     }
 
@@ -35,7 +33,8 @@ export default function OnlineToggle({ workerId, initialStatus }: { workerId: st
       </div>
       <button 
         onClick={toggleStatus}
-        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
+        disabled={loading}
+        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${isOnline ? 'bg-green-500' : 'bg-gray-300'} ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
       >
         <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isOnline ? 'translate-x-6' : 'translate-x-1'}`}/>
       </button>

@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { submitRating } from '@/app/actions/bookings';
+import { submitRating, getCustomerBookings } from '@/app/actions/bookings';
 import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
 import {
   CalendarClock,
@@ -33,10 +33,66 @@ import {
 export default function HistoryPage() {
   const { bookings, updateBookingStatus, rateBooking } = useBookingStore();
   const [mounted, setMounted] = useState(false);
+  const [dbBookings, setDbBookings] = useState<Booking[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
 
   useEffect(() => {
     setMounted(true);
+    async function loadDbBookings() {
+      try {
+        const { data } = await getCustomerBookings();
+        if (data && data.length > 0) {
+          const mapped: Booking[] = data.map((b: any) => ({
+            id: b.id,
+            customer_id: b.customer_id,
+            customer_name: 'Customer',
+            customer_phone: '',
+            worker_id: b.worker_id || 'unassigned',
+            worker: b.worker ? {
+              id: b.worker.id,
+              full_name: b.worker.full_name,
+              phone: b.worker.phone || '',
+              society_name: 'Cooperative Society',
+              profile_photo_url: b.worker.profile_photo_url || '',
+              profession: b.service?.name || 'Service Professional',
+              avg_rating: b.worker.avg_rating || 4.8,
+              approx_distance_km: 2.5,
+              hourly_rate: 300,
+              is_verified: true,
+              verification_status: 'verified',
+              cooperative_member_id: 'MEM-001',
+              total_jobs_completed: 12,
+              skills: [b.service?.name || 'General'],
+              badges: ['Verified'],
+              availability: 'Immediate (within 45 mins)',
+              experience_years: 4,
+              rating_count: 15,
+            } : (bookings[0]?.worker || ({} as any)),
+            service_category_id: b.service_category_id || '',
+            service_name: b.service?.name || 'Service',
+            service_icon: b.service?.icon_url || 'Droplet',
+            booking_type: b.booking_type || 'scheduled',
+            status: b.status || 'requested',
+            urgency: 'normal',
+            description: b.description || '',
+            address: b.address || '',
+            city: 'Patna',
+            scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
+            time_slot: 'Scheduled',
+            estimated_price: b.estimated_price || 350,
+            final_price: b.final_price || b.estimated_price || 350,
+            otp: '4892',
+            payment_status: 'pending',
+            payment_method: 'Pay after service',
+            created_at: b.created_at,
+          }));
+          setDbBookings(mapped);
+        }
+      } catch (err) {
+        console.warn('Could not fetch Supabase bookings:', err);
+      }
+    }
+    loadDbBookings();
   }, []);
 
   function formatSchedule(str: string) {
@@ -60,12 +116,18 @@ export default function HistoryPage() {
   const [userStars, setUserStars] = useState(5);
   const [userReviewText, setUserReviewText] = useState('');
 
+  // Combine DB bookings with local store bookings (avoid duplicate IDs)
+  const allBookings = [
+    ...dbBookings,
+    ...bookings.filter((b) => !dbBookings.some((db) => db.id === b.id)),
+  ];
+
   // Filter bookings by tab
-  const upcomingBookings = bookings.filter(
+  const upcomingBookings = allBookings.filter(
     (b) => b.status === 'requested' || b.status === 'assigned' || b.status === 'accepted' || b.status === 'in_progress'
   );
-  const completedBookings = bookings.filter((b) => b.status === 'completed');
-  const cancelledBookings = bookings.filter((b) => b.status === 'cancelled');
+  const completedBookings = allBookings.filter((b) => b.status === 'completed');
+  const cancelledBookings = allBookings.filter((b) => b.status === 'cancelled');
 
   const displayedList =
     activeTab === 'upcoming'

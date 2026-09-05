@@ -11,6 +11,8 @@ import { StarRating } from '@/components/customer/StarRating';
 import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/data/mockData';
 import { toast } from 'sonner';
+import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
+import { getBookingById as getBookingByIdAction } from '@/app/actions/bookings';
 import {
   ArrowLeft,
   Phone,
@@ -113,7 +115,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const currentStepIdx = getStepIndex(booking.status);
 
   // Prototype Live Demo Status Simulator
-  const handleSimulateNextStatus = () => {
+  const handleSimulateNextStatus = async () => {
     const nextStatuses: Booking['status'][] = [
       'assigned',
       'accepted',
@@ -125,6 +127,13 @@ export default function BookingTrackingPage({ params }: PageProps) {
 
     updateBookingStatus(booking.id, nextStatus);
     toast.success(`Demo status advanced to "${nextStatus.toUpperCase()}"!`);
+
+    // Sync status change to Supabase if it exists in backend
+    try {
+      await updateBookingStatusAction(booking.id, nextStatus);
+    } catch (e) {
+      // Graceful fallback for mock local IDs
+    }
   };
 
   const handleCallWorker = () => {

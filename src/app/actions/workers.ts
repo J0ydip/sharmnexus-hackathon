@@ -3,90 +3,87 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+// ---------------------------------------------------------------------------
+// getWorkersByCategory — fetch verified, available workers (optionally by cat)
+// ---------------------------------------------------------------------------
 export async function getWorkersByCategory(categoryId?: string) {
   const supabase = await createClient();
-  
-  let query = supabase
+
+  // If a categoryId is provided, join through worker_skills to filter
+  if (categoryId) {
+    const { data, error } = await supabase
+      .from('worker_skills')
+      .select(`
+        worker:worker_id (
+          id, full_name, phone, email, profile_photo_url,
+          is_verified, is_available, avg_rating, total_jobs_completed, hourly_rate, address
+        )
+      `)
+      .eq('service_category_id', categoryId)
+      .eq('is_verified', true);
+
+    if (error) {
+      console.error('Error fetching workers by category:', error);
+      return [];
+    }
+
+    // Flatten the join and filter available workers
+    return (data || [])
+      .map((row: any) => row.worker)
+      .filter((w: any) => w && w.is_available !== false);
+  }
+
+  // No category filter — return all active workers
+  const { data, error } = await supabase
     .from('workers')
-    .select('*, users!inner(full_name, phone, avatar_url), cooperative_societies(name)')
-    .eq('is_verified', true)
-    .eq('is_active', true);
-    
-  // If we had a junction table for worker_skills, we'd join here. 
-  // For MVP, we will just return all active workers or mock it.
-  
-  const { data, error } = await query;
-    
+    .select('id, full_name, phone, email, profile_photo_url, is_verified, is_available, avg_rating, total_jobs_completed, hourly_rate, address')
+    .eq('is_verified', true);
+
   if (error) {
     console.error('Error fetching workers:', error);
     return [];
   }
-  
-  return data;
+
+  return data || [];
 }
 
+// ---------------------------------------------------------------------------
+// getWorkerProfile — fetch a single worker's profile
+// ---------------------------------------------------------------------------
 export async function getWorkerProfile(workerId?: string) {
   const supabase = await createClient();
-  
-  // If no workerId provided, get the logged-in worker's profile
+
   let queryId = workerId;
-  
   if (!queryId) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     queryId = user.id;
   }
-  
+
   const { data, error } = await supabase
     .from('workers')
-    .select('*, users(*), cooperative_societies(*)')
+    .select(`
+      *,
+      skills:worker_skills (
+        id, service_category_id, years_experience, certification_name, is_verified,
+        category:service_category_id (id, name, icon_url)
+      ),
+      society:society_id (id, name, district, state)
+    `)
     .eq('id', queryId)
     .single();
-    
+
   if (error) {
     console.error('Error fetching worker profile:', error);
     return null;
   }
-  
+
   return data;
 }
 
-export async function registerWorker(workerData: any) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) throw new Error('Not authenticated');
-  
-  // Update user type to worker
-  await supabase
-    .from('users')
-    .update({ user_type: 'worker' })
-    .eq('id', user.id);
-    
-  // Insert worker record
-  const { data, error } = await supabase
-    .from('workers')
-    .insert({
-      id: user.id, // 1:1 relation with users table
-      society_id: workerData.society_id,
-      worker_role: workerData.worker_role || 'member',
-      experience_years: workerData.experience_years || 0,
-      base_hourly_rate: workerData.base_hourly_rate || 100,
-      is_verified: false, // Requires admin verification
-      is_active: true
-    })
-    .select()
-    .single();
-    
-  if (error) {
-    console.error('Error registering worker:', error);
-    return { success: false, error: error.message };
-  }
-  
-  revalidatePath('/worker');
-  return { success: true, data };
-}
-
+// ---------------------------------------------------------------------------
+// createWorkerRegistration — full 3-step worker signup
+// ---------------------------------------------------------------------------
 export async function createWorkerRegistration(data: {
   id: string;
   fullName: string;
@@ -97,6 +94,7 @@ export async function createWorkerRegistration(data: {
   serviceCategoryId: string;
   yearsExperience?: number;
   certificationName?: string;
+  hourlyRate?: number;
 }) {
   const supabase = await createClient();
 
@@ -110,6 +108,7 @@ export async function createWorkerRegistration(data: {
       email: data.email,
       aadhaar_number: data.aadhaarNumber || null,
       address: data.address || null,
+      hourly_rate: data.hourlyRate || 300,
       is_verified: true,
       is_available: true,
       verification_status: 'verified',
@@ -138,6 +137,75 @@ export async function createWorkerRegistration(data: {
     if (skillError) {
       console.warn('Worker skill insert notice:', skillError);
     }
+  }
+
+  revalidatePath('/worker-dashboard');
+  revalidatePath('/worker-profile');
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// updateWorkerAvailability — toggle online/offline duty status
+// ---------------------------------------------------------------------------
+export async function updateWorkerAvailability(workerId: string, isAvailable: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Not authenticated' };
+
+  const { error } = await supabase
+    .from('workers')
+    .update({ is_available: isAvailable })
+    .eq('id', workerId);
+
+  if (error) {
+    console.error('Error updating worker availability:', error);
+    return { error: error.message };
+  }
+
+  revalidatePath('/worker-dashboard');
+  revalidatePath('/worker-profile');
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// updateWorkerCategory — change primary trade category
+// ---------------------------------------------------------------------------
+export async function updateWorkerCategory(workerId: string, newCategoryId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Not authenticated' };
+
+  // Check if worker already has a skill entry
+  const { data: existing } = await supabase
+    .from('worker_skills')
+    .select('id')
+    .eq('worker_id', workerId)
+    .limit(1);
+
+  let opError;
+  if (existing && existing.length > 0) {
+    const res = await supabase
+      .from('worker_skills')
+      .update({ service_category_id: newCategoryId })
+      .eq('id', existing[0].id);
+    opError = res.error;
+  } else {
+    const res = await supabase
+      .from('worker_skills')
+      .insert({
+        worker_id: workerId,
+        service_category_id: newCategoryId,
+        years_experience: 3,
+        is_verified: true
+      });
+    opError = res.error;
+  }
+
+  if (opError) {
+    console.error('Error updating worker category:', opError);
+    return { error: opError.message };
   }
 
   revalidatePath('/worker-dashboard');

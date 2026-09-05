@@ -10,10 +10,10 @@ export async function getCustomerProfile() {
   if (!user) return null;
   
   const { data, error } = await supabase
-    .from('users')
+    .from('customers')
     .select('*')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
     
   if (error) {
     console.error('Error fetching customer profile:', error);
@@ -23,16 +23,24 @@ export async function getCustomerProfile() {
   return data;
 }
 
-export async function updateCustomerProfile(updateData: any) {
+export async function updateCustomerProfile(updateData: {
+  full_name?: string;
+  phone?: string;
+  email?: string;
+  profile_photo_url?: string;
+  preferred_language?: string;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) throw new Error('Not authenticated');
   
   const { error } = await supabase
-    .from('users')
-    .update(updateData)
-    .eq('id', user.id);
+    .from('customers')
+    .upsert({
+      id: user.id,
+      ...updateData,
+    });
     
   if (error) {
     console.error('Error updating customer profile:', error);

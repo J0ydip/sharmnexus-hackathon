@@ -3,18 +3,29 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+// ---------------------------------------------------------------------------
+// createBooking — unified booking creation for wizard, emergency & direct book
+// ---------------------------------------------------------------------------
 export async function createBooking(data: {
-  customer_id: string;
+  customer_id?: string;
   worker_id: string;
-  service_id: string;
-  booking_date: string;
-  booking_time: string;
-  address_line1: string;
-  latitude: number;
-  longitude: number;
+  service_category_id?: string;
+  service_category_name?: string;
+  service_id?: string;
+  worker_name?: string;
+  description?: string;
+  address?: string;
+  address_line1?: string;
+  booking_date?: string;
+  booking_time?: string;
+  booking_type?: 'scheduled' | 'emergency' | 'on_demand';
+  estimated_price?: number;
+  scheduled_at?: string;       // ISO datetime
+  latitude?: number;
+  longitude?: number;
 }) {
   const supabase = await createClient();
-  
+
   // 1. Resolve customer ID from session or payload
   const { data: authData } = await supabase.auth.getUser();
   const customerId = authData?.user?.id || data.customer_id;
@@ -23,7 +34,7 @@ export async function createBooking(data: {
     return { error: 'Authentication required. Please log in.' };
   }
 
-  // 2. Ensure customer exists in the customers table
+  // 2. Ensure customer row exists in the customers table
   const { data: existingCustomer } = await supabase
     .from('customers')
     .select('id')
@@ -55,15 +66,66 @@ export async function createBooking(data: {
     }
   }
 
+  const isUuid = (str?: string | null) =>
+    !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+  const rawCatId = data.service_category_id || data.service_id;
+  let realCategoryId: string | null = null;
+  if (rawCatId && isUuid(rawCatId)) {
+    realCategoryId = rawCatId;
+  } else {
+    // Try to resolve by name or fallback to matching category
+    const cleanName = (data.service_category_name || rawCatId || '').replace(/^cat-/, '').toLowerCase();
+    const { data: catRows } = await supabase.from('service_categories').select('id, name');
+    const matched = catRows?.find(c => c.name.toLowerCase().includes(cleanName) || cleanName.includes(c.name.toLowerCase()));
+    realCategoryId = matched?.id || catRows?.[0]?.id || null;
+  }
+
+  let realWorkerId: string | null = null;
+  if (data.worker_id && isUuid(data.worker_id)) {
+    realWorkerId = data.worker_id;
+  } else {
+    // Try to find a worker for this category or fallback to any verified worker
+    if (realCategoryId) {
+      const { data: skillRows } = await supabase
+        .from('worker_skills')
+        .select('worker_id')
+        .eq('service_category_id', realCategoryId)
+        .limit(1);
+      if (skillRows && skillRows.length > 0) {
+        realWorkerId = skillRows[0].worker_id;
+      }
+    }
+    if (!realWorkerId) {
+      const { data: anyWorker } = await supabase.from('workers').select('id').limit(1).maybeSingle();
+      realWorkerId = anyWorker?.id || null;
+    }
+  }
+
+  const addressStr = data.address || data.address_line1 || '';
+  let scheduledAt = data.scheduled_at;
+  if (!scheduledAt && data.booking_date) {
+    scheduledAt = data.booking_time
+      ? `${data.booking_date}T${data.booking_time}:00Z`
+      : `${data.booking_date}T10:00:00Z`;
+  }
+  if (!scheduledAt) {
+    scheduledAt = new Date().toISOString();
+  }
+
+  // 3. Insert the booking
   const { data: booking, error } = await supabase
     .from('bookings')
     .insert([
       {
-        customer_id: data.customer_id,
-        worker_id: data.worker_id,
-        service_category_id: data.service_id,
-        scheduled_at: `${data.booking_date}T${data.booking_time}:00Z`,
-        address: data.address_line1,
+        customer_id: customerId,
+        worker_id: realWorkerId,
+        service_category_id: realCategoryId,
+        booking_type: data.booking_type || 'scheduled',
+        description: data.description || null,
+        address: addressStr,
+        estimated_price: data.estimated_price || null,
+        scheduled_at: scheduledAt,
         status: 'requested',
       },
     ])
@@ -75,21 +137,37 @@ export async function createBooking(data: {
     return { error: error.message };
   }
 
-  revalidatePath('/bookings', 'page');
+  revalidatePath('/history');
+  revalidatePath('/jobs');
+  revalidatePath('/worker-dashboard');
+  revalidatePath('/bookings');
   return { data: booking };
 }
 
-export async function getCustomerBookings(customerId: string) {
+// ---------------------------------------------------------------------------
+// getCustomerBookings — fetch all bookings for the logged-in customer
+// ---------------------------------------------------------------------------
+export async function getCustomerBookings(customerId?: string) {
   const supabase = await createClient();
-  
+
+  // Resolve from session if not provided
+  let resolvedId = customerId;
+  if (!resolvedId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    resolvedId = user?.id;
+  }
+  if (!resolvedId) {
+    return { error: 'Authentication required', data: null };
+  }
+
   const { data: bookings, error } = await supabase
     .from('bookings')
     .select(`
       *,
-      worker:worker_id (id, full_name, profile_photo_url),
-      service:service_category_id (name, name_hi)
+      worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating),
+      service:service_category_id (id, name, name_hi, icon_url, base_price)
     `)
-    .eq('customer_id', customerId)
+    .eq('customer_id', resolvedId)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -100,6 +178,33 @@ export async function getCustomerBookings(customerId: string) {
   return { data: bookings, error: null };
 }
 
+// ---------------------------------------------------------------------------
+// getBookingById — fetch a single booking by UUID (for tracking page)
+// ---------------------------------------------------------------------------
+export async function getBookingById(bookingId: string) {
+  const supabase = await createClient();
+
+  const { data: booking, error } = await supabase
+    .from('bookings')
+    .select(`
+      *,
+      worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating),
+      service:service_category_id (id, name, name_hi, icon_url, base_price)
+    `)
+    .eq('id', bookingId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching booking:', error);
+    return null;
+  }
+
+  return booking;
+}
+
+// ---------------------------------------------------------------------------
+// submitRating — rate a completed booking
+// ---------------------------------------------------------------------------
 export async function submitRating(data: {
   bookingId: string;
   workerId?: string;

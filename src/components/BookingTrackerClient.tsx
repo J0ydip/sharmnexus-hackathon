@@ -71,7 +71,7 @@ export default function BookingTrackerClient({ initialBooking }: { initialBookin
               <p className="text-gray-500">{isMounted ? new Date(booking.scheduled_at).toLocaleString() : 'Loading time...'}</p>
             </div>
             <div className="text-right">
-              <div className="font-bold text-xl text-blue-600">₹{booking.total_amount}</div>
+              <div className="font-bold text-xl text-blue-600">₹{booking.final_price || booking.estimated_price || 350}</div>
               <p className="text-sm text-gray-500">Total</p>
             </div>
           </div>

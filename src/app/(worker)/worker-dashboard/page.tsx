@@ -23,7 +23,7 @@ export default async function WorkerDashboard() {
   const activeJobs = jobs?.filter(j => j.status === 'confirmed' || j.status === 'in_progress') || [];
   const completedJobs = jobs?.filter(j => j.status === 'completed') || [];
   
-  const totalEarnings = completedJobs.reduce((acc, curr) => acc + (curr.total_amount || 350), 0);
+  const totalEarnings = completedJobs.reduce((acc, curr) => acc + (curr.final_price || curr.estimated_price || 350), 0);
 
   return (
     <div className="p-4 space-y-6 max-w-4xl mx-auto pb-24">

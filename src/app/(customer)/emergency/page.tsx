@@ -12,6 +12,7 @@ import { MapView } from '@/components/customer/MapView';
 import { WorkerProfile, ServiceCategory } from '@/lib/data/mockData';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { createBooking } from '@/app/actions/bookings';
 import {
   Zap,
   Clock,
@@ -91,6 +92,23 @@ export default function EmergencyBookingPage() {
 
     const newBooking = createBookingFromDraft();
     toast.success(`Emergency SOS dispatched! Booking ${newBooking.id} created.`);
+
+    // Sync emergency booking to Supabase
+    try {
+      createBooking({
+        worker_id: worker.id,
+        service_category_id: selectedCategory.id,
+        service_category_name: selectedCategory.name,
+        description: `[EMERGENCY SOS] ${description}`,
+        address: address,
+        booking_type: 'emergency',
+        estimated_price: Math.round(selectedCategory.base_price * emergencyMultiplier),
+        scheduled_at: new Date().toISOString(),
+      }).catch(err => console.warn('Supabase emergency sync error:', err));
+    } catch (err) {
+      console.warn('Emergency booking sync warning:', err);
+    }
+
     router.push(`/track/${newBooking.id}`);
   };
 

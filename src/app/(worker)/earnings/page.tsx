@@ -20,7 +20,7 @@ export default async function EarningsPage() {
   const completedJobs = bookings?.filter(b => b.status === 'completed') || [];
   const inProgressJobs = bookings?.filter(b => b.status === 'in_progress' || b.status === 'confirmed') || [];
 
-  const grossEarnings = completedJobs.reduce((acc, curr) => acc + (curr.total_amount || 350), 0);
+  const grossEarnings = completedJobs.reduce((acc, curr) => acc + (curr.final_price || curr.estimated_price || 350), 0);
   const netEarnings = Math.round(grossEarnings * 0.85); // 85% to worker
   const welfareContribution = Math.round(grossEarnings * 0.05); // 5% cooperative welfare
   const platformFee = grossEarnings - netEarnings - welfareContribution; // 10% platform
@@ -120,7 +120,7 @@ export default async function EarningsPage() {
         ) : (
           <div className="space-y-3">
             {completedJobs.map(job => {
-              const gross = job.total_amount || 350;
+              const gross = job.final_price || job.estimated_price || 350;
               const net = Math.round(gross * 0.85);
               return (
                 <div key={job.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">

@@ -13,6 +13,7 @@ import { MapView } from '@/components/customer/MapView';
 import { WorkerProfile, Booking } from '@/lib/data/mockData';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { createBooking } from '@/app/actions/bookings';
 import {
   ArrowLeft,
   ArrowRight,
@@ -137,12 +138,30 @@ function BookingFlowContent({ params }: PageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     const newBooking = createBookingFromDraft();
     setCreatedBooking(newBooking);
     setStep('success');
     toast.success(`Booking ${newBooking.id} created successfully!`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Persist booking to Supabase
+    try {
+      await createBooking({
+        worker_id: draft.selectedWorkerId || 'worker-rajesh-kumar',
+        service_category_id: draft.serviceCategoryId,
+        service_category_name: draft.serviceCategoryName,
+        description: draft.description,
+        address: draft.address,
+        booking_type: draft.bookingType,
+        estimated_price: draft.estimatedPrice,
+        scheduled_at: `${draft.date}T10:00:00Z`,
+        latitude: draft.lat,
+        longitude: draft.lng,
+      });
+    } catch (err) {
+      console.warn('Could not sync booking to Supabase:', err);
+    }
   };
 
   return (

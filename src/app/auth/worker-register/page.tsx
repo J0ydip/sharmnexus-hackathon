@@ -108,6 +108,7 @@ export default function WorkerRegisterPage() {
         serviceCategoryId: selectedCategory,
         yearsExperience: parseInt(experience, 10) || 3,
         certificationName: certification || 'Verified Trade Professional',
+        hourlyRate: parseFloat(hourlyRate) || 350,
       });
 
       if (regResult?.error) {

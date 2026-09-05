@@ -60,7 +60,7 @@ export default function WorkerJobsPage() {
                     <h3 className="font-bold text-lg">{job.customers?.full_name || 'Customer'}</h3>
                     <p className="text-sm text-gray-500">{new Date(job.scheduled_at).toLocaleString()}</p>
                   </div>
-                  <div className="text-lg font-bold text-green-600">₹{job.total_amount}</div>
+                  <div className="text-lg font-bold text-green-600">₹{job.final_price || job.estimated_price || 350}</div>
                 </div>
                 <div className="text-sm text-gray-700 mb-4 bg-gray-50 p-2 rounded">
                   <span className="font-semibold block">Address:</span>
@@ -128,7 +128,7 @@ export default function WorkerJobsPage() {
                   <p className="text-xs text-gray-500">{new Date(job.scheduled_at).toLocaleDateString()} · {job.address}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-bold text-emerald-600">₹{job.total_amount || 350}</span>
+                  <span className="text-sm font-bold text-emerald-600">₹{job.final_price || job.estimated_price || 350}</span>
                   <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Completed</p>
                 </div>
               </div>
