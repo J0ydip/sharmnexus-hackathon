@@ -318,7 +318,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                 </span>
               </div>
 
-              <div className="h-[320px] w-full rounded-xl overflow-hidden border border-gray-100">
+              <div className="h-[320px] w-full rounded-xl overflow-hidden border border-gray-100 relative isolate z-0">
                 <MapView
                   workers={[worker]}
                   center={[worker.lat || 25.5941, worker.lng || 85.1376]}

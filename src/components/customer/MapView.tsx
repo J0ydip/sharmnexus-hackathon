@@ -84,7 +84,7 @@ function LeafletMapInner({
   });
 
   return (
-    <div className="relative w-full h-full min-h-[380px] rounded-2xl overflow-hidden border border-gray-200 shadow-xs">
+    <div className="relative isolate z-0 w-full h-full min-h-[380px] rounded-2xl overflow-hidden border border-gray-200 shadow-xs">
       <MapContainer
         center={center}
         zoom={zoom}
@@ -155,7 +155,7 @@ function LeafletMapInner({
       </MapContainer>
 
       {/* Map Legend Overlay */}
-      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs p-2.5 rounded-xl border border-gray-200/90 shadow-md text-[11px] space-y-1.5 z-[1000] pointer-events-auto">
+      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs p-2.5 rounded-xl border border-gray-200/90 shadow-md text-[11px] space-y-1.5 z-10 pointer-events-auto">
         <div className="font-bold text-gray-700 mb-1">Coverage Map</div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-blue-600 inline-block" />

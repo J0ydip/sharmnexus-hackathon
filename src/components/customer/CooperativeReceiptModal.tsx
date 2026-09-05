@@ -65,9 +65,9 @@ export function CooperativeReceiptModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md w-full max-h-[90vh] overflow-y-auto p-0 rounded-3xl border-0 shadow-2xl bg-white">
-        {/* Receipt Header Banner */}
-        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-6 rounded-t-3xl relative overflow-hidden">
+      <DialogContent className="max-w-md w-full max-h-[88vh] flex flex-col p-0 rounded-3xl border-0 shadow-2xl bg-white overflow-hidden z-[10000]">
+        {/* Receipt Header Banner (Pinned at top) */}
+        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-6 shrink-0 relative overflow-hidden pr-14">
           <div className="relative z-10">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold tracking-widest uppercase bg-emerald-900/60 px-2.5 py-1 rounded-full text-emerald-200 flex items-center gap-1">
@@ -88,8 +88,8 @@ export function CooperativeReceiptModal({
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/5 rounded-full blur-xl pointer-events-none" />
         </div>
 
-        {/* Receipt Body */}
-        <div className="p-6 space-y-5 print:p-0">
+        {/* Receipt Body (Scrollable interior) */}
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 print:p-0 print:overflow-visible">
           {/* Status Badge & Summary */}
           <div className="flex items-center justify-between border-b border-gray-100 pb-4">
             <div>
