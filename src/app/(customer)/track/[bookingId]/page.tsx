@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/lib/store/bookingStore';
@@ -44,8 +44,13 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const router = useRouter();
 
   const { bookings, updateBookingStatus, getBookingById, workers } = useBookingStore();
+  const [mounted, setMounted] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const booking =
     getBookingById(bookingId) ||
@@ -148,6 +153,17 @@ export default function BookingTrackingPage({ params }: PageProps) {
     toast.info(`Connecting to secure cooperative messenger with ${worker.full_name}`);
   };
 
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-gray-500 font-medium">Loading tracking status...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12">
       {/* Top Header */}
@@ -167,7 +183,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                 </h1>
                 <BookingStatusBadge status={booking.status} size="sm" />
               </div>
-              <span className="text-[11px] text-gray-500 block">
+              <span className="text-[11px] text-gray-500 block" suppressHydrationWarning>
                 {booking.service_name} • Scheduled for {booking.scheduled_at}
               </span>
             </div>
@@ -213,7 +229,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
             <span className="text-[10px] uppercase font-bold text-emerald-200 block">
               Security OTP
             </span>
-            <span className="font-mono text-2xl font-black tracking-widest text-white">
+            <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
               {booking.otp || '4829'}
             </span>
           </div>
