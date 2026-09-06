@@ -220,6 +220,17 @@ export async function submitRating(data: {
     return { error: 'Authentication required' };
   }
 
+  // Verify the user owns this booking
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('customer_id')
+    .eq('id', data.bookingId)
+    .maybeSingle();
+
+  if (!booking || booking.customer_id !== user.id) {
+    return { error: 'You can only rate your own bookings' };
+  }
+
   const { data: rating, error } = await supabase
     .from('ratings')
     .insert([

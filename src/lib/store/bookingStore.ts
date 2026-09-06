@@ -67,6 +67,7 @@ interface BookingStoreState {
   updateBookingStatus: (bookingId: string, newStatus: Booking['status']) => void;
   setBookingPaymentStatus: (bookingId: string, paymentStatus: 'pending' | 'completed', method?: string) => void;
   rateBooking: (bookingId: string, rating: number, review: string) => void;
+  addBooking: (booking: Booking) => void;
   getBookingById: (bookingId: string) => Booking | undefined;
   getMatchedWorkers: (categoryId?: string, urgency?: 'normal' | 'urgent' | 'emergency') => WorkerProfile[];
 }
@@ -164,6 +165,12 @@ export const useBookingStore = create<BookingStoreState>()(
         });
 
         return newBooking;
+      },
+
+      addBooking: (booking: Booking) => {
+        set((state) => ({
+          bookings: [booking, ...state.bookings],
+        }));
       },
 
       updateBookingStatus: (bookingId: string, newStatus: Booking['status']) => {

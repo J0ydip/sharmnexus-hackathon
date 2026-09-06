@@ -71,7 +71,7 @@ export function RazorpayPaymentButton({
           currency: orderRes.currency || 'INR',
           name: 'SharmNexus Cooperative',
           description: `Payment for ${serviceName} (#${bookingId})`,
-          image: 'https://ui-avatars.com/api/?name=SharmNexus&background=059669&color=fff',
+          image: 'https://ui-avatars.com/api/?name=SharmNexus&background=24172f&color=fff',
           order_id: orderRes.orderId,
           handler: async function (response: any) {
             toast.loading('Verifying payment and cooperative settlement...');
@@ -100,7 +100,7 @@ export function RazorpayPaymentButton({
             contact: customerPhone,
           },
           theme: {
-            color: '#059669',
+            color: '#24172f',
           },
           modal: {
             ondismiss: function () {
@@ -155,7 +155,7 @@ export function RazorpayPaymentButton({
       onClick={handlePayment}
       disabled={loading}
       size={size}
-      className={`bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 ${className}`}
+      className={`bg-[#24172f] hover:bg-[#1a1024] text-white font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 ${className}`}
     >
       {loading ? (
         <>
@@ -166,7 +166,7 @@ export function RazorpayPaymentButton({
         <>
           <CreditCard className="w-4 h-4" />
           <span>Pay ₹{amount} (UPI / Card)</span>
-          <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
+          <Sparkles className="w-3.5 h-3.5 text-amber-200" />
         </>
       )}
     </Button>

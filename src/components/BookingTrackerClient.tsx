@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
@@ -8,7 +8,7 @@ const TrackingMapWrapper = dynamic(() => import('@/components/TrackingMapWrapper
 
 export default function BookingTrackerClient({ initialBooking }: { initialBooking: any }) {
   const [booking, setBooking] = useState(initialBooking);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     // Listen to changes on this specific booking row
@@ -47,7 +47,7 @@ export default function BookingTrackerClient({ initialBooking }: { initialBookin
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [booking.id, supabase]);
+  }, [booking.id]);
 
   const steps = ['requested', 'confirmed', 'in_progress', 'completed'];
   const normalizedStatus = (booking.status === 'pending' || !booking.status) ? 'requested' : booking.status;

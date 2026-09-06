@@ -4,12 +4,14 @@ import React, { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { createClient } from '@/lib/supabase/client';
 import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
+import { LandingServiceModal, LANDING_SERVICES, ServiceModalData } from '@/components/customer/LandingServiceModal';
 import './landing.css';
 
 export default function LandingPage() {
   const [lang, setLang] = useState('en');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
+  const [activeServiceModal, setActiveServiceModal] = useState<ServiceModalData | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -44,8 +46,8 @@ export default function LandingPage() {
   // If still checking authentication, show a clean loader instead of flashing the landing page
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#fbf7ef] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-[#e6aa3b] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -54,39 +56,37 @@ export default function LandingPage() {
     <>
 
     <div className="cursor-dot" aria-hidden="true"></div>
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200/80 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-2xs navbar" aria-label="Main navigation">
-      <div className="navbar-container">
-        <a className="brand" href="#home" aria-label="SharmNexus home">
-          <img src="/logo.png" alt="SharmNexus" className="nav-logo-img" />
-          <span className="brand-text">Sharm<span>Nexus</span></span>
-        </a>
-        <div className="nav-links">
-          <a href="#how-it-works" data-i18n="nav_how">How it works</a>
-          <a href="#services" data-i18n="nav_services">Services</a>
-          <a href="#communities" data-i18n="nav_communities">For communities</a>
-          <a href="#cooperatives" data-i18n="nav_cooperatives">For cooperatives</a>
-        </div>
-        <div className="nav-actions">
-          <select id="nav-language-select" aria-label="Choose language">
-            <option value="en">EN</option>
-            <option value="hi">हिंदी</option>
-            <option value="bn">বাংলা</option>
-            <option value="mr">मराठी</option>
-            <option value="ta">தமிழ்</option>
-            <option value="te">తెలుగు</option>
-          </select>
-          <a className="text-link" href="/auth/login" data-i18n="nav_login">Log in</a>
-          <a className="button button-dark button-small" href="/auth/login">
-            <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
-          </a>
-        </div>
-        <button className="menu-toggle" aria-label="Open menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+    <nav className="navbar" aria-label="Main navigation">
+      <a className="brand" href="#home" aria-label="SharmNexus home">
+        <img src="/logo.png" alt="SharmNexus" className="nav-logo-img" />
+        <span className="brand-text">Sharm<span>Nexus</span></span>
+      </a>
+      <div className="nav-links">
+        <a href="#how-it-works" data-i18n="nav_how">How it works</a>
+        <a href="#services" data-i18n="nav_services">Services</a>
+        <a href="#communities" data-i18n="nav_communities">For communities</a>
+        <a href="#cooperatives" data-i18n="nav_cooperatives">For cooperatives</a>
       </div>
-    </header>
+      <div className="nav-actions">
+        <select id="nav-language-select" aria-label="Choose language" defaultValue="en">
+          <option value="en">EN</option>
+          <option value="hi">हिंदी</option>
+          <option value="bn">বাংলা</option>
+          <option value="mr">मराठी</option>
+          <option value="ta">தமிழ்</option>
+          <option value="te">తెలుగు</option>
+        </select>
+        <a className="text-link" href="/auth/login" data-i18n="nav_login">Log in</a>
+        <a className="button button-dark button-small" href="/auth/login">
+          <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
+        </a>
+      </div>
+      <button className="menu-toggle" aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </nav>
 
     <main>
         <section className="hero" id="home">
@@ -114,7 +114,16 @@ export default function LandingPage() {
                         <div className="match-card">
                             <div className="match-head"><div className="worker-avatar">RK</div><div><h3>Raj Kumar</h3><p>Verified Plumber</p></div><span className="verified-badge">✓ Verified</span></div>
                             <div className="match-details"><span>★ <b>4.8</b> rating</span><span>⌖ 1.8 km away</span><span className="available"><i></i> Available today</span></div>
-                            <div className="match-foot"><div><small>MATCH SCORE</small><strong>94%</strong></div><a className="button button-dark button-small" href="/auth/login">Book now <span>↗</span></a></div>
+                            <div className="match-foot">
+                              <div><small>MATCH SCORE</small><strong>94%</strong></div>
+                              <button
+                                type="button"
+                                className="button button-dark button-small"
+                                onClick={() => setActiveServiceModal(LANDING_SERVICES.plumbing)}
+                              >
+                                Book now <span>↗</span>
+                              </button>
+                            </div>
                         </div>
                         <div className="mini-stats"><div><small>NETWORK RATING</small><strong>4.8 <span>★</span></strong></div><div><small>SERVICES COMPLETED</small><strong>25k<span>+</span></strong></div><div><small>COOPERATIVES</small><strong>50<span>+</span></strong></div></div>
                     </div>
@@ -132,7 +141,134 @@ export default function LandingPage() {
             <div className="transformation"><div className="before-card"><span className="card-tag">TODAY</span><h3>Great skills, disconnected</h3><ul><li>Unpredictable job opportunities</li><li>No portable digital reputation</li><li>Households unsure whom to trust</li><li>Limited access to welfare support</li></ul></div><div className="transform-arrow">→</div><div className="after-card"><span className="card-tag">WITH SHARMNEXUS</span><h3>A stronger local network</h3><ul><li>Verified worker profiles and ratings</li><li>Fair, transparent bookings</li><li>Cooperative-owned workforce data</li><li>Training, insurance, and welfare access</li></ul></div></div>
         </section>
 
-        <section className="services section-pad" id="services"><div className="section-kicker" data-i18n="services_kicker">EVERYDAY HELP, CLOSE TO HOME</div><div className="section-heading-row"><h2 data-i18n-html="services_h2">Whatever you need,<br /><em>someone nearby can help.</em></h2><a className="arrow-link" href="/services"><span data-i18n="services_explore">Explore all services</span> ↗</a></div><div className="service-grid"><a className="service-card service-featured" href="/services"><img src="/plumbing.jfif" alt="Plumbing repair service" /><div className="service-overlay"><span>01</span><h3 data-i18n="svc_plumbing_t">Plumbing</h3><p data-i18n="svc_plumbing_d">Repairs, fittings & maintenance</p></div></a><a className="service-card" href="/services"><img src="/electral.jfif" alt="Electrical repair service" /><div className="service-overlay"><span>02</span><h3 data-i18n="svc_electrical_t">Electrical</h3><p data-i18n="svc_electrical_d">Repairs & installation</p></div></a><a className="service-card" href="/services"><img src="/cleaning.jfif" alt="Home cleaning service" /><div className="service-overlay"><span>03</span><h3 data-i18n="svc_cleaning_t">Cleaning</h3><p data-i18n="svc_cleaning_d">Home & office care</p></div></a><a className="service-card" href="/services"><img src="/caregiving.jfif" alt="Caregiving service" /><div className="service-overlay"><span>04</span><h3 data-i18n="svc_caregiving_t">Caregiving</h3><p data-i18n="svc_caregiving_d">Support when it matters</p></div></a><a className="service-card" href="/services"><img src="/carpentry.jfif" alt="Carpentry and furniture service" /><div className="service-overlay"><span>05</span><h3 data-i18n="svc_carpentry_t">Carpentry</h3><p data-i18n="svc_carpentry_d">Furniture & repairs</p></div></a><a className="service-card" href="/services"><img src="/driving.jfif" alt="Driving and delivery service" /><div className="service-overlay"><span>06</span><h3 data-i18n="svc_driving_t">Driving</h3><p data-i18n="svc_driving_d">Transport & delivery</p></div></a><a className="service-card" href="/services"><img src="/gardening.jfif" alt="Gardening and landscaping service" /><div className="service-overlay"><span>07</span><h3 data-i18n="svc_gardening_t">Gardening</h3><p data-i18n="svc_gardening_d">Landscaping & maintenance</p></div></a><a className="service-card" href="/services"><img src="/technician.jfif" alt="Technical repair and support service" /><div className="service-overlay"><span>08</span><h3 data-i18n="svc_technician_t">Technician</h3><p data-i18n="svc_technician_d">Tech repair & support</p></div></a></div></section>
+        <section className="services section-pad" id="services">
+          <div className="section-kicker" data-i18n="services_kicker">EVERYDAY HELP, CLOSE TO HOME</div>
+          <div className="section-heading-row">
+            <h2 data-i18n-html="services_h2">Whatever you need,<br /><em>someone nearby can help.</em></h2>
+            <a className="arrow-link" href="/services"><span data-i18n="services_explore">Explore all services</span> ↗</a>
+          </div>
+          <div className="service-grid">
+            <div 
+              className="service-card service-featured cursor-pointer" 
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveServiceModal(LANDING_SERVICES.plumbing)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.plumbing); }}
+            >
+              <img src="/plumbing.jfif" alt="Plumbing repair service" />
+              <div className="service-overlay">
+                <span>01</span>
+                <h3 data-i18n="svc_plumbing_t">Plumbing</h3>
+                <p data-i18n="svc_plumbing_d">Repairs, fittings & maintenance</p>
+              </div>
+            </div>
+
+            <div 
+              className="service-card cursor-pointer" 
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveServiceModal(LANDING_SERVICES.electrical)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.electrical); }}
+            >
+              <img src="/electral.jfif" alt="Electrical repair service" />
+              <div className="service-overlay">
+                <span>02</span>
+                <h3 data-i18n="svc_electrical_t">Electrical</h3>
+                <p data-i18n="svc_electrical_d">Repairs & installation</p>
+              </div>
+            </div>
+
+            <div 
+              className="service-card cursor-pointer" 
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveServiceModal(LANDING_SERVICES.cleaning)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.cleaning); }}
+            >
+              <img src="/cleaning.jfif" alt="Home cleaning service" />
+              <div className="service-overlay">
+                <span>03</span>
+                <h3 data-i18n="svc_cleaning_t">Cleaning</h3>
+                <p data-i18n="svc_cleaning_d">Home & office care</p>
+              </div>
+            </div>
+
+            <div 
+              className="service-card cursor-pointer" 
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveServiceModal(LANDING_SERVICES.caregiving)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.caregiving); }}
+            >
+              <img src="/caregiving.jfif" alt="Caregiving service" />
+              <div className="service-overlay">
+                <span>04</span>
+                <h3 data-i18n="svc_caregiving_t">Caregiving</h3>
+                <p data-i18n="svc_caregiving_d">Support when it matters</p>
+              </div>
+            </div>
+
+            <div 
+              className="service-card cursor-pointer" 
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveServiceModal(LANDING_SERVICES.carpentry)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.carpentry); }}
+            >
+              <img src="/carpentry.jfif" alt="Carpentry and furniture service" />
+              <div className="service-overlay">
+                <span>05</span>
+                <h3 data-i18n="svc_carpentry_t">Carpentry</h3>
+                <p data-i18n="svc_carpentry_d">Furniture & repairs</p>
+              </div>
+            </div>
+
+            <div 
+              className="service-card cursor-pointer" 
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveServiceModal(LANDING_SERVICES.driving)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.driving); }}
+            >
+              <img src="/driving.jfif" alt="Driving and delivery service" />
+              <div className="service-overlay">
+                <span>06</span>
+                <h3 data-i18n="svc_driving_t">Driving</h3>
+                <p data-i18n="svc_driving_d">Transport & delivery</p>
+              </div>
+            </div>
+
+            <div 
+              className="service-card cursor-pointer" 
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveServiceModal(LANDING_SERVICES.gardening)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.gardening); }}
+            >
+              <img src="/gardening.jfif" alt="Gardening and landscaping service" />
+              <div className="service-overlay">
+                <span>07</span>
+                <h3 data-i18n="svc_gardening_t">Gardening</h3>
+                <p data-i18n="svc_gardening_d">Landscaping & maintenance</p>
+              </div>
+            </div>
+
+            <div 
+              className="service-card cursor-pointer" 
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveServiceModal(LANDING_SERVICES.technician)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.technician); }}
+            >
+              <img src="/technician.jfif" alt="Technical repair and support service" />
+              <div className="service-overlay">
+                <span>08</span>
+                <h3 data-i18n="svc_technician_t">Technician</h3>
+                <p data-i18n="svc_technician_d">Tech repair & support</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="service-map-section section-pad" id="nearby-services"><div className="map-heading"><div><div className="section-kicker" data-i18n="map_kicker">LIVE LOCAL NETWORK</div><h2 data-i18n="map_h2">Services around you.</h2><p data-i18n="map_p">Explore verified workers, active bookings, and areas with rising demand.</p></div><button className="map-location-button" id="use-location" type="button">⌖ <span data-i18n="map_locbtn">Use my location</span></button></div><div className="map-layout"><div className="map-card"><div id="service-map" aria-label="Interactive map showing SharmNexus services around Jaipur"></div><div className="map-attribution-note">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div></div><div className="map-legend" aria-label="Map filters"><button className="legend-item is-active" data-category="worker" type="button"><i className="legend-dot dot-green"></i><span data-i18n="legend_workers">Available workers</span><b>12</b></button><button className="legend-item is-active" data-category="booking" type="button"><i className="legend-dot dot-terracotta"></i><span data-i18n="legend_bookings">Active bookings</span><b>8</b></button><button className="legend-item is-active" data-category="demand" type="button"><i className="legend-dot dot-red"></i><span data-i18n="legend_demand">High-demand zones</span><b>3</b></button><button className="legend-item is-active" data-category="request" type="button"><i className="legend-dot dot-orange"></i><span data-i18n="legend_requests">Customer requests</span><b>6</b></button></div></div><div className="demand-zone"><span>📍 <b>Zone A</b></span><div><strong>High Demand Zone</strong><small>Plumbing demand +23%</small></div><span>Available workers: <b>8</b></span></div></section>
 
@@ -183,6 +319,12 @@ export default function LandingPage() {
 
 
 
+
+      {/* Dynamic Service Booking Modal */}
+      <LandingServiceModal
+        service={activeServiceModal}
+        onClose={() => setActiveServiceModal(null)}
+      />
 
       <div id="google_translate_element" style={{ display: 'none' }}></div>
       <Script src="/js/script.js" strategy="afterInteractive" />

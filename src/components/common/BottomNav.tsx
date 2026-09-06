@@ -79,14 +79,14 @@ export function BottomNav() {
               className={cn(
                 'relative flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
                 isActive
-                  ? 'text-emerald-700 font-bold'
+                  ? 'text-[#24172f] font-bold'
                   : 'text-gray-500 hover:text-gray-900'
               )}
             >
               <div className="relative">
                 <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
                 {link.badge && (
-                  <span className="absolute -top-1 -right-2 bg-emerald-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
+                  <span className="absolute -top-1 -right-2 bg-[#e6aa3b] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
                     {link.badge}
                   </span>
                 )}

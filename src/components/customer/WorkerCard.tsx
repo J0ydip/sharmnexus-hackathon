@@ -91,28 +91,29 @@ export function WorkerCard({
         </div>
 
         {/* Stats Row: Rating, Jobs, Distance, Availability */}
-        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-gray-100 text-xs">
-          <div className="flex flex-col">
-            <span className="text-[10px] text-gray-400 font-medium">Rating & Jobs</span>
-            <div className="flex items-center gap-1 font-bold text-gray-800 mt-0.5">
-              <StarRating rating={worker.avg_rating} size="sm" showNumber={true} />
+        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-gray-100 text-xs items-start">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] text-gray-400 font-medium truncate">Rating & Jobs</span>
+            <div className="flex items-center gap-1 font-bold text-gray-800 mt-0.5 whitespace-nowrap">
+              <span className="text-amber-400 text-xs">★</span>
+              <span className="text-xs">{worker.avg_rating ? worker.avg_rating.toFixed(1) : 'New'}</span>
               <span className="text-[10px] text-gray-400 font-normal">({worker.total_jobs_completed})</span>
             </div>
           </div>
 
-          <div className="flex flex-col">
-            <span className="text-[10px] text-gray-400 font-medium">Proximity</span>
-            <div className="flex items-center gap-1 font-bold text-gray-800 mt-0.5">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] text-gray-400 font-medium truncate">Proximity</span>
+            <div className="flex items-center gap-1 font-bold text-gray-800 mt-0.5 whitespace-nowrap">
               <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
-              <span>{worker.approx_distance_km.toFixed(1)} km</span>
+              <span className="text-xs">{worker.approx_distance_km.toFixed(1)} km</span>
             </div>
           </div>
 
-          <div className="flex flex-col">
-            <span className="text-[10px] text-gray-400 font-medium">Availability</span>
-            <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] text-gray-400 font-medium truncate">Availability</span>
+            <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5 min-w-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="truncate">Available today</span>
+              <span className="text-xs truncate">Available</span>
             </div>
           </div>
         </div>

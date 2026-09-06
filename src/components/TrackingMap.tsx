@@ -39,6 +39,13 @@ export default function TrackingMap({ lat, lng, status }: { lat: number, lng: nu
         L.polyline([[lat, lng], [wLat, wLng]], { color: '#EAB308', dashArray: '5, 10' }).addTo(mapRef.current);
       }
     }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
   }, [lat, lng, status]);
 
   return <div id="tracking-map" className="w-full h-full rounded-xl z-0" />;

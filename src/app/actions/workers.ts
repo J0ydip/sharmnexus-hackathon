@@ -114,7 +114,7 @@ export async function createWorkerRegistration(data: {
       verification_status: 'verified',
       avg_rating: 4.8,
       total_jobs_completed: 0,
-      profile_photo_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.fullName)}&background=0D8ABC&color=fff`
+      profile_photo_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.fullName)}&background=24172f&color=fff`
     }, { onConflict: 'id' });
 
   if (workerError) {

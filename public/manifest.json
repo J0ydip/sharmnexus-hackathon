@@ -1,11 +1,11 @@
 {
-  "name": "SahayaK - Cooperative Gig Services",
-  "short_name": "SahayaK",
+  "name": "SharmNexus - Cooperative Gig Services",
+  "short_name": "SharmNexus",
   "description": "A cooperative-owned digital service marketplace connecting Labour Cooperative workers with households and institutions.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#059669",
+  "background_color": "#fbf7ef",
+  "theme_color": "#24172f",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
