@@ -71,7 +71,7 @@ export default function WorkerProfilePage() {
           </div>
           
           <div className="mt-6 border-t pt-4 w-full text-center">
-            <p className="text-xs text-gray-400">SharmNexus Official Worker Platform</p>
+            <p className="text-xs text-gray-400">ShramNexus Official Worker Platform</p>
           </div>
         </div>
       </div>

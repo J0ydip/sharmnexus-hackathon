@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Dashboard - ShramNexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="worker-dashboard.css">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="logo.png" alt="Logo" class="sidebar-logo">
+            <h2>Shram<span>Nexus</span></h2>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" data-target="view-dashboard" class="nav-item active"><span data-i18n="nav_dash"> Dashboard</span></a>
+            <a href="#" data-target="view-requests" class="nav-item"><span data-i18n="nav_req"> Job Requests</span> <span class="badge" id="req-badge">2</span></a>
+            <a href="#" data-target="view-jobs" class="nav-item"><span data-i18n="nav_jobs"> My Jobs</span></a>
+            <a href="#" data-target="view-earnings" class="nav-item"><span data-i18n="nav_earn"> Earnings</span></a>
+            <a href="#" data-target="view-reviews" class="nav-item"><span data-i18n="nav_rev"> Reviews</span></a>
+            <a href="#" data-target="view-notifications" class="nav-item"><span data-i18n="nav_notif"> Notifications</span> <span class="badge badge-red">1</span></a>
+            <a href="#" data-target="view-profile" class="nav-item"><span data-i18n="nav_prof"> My Profile</span></a>
+            <a href="#" data-target="view-verification" class="nav-item"><span data-i18n="nav_verif"> Verification</span></a>
+            <a href="#" id="btnLogout" class="nav-item text-red" style="margin-top: auto;"><span data-i18n="nav_logout">🚪 Logout</span></a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="mobile-menu-btn" id="mobileMenuBtn">☰</div>
+            
+            <div class="topbar-right">
+                <!-- Language Selector -->
+                <select id="nav-language-select" aria-label="Choose language" class="lang-select">
+                    <option value="en">EN</option>
+                    <option value="hi">हिंदी</option>
+                    <option value="bn">বাংলা</option>
+                    <option value="mr">मराठी</option>
+                    <option value="ta">தமிழ்</option>
+                    <option value="te">తెలుగు</option>
+                </select>
+
+                <div class="availability-toggle">
+                    <span id="avail-status-text" class="status-active" data-i18n="avail_online">🟢 Available for Work</span>
+                    <label class="switch">
+                        <input type="checkbox" id="avail-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="topbar-user">
+                    <div class="user-avatar" id="topbar-avatar">W</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- View: Dashboard -->
+        <div id="view-dashboard" class="dashboard-view active">
+            <div class="welcome-banner">
+                <div>
+                    <h1 id="welcome-name">Welcome back, Worker!</h1>
+                    <p>Here is what's happening with your services today.</p>
+                </div>
+                <div class="verification-badge verified">✓ Verified Professional</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Rating</h3>
+                    <div class="stat-val" id="stat-rating">★ 4.8</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Completed Jobs</h3>
+                    <div class="stat-val" id="stat-jobs">126</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Today's Earnings</h3>
+                    <div class="stat-val text-green" id="stat-earnings">₹ 1,450</div>
+                </div>
+            </div>
+
+            <h2 class="section-title mt-4">Recent Incoming Requests</h2>
+            <div id="recent-requests-container" class="requests-grid">
+                <!-- Rendered via JS -->
+            </div>
+        </div>
+
+        <!-- View: Job Requests -->
+        <div id="view-requests" class="dashboard-view">
+            <h1 class="page-title">Incoming Job Requests</h1>
+            <p class="page-subtitle">Review and accept customer requests.</p>
+            <div id="full-requests-container" class="requests-grid mt-4">
+                <!-- Rendered via JS -->
+            </div>
+        </div>
+
+        <!-- View: My Jobs -->
+        <div id="view-jobs" class="dashboard-view">
+            <h1 class="page-title">My Jobs</h1>
+            
+            <div class="tabs mt-4">
+                <button class="tab-btn active" data-tab="active-jobs">Active</button>
+                <button class="tab-btn" data-tab="pending-jobs">Pending</button>
+                <button class="tab-btn" data-tab="completed-jobs">Completed</button>
+            </div>
+
+            <div class="tab-content active" id="active-jobs">
+                <div id="active-jobs-container" class="requests-grid"></div>
+            </div>
+            <div class="tab-content" id="pending-jobs"><p class="text-muted">No pending jobs.</p></div>
+            <div class="tab-content" id="completed-jobs">
+                <div id="completed-jobs-container" class="requests-grid"></div>
+            </div>
+        </div>
+
+        <!-- View: Earnings -->
+        <div id="view-earnings" class="dashboard-view">
+            <h1 class="page-title">Earnings & Payments</h1>
+            <div class="stats-grid mt-4">
+                <div class="stat-card"><h3>This Week</h3><div class="stat-val">₹ 4,200</div></div>
+                <div class="stat-card"><h3>This Month</h3><div class="stat-val">₹ 18,450</div></div>
+                <div class="stat-card"><h3>Pending Payments</h3><div class="stat-val text-red">₹ 850</div></div>
+            </div>
+            <h2 class="section-title mt-4">Recent Transactions</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead><tr><th>Customer</th><th>Service</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody>
+                        <tr><td>Priya Sharma</td><td>Plumbing Repair</td><td>Today</td><td>₹ 450</td><td><span class="status-badge success">Paid</span></td></tr>
+                        <tr><td>Rahul Verma</td><td>Pipe Fitting</td><td>Yesterday</td><td>₹ 1,000</td><td><span class="status-badge success">Paid</span></td></tr>
+                        <tr><td>Amit Singh</td><td>Water Leak</td><td>Aug 22</td><td>₹ 850</td><td><span class="status-badge warning">Pending</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- View: Profile -->
+        <div id="view-profile" class="dashboard-view">
+            <h1 class="page-title">My Profile</h1>
+            <div class="card mt-4">
+                <form id="profile-form">
+                    <div class="form-grid">
+                        <div class="form-group"><label>Full Name</label><input type="text" id="p-name"></div>
+                        <div class="form-group"><label>Mobile</label><input type="tel" id="p-phone"></div>
+                        <div class="form-group"><label>Main Skill</label><input type="text" id="p-skill"></div>
+                        <div class="form-group"><label>Years of Experience</label><input type="number" id="p-exp"></div>
+                        <div class="form-group"><label>Expected Starting Price (₹)</label><input type="number" id="p-price"></div>
+                        <div class="form-group"><label>Service Area / City</label><input type="text" id="p-loc"></div>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label>Short Bio</label>
+                        <textarea rows="3" id="p-bio" placeholder="Describe your expertise..."></textarea>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label>Languages Known</label>
+                        <input type="text" id="p-lang" placeholder="e.g., Hindi, English">
+                    </div>
+                    <button type="submit" class="btn btn-gold mt-4">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- View: Reviews -->
+        <div id="view-reviews" class="dashboard-view">
+            <h1 class="page-title">Customer Reviews</h1>
+            <div class="review-avg card mt-4">
+                <h2>⭐ 4.8 / 5</h2>
+                <p>Based on 126 completed jobs</p>
+            </div>
+            <div class="reviews-list mt-4">
+                <div class="review-card">
+                    <div class="review-head"><strong>Priya Sharma</strong><span class="stars">★★★★★</span></div>
+                    <small>Plumbing Repair • 2 days ago</small>
+                    <p class="mt-2">Excellent work, very professional and arrived on time.</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-head"><strong>Rahul Verma</strong><span class="stars">★★★★☆</span></div>
+                    <small>Pipe Fitting • 1 week ago</small>
+                    <p class="mt-2">Good job fixing the pipes. Cleaned up afterwards.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Notifications -->
+        <div id="view-notifications" class="dashboard-view">
+            <h1 class="page-title">Notifications</h1>
+            <div class="notification-list mt-4">
+                <div class="notification-card unread">
+                    <div class="notif-icon">💰</div>
+                    <div class="notif-content">
+                        <strong>Payment Received</strong>
+                        <p>You received ₹450 from Priya Sharma.</p>
+                        <small>2 hours ago</small>
+                    </div>
+                </div>
+                <div class="notification-card">
+                    <div class="notif-icon">☆</div>
+                    <div class="notif-content">
+                        <strong>New Review</strong>
+                        <p>Rahul Verma left a 4-star review.</p>
+                        <small>1 day ago</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Verification -->
+        <div id="view-verification" class="dashboard-view">
+            <h1 class="page-title">Worker Verification</h1>
+            <div class="card mt-4 text-center">
+                <div class="verification-status-large verified">
+                    <span class="v-icon">✓</span>
+                    <h2>Status: Verified</h2>
+                    <p>Your Aadhaar and PAN documents have been verified.</p>
+                </div>
+                <div class="divider mt-4"></div>
+                <h3 class="text-left mt-2">Update Documents</h3>
+                <div class="form-group text-left mt-2">
+                    <label>Government ID Number (Aadhaar)</label>
+                    <input type="text" value="[Aadhaar Redacted]" readonly disabled style="background: #f0f0f0;">
+                </div>
+                <button class="btn btn-dark mt-4" onclick="alert('Upload system simulated.')">Upload New Documents</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Chat Modal -->
+    <div id="chat-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content chat-content">
+            <div class="chat-header">
+                <h3 id="chat-customer-name">Customer Name</h3>
+                <button class="close-btn" id="close-chat">✕</button>
+            </div>
+            <div class="chat-body" id="chat-messages">
+                <div class="msg received">Hello, are you available today?</div>
+                <div class="msg sent">Yes, I am available. I can reach your location in 30 minutes.</div>
+            </div>
+            <div class="chat-footer">
+                <input type="text" id="chat-input" placeholder="Type a message...">
+                <button class="btn btn-gold" id="btn-send-msg">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Action Successful</div>
+
+    <script src="worker-dashboard.js"></script>
+</body>
+</html>

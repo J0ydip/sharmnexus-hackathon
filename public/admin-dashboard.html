@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SharmNexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin-dashboard.css">
+    <!-- Chart.js for Earnings -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="admin-dashboard-body">
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <img src="../logo.png" alt="SharmNexus" class="sidebar-logo" onerror="this.style.display='none'">
+            <h2>Sharm<span>Nexus</span></h2>
+        </div>
+        <div class="admin-badge-container">
+            <span class="admin-badge">System Administrator</span>
+        </div>
+        
+        <nav class="sidebar-nav mt-4">
+            <a href="#" data-target="view-overview" class="nav-item active">📊 Platform Overview</a>
+            <a href="#" data-target="view-customers" class="nav-item">👥 Customers</a>
+            <a href="#" data-target="view-workers" class="nav-item">👷‍♂️ Workers</a>
+            <a href="#" data-target="view-bookings" class="nav-item">🧾 Bookings</a>
+            <a href="#" data-target="view-earnings" class="nav-item">💰 Earnings</a>
+            <a href="#" data-target="view-reviews" class="nav-item">⭐ Reviews</a>
+            
+            <a href="#" id="admin-logout" class="nav-item text-red" style="margin-top: auto;">🚪 Secure Logout</a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        
+        <!-- Header -->
+        <header class="admin-topbar">
+            <div>
+                <h1 class="topbar-title">Admin Console</h1>
+                <p class="text-muted" style="font-size: 0.85rem;">SharmNexus Master Control</p>
+            </div>
+            <div class="topbar-profile">
+                <div class="topbar-avatar">A</div>
+                <div class="topbar-user-info">
+                    <strong>Super Admin</strong>
+                    <small>admin@sharmnexus.com</small>
+                </div>
+            </div>
+        </header>
+
+        <div class="admin-content-area">
+
+            <!-- 1. OVERVIEW VIEW -->
+            <div id="view-overview" class="admin-view active">
+                
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <!-- Customers -->
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: var(--mint); color: var(--green);">👥</div>
+                        <div class="kpi-details">
+                            <p>Total Customers</p>
+                            <h3>14,250</h3>
+                            <span class="kpi-trend up">↑ 12% this month</span>
+                        </div>
+                    </div>
+                    <!-- Workers -->
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: var(--gold-soft); color: #9b6b14;">👷‍♂️</div>
+                        <div class="kpi-details">
+                            <p>Verified Workers</p>
+                            <h3>5,120</h3>
+                            <span class="kpi-trend up">↑ 5% this month</span>
+                        </div>
+                    </div>
+                    <!-- Bookings -->
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #e6e0f8; color: var(--violet);">🧾</div>
+                        <div class="kpi-details">
+                            <p>Total Bookings</p>
+                            <h3>82,400</h3>
+                            <span class="kpi-trend up">↑ 18% this month</span>
+                        </div>
+                    </div>
+                    <!-- Earnings -->
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #f5d9cf; color: var(--terracotta);">💰</div>
+                        <div class="kpi-details">
+                            <p>Platform Commission</p>
+                            <h3>₹ 4.2M</h3>
+                            <span class="kpi-trend up">↑ 22% this month</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-split mt-4">
+                    <!-- Left: Recent Bookings -->
+                    <div class="card split-left">
+                        <div class="card-header">
+                            <h2>Live Bookings</h2>
+                            <button class="btn-link" onclick="switchAdminTab('view-bookings')">View All</button>
+                        </div>
+                        <div class="table-container mt-2">
+                            <table class="admin-table">
+                                <thead><tr><th>ID</th><th>Service</th><th>Amount</th><th>Status</th></tr></thead>
+                                <tbody>
+                                    <tr><td>#SNX-992</td><td>Plumbing</td><td>₹ 450</td><td><span class="badge badge-ongoing">Ongoing</span></td></tr>
+                                    <tr><td>#SNX-991</td><td>Cleaning</td><td>₹ 800</td><td><span class="badge badge-pending">Pending</span></td></tr>
+                                    <tr><td>#SNX-990</td><td>Electrician</td><td>₹ 350</td><td><span class="badge badge-success">Completed</span></td></tr>
+                                    <tr><td>#SNX-989</td><td>Caregiving</td><td>₹ 1200</td><td><span class="badge badge-ongoing">Ongoing</span></td></tr>
+                                    <tr><td>#SNX-988</td><td>Driver</td><td>₹ 500</td><td><span class="badge badge-cancelled">Cancelled</span></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right: Activity Timeline -->
+                    <div class="card split-right">
+                        <div class="card-header">
+                            <h2>Recent Activity</h2>
+                        </div>
+                        <div class="timeline mt-4">
+                            <div class="timeline-item">
+                                <div class="timeline-dot bg-green"></div>
+                                <div class="timeline-content">
+                                    <strong>New Worker Verified</strong>
+                                    <p>Raj Kumar (Plumber) passed background check.</p>
+                                    <small>10 mins ago</small>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot bg-gold"></div>
+                                <div class="timeline-content">
+                                    <strong>Payment Processed</strong>
+                                    <p>Platform collected commission for #SNX-990.</p>
+                                    <small>25 mins ago</small>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot bg-violet"></div>
+                                <div class="timeline-content">
+                                    <strong>New Customer</strong>
+                                    <p>Priya Sharma created an account.</p>
+                                    <small>1 hour ago</small>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot bg-red"></div>
+                                <div class="timeline-content">
+                                    <strong>Booking Cancelled</strong>
+                                    <p>Booking #SNX-988 cancelled by customer.</p>
+                                    <small>2 hours ago</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. EARNINGS VIEW -->
+            <div id="view-earnings" class="admin-view">
+                <div class="card-header mb-4">
+                    <h1 class="page-title">Financial Overview</h1>
+                    <div class="chart-filters">
+                        <button class="btn btn-outline active" data-range="7D">7 Days</button>
+                        <button class="btn btn-outline" data-range="30D">30 Days</button>
+                        <button class="btn btn-outline" data-range="6M">6 Months</button>
+                        <button class="btn btn-outline" data-range="1Y">1 Year</button>
+                    </div>
+                </div>
+
+                <div class="kpi-grid mb-4">
+                    <div class="kpi-card"><h3>Total Platform Vol.</h3><h2 class="mt-1">₹ 21.5M</h2></div>
+                    <div class="kpi-card"><h3>Platform Commission</h3><h2 class="mt-1 text-green">₹ 4.2M</h2><small class="text-muted">~19.5% Avg Take</small></div>
+                    <div class="kpi-card"><h3>Worker Payouts</h3><h2 class="mt-1 text-terracotta">₹ 17.3M</h2></div>
+                    <div class="kpi-card"><h3>Today's Commission</h3><h2 class="mt-1 text-violet">₹ 14,250</h2></div>
+                </div>
+
+                <div class="card">
+                    <canvas id="earningsChart" height="100"></canvas>
+                </div>
+            </div>
+
+            <!-- 3. CUSTOMERS VIEW -->
+            <div id="view-customers" class="admin-view">
+                <h1 class="page-title mb-4">Customer Directory</h1>
+                <div class="card table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Name</th><th>Email</th><th>Total Bookings</th><th>Spent</th><th>Status</th><th>Join Date</th></tr></thead>
+                        <tbody id="customers-tbody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. WORKERS VIEW -->
+            <div id="view-workers" class="admin-view">
+                <h1 class="page-title mb-4">Worker Directory</h1>
+                <div class="card table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Name</th><th>Category</th><th>Completed Jobs</th><th>Earnings</th><th>Verification</th><th>Status</th></tr></thead>
+                        <tbody id="workers-tbody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 5. REVIEWS VIEW -->
+            <div id="view-reviews" class="admin-view">
+                <h1 class="page-title mb-4">Platform Reviews</h1>
+                
+                <div class="dashboard-split mb-4">
+                    <div class="card split-left text-center">
+                        <h2 style="font-size: 3rem; color: var(--gold);">4.7</h2>
+                        <div class="stars mb-2" style="font-size: 1.5rem; color: var(--gold);">★★★★★</div>
+                        <p class="text-muted">Platform Average based on 64,200 reviews</p>
+                    </div>
+                    <div class="card split-right">
+                        <div class="rating-bar"><span class="label">5 Star</span><div class="bar-track"><div class="bar-fill bg-gold" style="width: 78%"></div></div><span class="pct">78%</span></div>
+                        <div class="rating-bar"><span class="label">4 Star</span><div class="bar-track"><div class="bar-fill bg-mint" style="width: 15%"></div></div><span class="pct">15%</span></div>
+                        <div class="rating-bar"><span class="label">3 Star</span><div class="bar-track"><div class="bar-fill bg-violet" style="width: 5%"></div></div><span class="pct">5%</span></div>
+                        <div class="rating-bar"><span class="label">2 Star</span><div class="bar-track"><div class="bar-fill bg-terracotta" style="width: 1%"></div></div><span class="pct">1%</span></div>
+                        <div class="rating-bar"><span class="label">1 Star</span><div class="bar-track"><div class="bar-fill bg-red" style="width: 1%"></div></div><span class="pct">1%</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h2>Recent Reviews</h2></div>
+                    <div class="table-container mt-2">
+                        <table class="admin-table">
+                            <thead><tr><th>Customer</th><th>Worker</th><th>Service</th><th>Rating</th><th>Review</th><th>Date</th></tr></thead>
+                            <tbody id="reviews-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. BOOKINGS VIEW -->
+            <div id="view-bookings" class="admin-view">
+                <h1 class="page-title mb-4">All Bookings</h1>
+                <div class="card table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Booking ID</th><th>Customer</th><th>Worker</th><th>Service</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+                        <tbody id="bookings-tbody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="admin.js"></script>
+</body>
+</html>

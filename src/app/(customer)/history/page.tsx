@@ -30,7 +30,9 @@ import {
   Receipt,
   RotateCcw,
   Zap,
+  ShieldCheck,
 } from 'lucide-react';
+import { getBookingOtp } from '@/lib/utils';
 
 export default function HistoryPage() {
   const { bookings, updateBookingStatus, setBookingPaymentStatus, rateBooking } = useBookingStore();
@@ -91,7 +93,7 @@ export default function HistoryPage() {
               time_slot: 'Scheduled',
               estimated_price: b.estimated_price || 350,
               final_price: b.final_price || b.estimated_price || 350,
-              otp: '4892',
+              otp: getBookingOtp(b.id),
               payment_status: hasCompletedPayment ? 'completed' : 'pending',
               payment_method: hasCompletedPayment
                 ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
@@ -402,9 +404,16 @@ export default function HistoryPage() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {booking.status !== 'completed' && booking.status !== 'cancelled' && (
                     <>
+                      <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 rounded-xl px-2.5 py-1 text-xs text-amber-900 shadow-2xs">
+                        <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span className="text-[10px] uppercase font-bold text-amber-800">PIN:</span>
+                        <span className="font-mono font-black text-xs text-amber-950 bg-amber-100/90 px-1.5 py-0.5 rounded tracking-wider">
+                          {getBookingOtp(booking.id, booking.otp)}
+                        </span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleCancelBooking(booking.id)}

@@ -1,5 +1,5 @@
 /* ============================================================================
-   SHARMNEXUS — Auth Styles (Aligned with Brand Palette)
+   SHRAMNEXUS — Auth Styles (Aligned with Brand Palette)
    ============================================================================ */
 :root {
     --ink: #24172f;
@@ -46,7 +46,7 @@ html, body {
 }
 
 /* ============================================================================
-   Background Animation (SharmNexus Glow Orbs)
+   Background Animation (ShramNexus Glow Orbs)
    ============================================================================ */
 .background-animation {
     position: fixed;

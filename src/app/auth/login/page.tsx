@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { setAdminSession } from '@/app/actions/admin';
 import { toast } from 'sonner';
 import './auth.css';
 
@@ -58,6 +59,45 @@ export default function AuthPage() {
       toast.error('Please enter both email and password');
       return;
     }
+
+    const trimmedEmail = loginEmail.trim().toLowerCase();
+
+    // 🚨 SUPER ADMIN CREDENTIALS BYPASS 🚨
+    const isAdminEmail =
+      trimmedEmail === 'admin@shramnexus' ||
+      trimmedEmail === 'admin@shramnexus.com' ||
+      trimmedEmail === 'admin@sharmnexus' ||
+      trimmedEmail === 'admin@sharmnexus.com';
+
+    if (isAdminEmail && loginPassword === 'admin123') {
+      setIsLoading(true);
+      try {
+        await setAdminSession();
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {}
+        localStorage.setItem('shramnexus-admin-auth', 'true');
+        localStorage.setItem('sharmnexus-admin-auth', 'true');
+        const adminData = JSON.stringify({
+          isLoggedIn: true,
+          role: 'admin',
+          name: 'Super Admin',
+          email: 'admin@shramnexus.com',
+        });
+        localStorage.setItem('shramnexus-auth', adminData);
+        localStorage.setItem('sharmnexus-auth', adminData);
+        document.cookie = 'admin-session=true; path=/; max-age=86400';
+        toast.success('Welcome, Super Admin! Transporting to Admin Console...');
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 500);
+        return;
+      } catch (err) {
+        window.location.href = '/admin';
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ 
@@ -71,6 +111,18 @@ export default function AuthPage() {
       toast.success(`Successfully logged in as ${selectedRole.toUpperCase()}!`);
       const { data: { user } } = await supabase.auth.getUser();
       const role = user?.user_metadata?.user_type || selectedRole;
+
+      try {
+        const authPayload = JSON.stringify({
+          isLoggedIn: true,
+          role: role,
+          name: user?.user_metadata?.full_name || loginEmail.split('@')[0],
+          email: loginEmail,
+        });
+        localStorage.setItem('shramnexus-auth', authPayload);
+        localStorage.setItem('sharmnexus-auth', authPayload);
+      } catch (e) {}
+
       window.location.href = role === 'worker' ? '/worker-dashboard' : '/';
     } catch (err) {
       toast.error('An unexpected error occurred during login.');
@@ -188,7 +240,7 @@ export default function AuthPage() {
 
   return (
     <>
-      {/* Animated Background Orbs (SharmNexus Brand Glow) */}
+      {/* Animated Background Orbs (ShramNexus Brand Glow) */}
       <div className="background-animation">
         <div className="blob blob-1"></div>
         <div className="blob blob-2"></div>
@@ -211,7 +263,7 @@ export default function AuthPage() {
                   <path d="M12 2L2 7V12C2 18.627 12 23 12 23C12 23 22 18.627 22 12V7L12 2Z" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <h1 className="brand-title">SharmNexus</h1>
+              <h1 className="brand-title">ShramNexus</h1>
               <p className="brand-tagline">COOPERATIVE-POWERED SERVICE NETWORK</p>
             </div>
 
@@ -239,7 +291,7 @@ export default function AuthPage() {
           {/* Right Panel - Authentication Forms & Role Selector */}
           <div className="auth-panel auth-right" id="authRight">
             {/* Back to Home Button */}
-            <a href="/" className="back-to-home" title="Back to Home" aria-label="Go back to SharmNexus landing page">
+            <a href="/" className="back-to-home" title="Back to Home" aria-label="Go back to ShramNexus landing page">
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 10H1m0 0l8-8m-8 8l8 8"/>
               </svg>
@@ -400,7 +452,7 @@ export default function AuthPage() {
             {/* Signup Form Container */}
             <div className={`form-container ${!isLogin ? 'active' : ''}`} id="signupContainer">
               <div className="form-header">
-                <h2 className="form-title">Join SharmNexus</h2>
+                <h2 className="form-title">Join ShramNexus</h2>
                 <p className="form-subtitle">Create your network profile</p>
               </div>
 

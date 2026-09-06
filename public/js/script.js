@@ -1,5 +1,5 @@
 /* =========================================================
-   SHARMNEXUS — script.js
+   SHRAMNEXUS — script.js
    Rebuilt to match the actual markup in index.html.
    Sections:
      1. Custom cursor dot
@@ -184,7 +184,7 @@ const initScript = () => {
       nav_login: "Log in", nav_getstarted: "Get started",
       hero_eyebrow: "COOPERATIVE-POWERED SERVICE NETWORK",
       hero_h1: "Trusted help for every home.<br><em>Stronger opportunities</em> for every worker.",
-      hero_lede: "SharmNexus connects households with verified local professionals while helping labour cooperatives manage work, earnings, and welfare from one platform.",
+      hero_lede: "ShramNexus connects households with verified local professionals while helping labour cooperatives manage work, earnings, and welfare from one platform.",
       hero_cta_find: "Find a service", hero_cta_join: "Join as a worker",
       hero_proof_title: "Built around local trust", hero_proof_sub: "5,000+ skilled workers already in the network",
       trust_workers: "skilled workers", trust_services: "services completed", trust_coops: "cooperatives", trust_rating: "average rating",
@@ -205,14 +205,14 @@ const initScript = () => {
       map_locbtn: "Use my location",
       legend_workers: "Available workers", legend_bookings: "Active bookings",
       legend_demand: "High-demand zones", legend_requests: "Customer requests",
-      features_kicker: "THE SHARMNEXUS DIFFERENCE",
+      features_kicker: "THE SHRAMNEXUS DIFFERENCE",
       features_h2: "Everything you need.<br><em>One simple platform.</em>",
       feat_1: "Find verified<br>professionals", feat_2: "Location-based<br>matching", feat_3: "Easy scheduling",
       feat_4: "Secure digital<br>payments", feat_5: "Digital invoices", feat_6: "Ratings &<br>reviews",
       feat_7: "Service tracking", feat_8: "Emergency<br>booking",
       access_kicker: "DESIGNED FOR EVERYONE",
       access_h2: "Technology that speaks<br><em>your language.</em>",
-      access_explore: "Explore SharmNexus",
+      access_explore: "Explore ShramNexus",
       worker_kicker: "FOR SKILLED WORKERS",
       worker_h2: "Your skills deserve more<br><em>opportunities.</em>",
       worker_p: "Build your professional identity, discover jobs, grow your reputation, and access cooperative welfare benefits — all from one platform.",
@@ -243,7 +243,7 @@ const initScript = () => {
       nav_login: "लॉग इन करें", nav_getstarted: "शुरू करें",
       hero_eyebrow: "सहकारी-संचालित सेवा नेटवर्क",
       hero_h1: "हर घर के लिए भरोसेमंद मदद।<br><em>हर कामगार के लिए</em> बेहतर अवसर।",
-      hero_lede: "SharmNexus घरों को सत्यापित स्थानीय पेशेवरों से जोड़ता है, और श्रम सहकारी समितियों को काम, कमाई और कल्याण एक ही मंच से प्रबंधित करने में मदद करता है।",
+      hero_lede: "ShramNexus घरों को सत्यापित स्थानीय पेशेवरों से जोड़ता है, और श्रम सहकारी समितियों को काम, कमाई और कल्याण एक ही मंच से प्रबंधित करने में मदद करता है।",
       hero_cta_find: "सेवा खोजें", hero_cta_join: "कामगार के रूप में जुड़ें",
       hero_proof_title: "स्थानीय भरोसे पर आधारित", hero_proof_sub: "नेटवर्क में पहले से ही 5,000+ कुशल कामगार",
       trust_workers: "कुशल कामगार", trust_services: "पूरी की गई सेवाएँ", trust_coops: "सहकारी समितियाँ", trust_rating: "औसत रेटिंग",
@@ -264,14 +264,14 @@ const initScript = () => {
       map_locbtn: "मेरी लोकेशन का उपयोग करें",
       legend_workers: "उपलब्ध कामगार", legend_bookings: "सक्रिय बुकिंग",
       legend_demand: "उच्च-मांग वाले क्षेत्र", legend_requests: "ग्राहक अनुरोध",
-      features_kicker: "SHARMNEXUS की खासियत",
+      features_kicker: "SHRAMNEXUS की खासियत",
       features_h2: "आपको जो चाहिए, सब कुछ।<br><em>एक सरल मंच।</em>",
       feat_1: "सत्यापित<br>पेशेवर खोजें", feat_2: "लोकेशन-आधारित<br>मैचिंग", feat_3: "आसान शेड्यूलिंग",
       feat_4: "सुरक्षित डिजिटल<br>भुगतान", feat_5: "डिजिटल इनवॉइस", feat_6: "रेटिंग और<br>समीक्षाएँ",
       feat_7: "सेवा ट्रैकिंग", feat_8: "आपातकालीन<br>बुकिंग",
       access_kicker: "सभी के लिए डिज़ाइन किया गया",
       access_h2: "ऐसी तकनीक जो<br><em>आपकी भाषा बोलती है।</em>",
-      access_explore: "SharmNexus देखें",
+      access_explore: "ShramNexus देखें",
       worker_kicker: "कुशल कामगारों के लिए",
       worker_h2: "आपके हुनर के लिए<br><em>और भी अवसर।</em>",
       worker_p: "अपनी पेशेवर पहचान बनाएं, नए काम खोजें, अपनी प्रतिष्ठा बढ़ाएं, और एक ही मंच से सहकारी कल्याण लाभ पाएं।",
@@ -302,7 +302,7 @@ const initScript = () => {
       nav_login: "লগ ইন", nav_getstarted: "শুরু করুন",
       hero_eyebrow: "সমবায়-চালিত সেবা নেটওয়ার্ক",
       hero_h1: "প্রতিটি বাড়ির জন্য বিশ্বস্ত সহায়তা।<br><em>প্রতিটি কর্মীর জন্য</em> আরও ভালো সুযোগ।",
-      hero_lede: "SharmNexus পরিবারগুলোকে যাচাইকৃত স্থানীয় পেশাদারদের সাথে সংযুক্ত করে, এবং শ্রম সমবায়গুলোকে কাজ, আয় ও কল্যাণ একটি প্ল্যাটফর্ম থেকে পরিচালনা করতে সাহায্য করে।",
+      hero_lede: "ShramNexus পরিবারগুলোকে যাচাইকৃত স্থানীয় পেশাদারদের সাথে সংযুক্ত করে, এবং শ্রম সমবায়গুলোকে কাজ, আয় ও কল্যাণ একটি প্ল্যাটফর্ম থেকে পরিচালনা করতে সাহায্য করে।",
       hero_cta_find: "সেবা খুঁজুন", hero_cta_join: "কর্মী হিসেবে যোগ দিন",
       hero_proof_title: "স্থানীয় বিশ্বাসের ভিত্তিতে গড়া", hero_proof_sub: "নেটওয়ার্কে ইতিমধ্যে ৫,০০০+ দক্ষ কর্মী",
       trust_workers: "দক্ষ কর্মী", trust_services: "সম্পন্ন সেবা", trust_coops: "সমবায়", trust_rating: "গড় রেটিং",
@@ -323,14 +323,14 @@ const initScript = () => {
       map_locbtn: "আমার অবস্থান ব্যবহার করুন",
       legend_workers: "উপলব্ধ কর্মী", legend_bookings: "চলমান বুকিং",
       legend_demand: "উচ্চ-চাহিদা এলাকা", legend_requests: "গ্রাহক অনুরোধ",
-      features_kicker: "SHARMNEXUS-এর বৈশিষ্ট্য",
+      features_kicker: "SHRAMNEXUS-এর বৈশিষ্ট্য",
       features_h2: "আপনার প্রয়োজনীয় সবকিছু।<br><em>একটি সহজ প্ল্যাটফর্ম।</em>",
       feat_1: "যাচাইকৃত<br>পেশাদার খুঁজুন", feat_2: "অবস্থান-ভিত্তিক<br>ম্যাচিং", feat_3: "সহজ সময়সূচি",
       feat_4: "নিরাপদ ডিজিটাল<br>পেমেন্ট", feat_5: "ডিজিটাল চালান", feat_6: "রেটিং ও<br>রিভিউ",
       feat_7: "সেবা ট্র্যাকিং", feat_8: "জরুরি<br>বুকিং",
       access_kicker: "সবার জন্য ডিজাইন করা",
       access_h2: "প্রযুক্তি যা<br><em>আপনার ভাষায় কথা বলে।</em>",
-      access_explore: "SharmNexus দেখুন",
+      access_explore: "ShramNexus দেখুন",
       worker_kicker: "দক্ষ কর্মীদের জন্য",
       worker_h2: "আপনার দক্ষতার জন্য<br><em>আরও সুযোগ।</em>",
       worker_p: "আপনার পেশাদার পরিচয় গড়ুন, কাজ খুঁজুন, সুনাম বাড়ান, এবং একটি প্ল্যাটফর্ম থেকে সমবায় কল্যাণ সুবিধা পান।",
@@ -361,7 +361,7 @@ const initScript = () => {
       nav_login: "लॉग इन करा", nav_getstarted: "सुरुवात करा",
       hero_eyebrow: "सहकारी-चालित सेवा नेटवर्क",
       hero_h1: "प्रत्येक घरासाठी विश्वासार्ह मदत.<br><em>प्रत्येक कामगारासाठी</em> अधिक चांगल्या संधी.",
-      hero_lede: "SharmNexus घरांना पडताळणी केलेल्या स्थानिक व्यावसायिकांशी जोडते, आणि कामगार सहकारी संस्थांना काम, कमाई व कल्याण एकाच व्यासपीठावरून सांभाळण्यास मदत करते.",
+      hero_lede: "ShramNexus घरांना पडताळणी केलेल्या स्थानिक व्यावसायिकांशी जोडते, आणि कामगार सहकारी संस्थांना काम, कमाई व कल्याण एकाच व्यासपीठावरून सांभाळण्यास मदत करते.",
       hero_cta_find: "सेवा शोधा", hero_cta_join: "कामगार म्हणून सामील व्हा",
       hero_proof_title: "स्थानिक विश्वासावर आधारित", hero_proof_sub: "नेटवर्कमध्ये आधीच 5,000+ कुशल कामगार",
       trust_workers: "कुशल कामगार", trust_services: "पूर्ण झालेल्या सेवा", trust_coops: "सहकारी संस्था", trust_rating: "सरासरी रेटिंग",
@@ -382,14 +382,14 @@ const initScript = () => {
       map_locbtn: "माझे स्थान वापरा",
       legend_workers: "उपलब्ध कामगार", legend_bookings: "सक्रिय बुकिंग",
       legend_demand: "उच्च-मागणी क्षेत्र", legend_requests: "ग्राहक विनंत्या",
-      features_kicker: "SHARMNEXUS चे वैशिष्ट्य",
+      features_kicker: "SHRAMNEXUS चे वैशिष्ट्य",
       features_h2: "तुम्हाला हवे ते सर्व काही.<br><em>एक सोपे व्यासपीठ.</em>",
       feat_1: "पडताळणी केलेले<br>व्यावसायिक शोधा", feat_2: "स्थान-आधारित<br>जुळणी", feat_3: "सोपे वेळापत्रक",
       feat_4: "सुरक्षित डिजिटल<br>पेमेंट", feat_5: "डिजिटल इनव्हॉइस", feat_6: "रेटिंग व<br>पुनरावलोकने",
       feat_7: "सेवा ट्रॅकिंग", feat_8: "आपत्कालीन<br>बुकिंग",
       access_kicker: "सर्वांसाठी बनवलेले",
       access_h2: "तंत्रज्ञान जे<br><em>तुमची भाषा बोलते.</em>",
-      access_explore: "SharmNexus पहा",
+      access_explore: "ShramNexus पहा",
       worker_kicker: "कुशल कामगारांसाठी",
       worker_h2: "तुमच्या कौशल्यांसाठी<br><em>अधिक संधी.</em>",
       worker_p: "तुमची व्यावसायिक ओळख तयार करा, कामे शोधा, प्रतिष्ठा वाढवा, आणि एकाच व्यासपीठावरून सहकारी कल्याण लाभ मिळवा.",
@@ -420,7 +420,7 @@ const initScript = () => {
       nav_login: "உள்நுழைய", nav_getstarted: "தொடங்குங்கள்",
       hero_eyebrow: "கூட்டுறவு-இயங்கும் சேவை நெட்வொர்க்",
       hero_h1: "ஒவ்வொரு வீட்டிற்கும் நம்பகமான உதவி.<br><em>ஒவ்வொரு தொழிலாளிக்கும்</em> சிறந்த வாய்ப்புகள்.",
-      hero_lede: "SharmNexus வீடுகளை சரிபார்க்கப்பட்ட உள்ளூர் நிபுணர்களுடன் இணைக்கிறது, மேலும் தொழிலாளர் கூட்டுறவு சங்கங்கள் வேலை, வருமானம் மற்றும் நலனை ஒரே தளத்தில் நிர்வகிக்க உதவுகிறது.",
+      hero_lede: "ShramNexus வீடுகளை சரிபார்க்கப்பட்ட உள்ளூர் நிபுணர்களுடன் இணைக்கிறது, மேலும் தொழிலாளர் கூட்டுறவு சங்கங்கள் வேலை, வருமானம் மற்றும் நலனை ஒரே தளத்தில் நிர்வகிக்க உதவுகிறது.",
       hero_cta_find: "சேவையைத் தேடுங்கள்", hero_cta_join: "தொழிலாளியாக இணையுங்கள்",
       hero_proof_title: "உள்ளூர் நம்பிக்கையின் அடிப்படையில் கட்டமைக்கப்பட்டது", hero_proof_sub: "நெட்வொர்க்கில் ஏற்கனவே 5,000+ திறமையான தொழிலாளர்கள்",
       trust_workers: "திறமையான தொழிலாளர்கள்", trust_services: "முடிக்கப்பட்ட சேவைகள்", trust_coops: "கூட்டுறவு சங்கங்கள்", trust_rating: "சராசரி மதிப்பீடு",
@@ -441,14 +441,14 @@ const initScript = () => {
       map_locbtn: "எனது இருப்பிடத்தைப் பயன்படுத்தவும்",
       legend_workers: "கிடைக்கும் தொழிலாளர்கள்", legend_bookings: "நடப்பு முன்பதிவுகள்",
       legend_demand: "அதிக தேவை உள்ள பகுதிகள்", legend_requests: "வாடிக்கையாளர் கோரிக்கைகள்",
-      features_kicker: "SHARMNEXUS-இன் சிறப்பம்சம்",
+      features_kicker: "SHRAMNEXUS-இன் சிறப்பம்சம்",
       features_h2: "உங்களுக்குத் தேவையான அனைத்தும்.<br><em>ஒரு எளிய தளம்.</em>",
       feat_1: "சரிபார்க்கப்பட்ட<br>நிபுணர்களைக் கண்டறியவும்", feat_2: "இருப்பிடம் அடிப்படையிலான<br>பொருத்தம்", feat_3: "எளிதான திட்டமிடல்",
       feat_4: "பாதுகாப்பான டிஜிட்டல்<br>கட்டணம்", feat_5: "டிஜிட்டல் விலைப்பட்டியல்", feat_6: "மதிப்பீடுகள் மற்றும்<br>விமர்சனங்கள்",
       feat_7: "சேவை கண்காணிப்பு", feat_8: "அவசர<br>முன்பதிவு",
       access_kicker: "அனைவருக்குமான வடிவமைப்பு",
       access_h2: "உங்கள் மொழியில் பேசும்<br><em>தொழில்நுட்பம்.</em>",
-      access_explore: "SharmNexus-ஐ ஆராயுங்கள்",
+      access_explore: "ShramNexus-ஐ ஆராயுங்கள்",
       worker_kicker: "திறமையான தொழிலாளர்களுக்கு",
       worker_h2: "உங்கள் திறமைகளுக்கு<br><em>மேலும் வாய்ப்புகள்.</em>",
       worker_p: "உங்கள் தொழில்முறை அடையாளத்தை உருவாக்குங்கள், வேலைகளைக் கண்டறியுங்கள், நற்பெயரை வளர்த்துக்கொள்ளுங்கள், மேலும் ஒரே தளத்தில் கூட்டுறவு நலன் பலன்களைப் பெறுங்கள்.",
@@ -479,7 +479,7 @@ const initScript = () => {
       nav_login: "లాగిన్ చేయండి", nav_getstarted: "ప్రారంభించండి",
       hero_eyebrow: "సహకార-ఆధారిత సేవా నెట్‌వర్క్",
       hero_h1: "ప్రతి ఇంటికీ నమ్మకమైన సహాయం.<br><em>ప్రతి కార్మికుడికి</em> మెరుగైన అవకాశాలు.",
-      hero_lede: "SharmNexus ఇళ్లను ధృవీకరించిన స్థానిక నిపుణులతో కలుపుతుంది, మరియు కార్మిక సహకార సంఘాలు పని, ఆదాయం, సంక్షేమాన్ని ఒకే వేదిక నుండి నిర్వహించడంలో సహాయపడుతుంది.",
+      hero_lede: "ShramNexus ఇళ్లను ధృవీకరించిన స్థానిక నిపుణులతో కలుపుతుంది, మరియు కార్మిక సహకార సంఘాలు పని, ఆదాయం, సంక్షేమాన్ని ఒకే వేదిక నుండి నిర్వహించడంలో సహాయపడుతుంది.",
       hero_cta_find: "సేవను కనుగొనండి", hero_cta_join: "కార్మికుడిగా చేరండి",
       hero_proof_title: "స్థానిక నమ్మకంపై ఆధారపడి నిర్మించబడింది", hero_proof_sub: "నెట్‌వర్క్‌లో ఇప్పటికే 5,000+ నైపుణ్యం గల కార్మికులు",
       trust_workers: "నైపుణ్యం గల కార్మికులు", trust_services: "పూర్తయిన సేవలు", trust_coops: "సహకార సంఘాలు", trust_rating: "సగటు రేటింగ్",
@@ -500,14 +500,14 @@ const initScript = () => {
       map_locbtn: "నా స్థానాన్ని ఉపయోగించండి",
       legend_workers: "అందుబాటులో ఉన్న కార్మికులు", legend_bookings: "జరుగుతున్న బుకింగ్‌లు",
       legend_demand: "అధిక-డిమాండ్ ప్రాంతాలు", legend_requests: "కస్టమర్ అభ్యర్థనలు",
-      features_kicker: "SHARMNEXUS ప్రత్యేకత",
+      features_kicker: "SHRAMNEXUS ప్రత్యేకత",
       features_h2: "మీకు కావలసినవన్నీ.<br><em>ఒకే సరళమైన వేదిక.</em>",
       feat_1: "ధృవీకరించిన<br>నిపుణులను కనుగొనండి", feat_2: "స్థాన-ఆధారిత<br>మ్యాచింగ్", feat_3: "సులభమైన షెడ్యూలింగ్",
       feat_4: "సురక్షిత డిజిటల్<br>చెల్లింపులు", feat_5: "డిజిటల్ ఇన్వాయిస్‌లు", feat_6: "రేటింగ్‌లు &<br>సమీక్షలు",
       feat_7: "సేవా ట్రాకింగ్", feat_8: "అత్యవసర<br>బుకింగ్",
       access_kicker: "అందరి కోసం రూపొందించబడింది",
       access_h2: "మీ భాషలో మాట్లాడే<br><em>సాంకేతికత.</em>",
-      access_explore: "SharmNexusని అన్వేషించండి",
+      access_explore: "ShramNexusని అన్వేషించండి",
       worker_kicker: "నైపుణ్యం గల కార్మికుల కోసం",
       worker_h2: "మీ నైపుణ్యాలకు<br><em>మరిన్ని అవకాశాలు.</em>",
       worker_p: "మీ వృత్తిపరమైన గుర్తింపును నిర్మించండి, ఉద్యోగాలను కనుగొనండి, మీ ప్రతిష్టను పెంచుకోండి, మరియు ఒకే వేదిక నుండి సహకార సంక్షేమ ప్రయోజనాలను పొందండి.",
@@ -535,7 +535,7 @@ const initScript = () => {
     }
   };
 
-  const STORAGE_KEY = 'sharmnexus-lang';
+  const STORAGE_KEY = 'shramnexus-lang';
 
   function applyLanguage(lang) {
     const dict = translations[lang];
@@ -575,7 +575,7 @@ const initScript = () => {
   try { savedLang = localStorage.getItem(STORAGE_KEY) || 'en'; } catch (e) { /* ignore */ }
   if (translations[savedLang]) applyLanguage(savedLang);
 
-  console.log('✅ SharmNexus script.js loaded — cursor, counters, map, mobile nav, and 6-language switching are live.');
+  console.log('✅ ShramNexus script.js loaded — cursor, counters, map, mobile nav, and 6-language switching are live.');
 };
 
 if (typeof document !== 'undefined') {

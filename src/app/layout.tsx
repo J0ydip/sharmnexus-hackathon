@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'SharmNexus - Professional Services',
+  title: 'ShramNexus - Professional Services',
   description: 'Book verified professionals for your everyday needs.',
   manifest: '/manifest.json',
   icons: {

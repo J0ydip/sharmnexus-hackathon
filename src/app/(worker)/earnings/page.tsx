@@ -30,7 +30,7 @@ export default async function EarningsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Earnings Dashboard</h1>
-          <p className="text-xs text-gray-500">Transparent earnings and welfare splits powered by SharmNexus</p>
+          <p className="text-xs text-gray-500">Transparent earnings and welfare splits powered by ShramNexus</p>
         </div>
         <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200">
           ● Payouts Active

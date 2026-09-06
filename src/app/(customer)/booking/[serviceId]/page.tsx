@@ -14,6 +14,7 @@ import { WorkerProfile, Booking } from '@/lib/data/mockData';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { createBooking } from '@/app/actions/bookings';
+import { getBookingOtp } from '@/lib/utils';
 import {
   ArrowLeft,
   ArrowRight,
@@ -858,7 +859,7 @@ function BookingFlowContent({ params }: PageProps) {
                   </Button>
 
                   <p className="text-[10px] text-gray-400 text-center leading-relaxed">
-                    By confirming, you agree to SharmNexus Cooperative terms. Initial booking status will be set to <strong>Requested</strong>.
+                    By confirming, you agree to ShramNexus Cooperative terms. Initial booking status will be set to <strong>Requested</strong>.
                   </p>
                 </div>
               </div>
@@ -901,10 +902,13 @@ function BookingFlowContent({ params }: PageProps) {
                 <span className="text-gray-400">Scheduled Time:</span>
                 <span className="font-semibold text-emerald-700">{createdBooking.scheduled_at}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">OTP Code:</span>
-                <span className="font-mono font-extrabold text-emerald-700 text-sm bg-emerald-100/70 px-2 py-0.5 rounded">
-                  {createdBooking.otp}
+              <div className="flex justify-between items-center bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200/60">
+                <div>
+                  <span className="text-xs font-bold text-emerald-900 block">Completion PIN (OTP):</span>
+                  <span className="text-[10px] text-emerald-700">Share with worker only after job completion</span>
+                </div>
+                <span className="font-mono font-black text-emerald-800 text-base bg-white px-3 py-1 rounded-lg border border-emerald-300 tracking-wider">
+                  {createdBooking.otp || getBookingOtp(createdBooking.id)}
                 </span>
               </div>
               <div className="flex justify-between">

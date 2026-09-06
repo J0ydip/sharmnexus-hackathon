@@ -23,7 +23,7 @@ export function RazorpayPaymentButton({
   amount,
   customerName = 'Valued Customer',
   customerPhone = '+91 99887 76655',
-  customerEmail = 'customer@sharmnexus.org',
+  customerEmail = 'customer@shramnexus.org',
   serviceName = 'Cooperative Service',
   onPaymentSuccess,
   className = '',
@@ -69,9 +69,9 @@ export function RazorpayPaymentButton({
           key: orderRes.keyId,
           amount: orderRes.amount,
           currency: orderRes.currency || 'INR',
-          name: 'SharmNexus Cooperative',
+          name: 'ShramNexus Cooperative',
           description: `Payment for ${serviceName} (#${bookingId})`,
-          image: 'https://ui-avatars.com/api/?name=SharmNexus&background=24172f&color=fff',
+          image: 'https://ui-avatars.com/api/?name=ShramNexus&background=24172f&color=fff',
           order_id: orderRes.orderId,
           handler: async function (response: any) {
             toast.loading('Verifying payment and cooperative settlement...');

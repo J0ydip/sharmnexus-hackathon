@@ -115,7 +115,7 @@ export default function WorkerRegisterPage() {
         toast.error('Notice: Worker profile will sync upon login');
       }
 
-      toast.success('Worker registration complete! Welcome to SharmNexus.');
+      toast.success('Worker registration complete! Welcome to ShramNexus.');
       
       await supabase.auth.signInWithPassword({ email, password });
       window.location.href = '/worker-dashboard';
@@ -131,7 +131,7 @@ export default function WorkerRegisterPage() {
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center px-4">
         <Link href="/" className="inline-flex items-center gap-2 mb-4 text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium">
-          ← Back to SharmNexus Home
+          ← Back to ShramNexus Home
         </Link>
         <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30 mb-4">
           <span className="text-2xl font-black text-white">SN</span>
@@ -310,7 +310,7 @@ export default function WorkerRegisterPage() {
             <form onSubmit={handleFinalSubmit} className="space-y-5">
               <div className="border-b border-slate-700 pb-3 mb-4">
                 <h3 className="text-lg font-bold text-white">Step 3: Verification & Service Area</h3>
-                <p className="text-xs text-slate-400">Required to issue your verified SharmNexus Digital ID</p>
+                <p className="text-xs text-slate-400">Required to issue your verified ShramNexus Digital ID</p>
               </div>
 
               <div>
@@ -350,7 +350,7 @@ export default function WorkerRegisterPage() {
               </div>
 
               <div className="bg-blue-900/20 border border-blue-500/30 p-3.5 rounded-xl text-xs text-blue-200">
-                🛡️ <strong>Instant Digital ID Guarantee:</strong> Once submitted, your SharmNexus Digital ID will be activated and you can immediately receive customer requests!
+                🛡️ <strong>Instant Digital ID Guarantee:</strong> Once submitted, your ShramNexus Digital ID will be activated and you can immediately receive customer requests!
               </div>
 
               <div className="flex gap-3 pt-2">

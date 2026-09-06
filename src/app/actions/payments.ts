@@ -38,7 +38,7 @@ export async function createPaymentOrder(bookingId: string, amount: number) {
         receipt: `rcpt_${Date.now().toString().slice(-8)}`,
         notes: {
           booking_id: bookingId,
-          platform: 'SharmNexus Cooperative',
+          platform: 'ShramNexus Cooperative',
         },
       };
 
@@ -57,7 +57,7 @@ export async function createPaymentOrder(bookingId: string, amount: number) {
       return {
         success: true,
         isMock: true,
-        keyId: 'rzp_test_sharmnexus_demo',
+        keyId: 'rzp_test_shramnexus_demo',
         orderId: `order_sim_${Date.now()}`,
         amount: amountInPaise,
         currency: 'INR',
@@ -69,7 +69,7 @@ export async function createPaymentOrder(bookingId: string, amount: number) {
     return {
       success: true,
       isMock: true,
-      keyId: 'rzp_test_sharmnexus_demo',
+      keyId: 'rzp_test_shramnexus_demo',
       orderId: `order_sim_${Date.now()}`,
       amount: Math.round(amount * 100),
       currency: 'INR',

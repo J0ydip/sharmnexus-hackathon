@@ -1,6 +1,6 @@
-# 🤝 SharmNexus — Cooperative Gig Platform (SIH 2026 Problem Statement 26089)
+# 🤝 ShramNexus — Cooperative Gig Platform (SIH 2026 Problem Statement 26089)
 
-Welcome! Here is everything you need to see all the changes and updates made to the SharmNexus website.
+Welcome! Here is everything you need to see all the changes and updates made to the ShramNexus website.
 
 ---
 

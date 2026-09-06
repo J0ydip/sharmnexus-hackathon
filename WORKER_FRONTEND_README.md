@@ -1,4 +1,4 @@
-# 👷 SharmNexus Worker Portal — Frontend Architecture & Developer Guide
+# 👷 ShramNexus Worker Portal — Frontend Architecture & Developer Guide
 
 > **Smart India Hackathon (SIH 2026) — Problem Statement 26089**  
 > A dedicated, mobile-first Progressive Web App (PWA) for skilled cooperative gig workers (electricians, plumbers, carpenters, cleaners, caregivers, etc.) to manage job dispatches, live duty availability, on-site service lifecycles, and fair cooperative earnings.
@@ -65,7 +65,7 @@ The worker layout wraps all worker routes and provides:
 WorkerLayout (src/app/(worker)/layout.tsx)
 ├── Server Auth Guard: Checks user session and user_metadata.user_type === 'worker'
 ├── Sticky Top Header:
-│   ├── Platform title ("SharmNexus Worker")
+│   ├── Platform title ("ShramNexus Worker")
 │   ├── User avatar circle with first initial
 │   └── Logout button (<LogOutButton />)
 ├── Main Content Container:

@@ -9,6 +9,7 @@ import {
   INITIAL_DEMO_BOOKINGS,
 } from '@/lib/data/mockData';
 import { calculateFairMatchScore } from '@/lib/data/matchingAlgorithm';
+import { getBookingOtp } from '@/lib/utils';
 
 export interface BookingDraft {
   serviceCategoryId: string;
@@ -130,7 +131,7 @@ export const useBookingStore = create<BookingStoreState>()(
       createBookingFromDraft: () => {
         const { draft, bookings } = get();
         const newBookingId = `SN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-        const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
+        const bookingOtp = getBookingOtp(newBookingId);
 
         const newBooking: Booking = {
           id: newBookingId,
@@ -154,7 +155,7 @@ export const useBookingStore = create<BookingStoreState>()(
           time_slot: draft.timeSlot,
           estimated_price: draft.estimatedPrice,
           image_url: draft.imageUrl,
-          otp: randomOtp,
+          otp: bookingOtp,
           payment_status: 'pending',
           payment_method: 'Pay after service (Cash / UPI)',
           created_at: new Date().toISOString(),
@@ -237,7 +238,7 @@ export const useBookingStore = create<BookingStoreState>()(
       },
     }),
     {
-      name: 'sharmnexus-customer-store-v2',
+      name: 'shramnexus-customer-store-v2',
     }
   )
 );

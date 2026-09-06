@@ -79,3 +79,52 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
   revalidatePath('/earnings');
   revalidatePath('/history');
 }
+
+export async function getWorkerDashboardData() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  try {
+    const { data: worker } = await supabase
+      .from('workers')
+      .select('id, full_name, phone, email, is_verified, is_available, verification_status, avg_rating, total_jobs_completed, address')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const [requestsRes, activeRes, completedRes] = await Promise.all([
+      supabase
+        .from('bookings')
+        .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name), service_categories(name)')
+        .eq('status', 'requested')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabase
+        .from('bookings')
+        .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name), service_categories(name)')
+        .eq('worker_id', user.id)
+        .in('status', ['assigned', 'accepted', 'in_progress'])
+        .order('scheduled_at', { ascending: true }),
+      supabase
+        .from('bookings')
+        .select('id, status, estimated_price, final_price, description, address, scheduled_at, completed_at, created_at, customers(full_name), service_categories(name)')
+        .eq('worker_id', user.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(10),
+    ]);
+
+    return {
+      worker,
+      requests: requestsRes.data || [],
+      activeJobs: activeRes.data || [],
+      completedJobs: completedRes.data || [],
+    };
+  } catch (err) {
+    console.error('Error fetching worker dashboard data:', err);
+    return null;
+  }
+}

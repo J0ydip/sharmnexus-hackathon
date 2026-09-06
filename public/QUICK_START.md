@@ -1,4 +1,4 @@
-# 🚀 SharmNexus Landing Page - Quick Start Guide
+# 🚀 ShramNexus Landing Page - Quick Start Guide
 
 **Get your landing page up and running in 30 seconds!**
 
@@ -8,7 +8,7 @@
 
 1. **Open in Browser:**
    ```
-   sharmnexus-landing.html
+   shramnexus-landing.html
    ```
    → Double-click or drag into browser
 
@@ -44,10 +44,10 @@
 ## 📋 Files Included
 
 ```
-sharmnexus-landing.html     ← Main page (open this!)
-sharmnexus-landing.css      ← Styling (1000+ lines)
-sharmnexus-landing.js       ← JavaScript (400+ lines)
-SHARMNEXUS_README.md        ← Full documentation
+shramnexus-landing.html     ← Main page (open this!)
+shramnexus-landing.css      ← Styling (1000+ lines)
+shramnexus-landing.js       ← JavaScript (400+ lines)
+SHRAMNEXUS_README.md        ← Full documentation
 QUICK_START.md              ← This file
 ```
 
@@ -96,12 +96,12 @@ QUICK_START.md              ← This file
 ## 🎨 Customize in 5 Minutes
 
 ### Change Brand Name
-**File:** `sharmnexus-landing.html`
-**Find:** `<span>SharmNexus</span>` (line ~27)
+**File:** `shramnexus-landing.html`
+**Find:** `<span>ShramNexus</span>` (line ~27)
 **Change:** `<span>YourBrand</span>`
 
 ### Change Colors
-**File:** `sharmnexus-landing.css`
+**File:** `shramnexus-landing.css`
 **Find:** Top of file, `:root {` section
 **Change:**
 ```css
@@ -110,12 +110,12 @@ QUICK_START.md              ← This file
 ```
 
 ### Change Logo
-**File:** `sharmnexus-landing.html`
+**File:** `shramnexus-landing.html`
 **Find:** SVG in navbar section
 **Change:** Replace with your logo (SVG preferred)
 
 ### Add Your Services
-**File:** `sharmnexus-landing.html`
+**File:** `shramnexus-landing.html`
 **Find:** Service categories section
 **Change:** Modify emoji, name, description
 ```html
@@ -127,7 +127,7 @@ QUICK_START.md              ← This file
 ```
 
 ### Change Testimonials
-**File:** `sharmnexus-landing.html`
+**File:** `shramnexus-landing.html`
 **Find:** Testimonials section
 **Change:** Names, reviews, service types
 
@@ -175,7 +175,7 @@ Options:
 - `btn-emergency` = Red button
 
 ### How to Change Font Size?
-**File:** `sharmnexus-landing.css`
+**File:** `shramnexus-landing.css`
 
 Large heading:
 ```css
@@ -189,7 +189,7 @@ Options:
 - `--font-size-4xl` = Very Large
 
 ### How to Change Spacing?
-**File:** `sharmnexus-landing.css`
+**File:** `shramnexus-landing.css`
 
 Add padding:
 ```css
@@ -234,7 +234,7 @@ vercel
 
 ### Netlify
 ```bash
-# Drag & drop sharmnexus-landing.html
+# Drag & drop shramnexus-landing.html
 # Auto deploys to netlify.com
 ```
 
@@ -428,12 +428,12 @@ vercel
 
 ## 🚀 You're Ready!
 
-Your SharmNexus landing page is complete and ready to use.
+Your ShramNexus landing page is complete and ready to use.
 
-**Next:** Open `sharmnexus-landing.html` in your browser!
+**Next:** Open `shramnexus-landing.html` in your browser!
 
 ---
 
-**Questions?** Check `SHARMNEXUS_README.md` for detailed documentation.
+**Questions?** Check `SHRAMNEXUS_README.md` for detailed documentation.
 
 **Happy building! 🎉**

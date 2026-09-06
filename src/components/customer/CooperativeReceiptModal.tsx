@@ -59,7 +59,7 @@ export function CooperativeReceiptModal({
 
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/track/${booking.id}?verify=${transactionId}`
-    : `https://sharmnexus.org/track/${booking.id}`;
+    : `https://shramnexus.org/track/${booking.id}`;
 
   const handlePrint = () => {
     window.print();
@@ -84,7 +84,7 @@ export function CooperativeReceiptModal({
               Official Service Receipt
             </h2>
             <p className="text-xs text-emerald-100/90 mt-0.5">
-              SharmNexus Labour Cooperative Federation
+              ShramNexus Labour Cooperative Federation
             </p>
           </div>
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/5 rounded-full blur-xl pointer-events-none" />

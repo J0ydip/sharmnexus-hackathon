@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -8,9 +8,14 @@ export default function LogOutButton() {
   const supabase = createClient();
 
   const handleLogout = async () => {
+    localStorage.removeItem('shramnexus-auth');
+    localStorage.removeItem('shramnexus-admin-auth');
+    localStorage.removeItem('sharmnexus-auth');
+    localStorage.removeItem('sharmnexus-admin-auth');
+    sessionStorage.clear();
+    document.cookie = 'admin-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
+    window.location.href = '/auth/login';
   };
 
   return (

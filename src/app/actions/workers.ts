@@ -16,7 +16,7 @@ export async function getWorkersByCategory(categoryId?: string) {
       .select(`
         worker:worker_id (
           id, full_name, phone, email, profile_photo_url,
-          is_verified, is_available, avg_rating, total_jobs_completed, hourly_rate, address
+          is_verified, is_available, avg_rating, total_jobs_completed, address
         )
       `)
       .eq('service_category_id', categoryId)
@@ -27,16 +27,19 @@ export async function getWorkersByCategory(categoryId?: string) {
       return [];
     }
 
-    // Flatten the join and filter available workers
+    // Flatten the join and filter available workers, ensuring hourly_rate default
     return (data || [])
-      .map((row: any) => row.worker)
-      .filter((w: any) => w && w.is_available !== false);
+      .map((row: any) => ({
+        ...row.worker,
+        hourly_rate: row.worker?.hourly_rate || 300,
+      }))
+      .filter((w: any) => w && w.id && w.is_available !== false);
   }
 
   // No category filter — return all active workers
   const { data, error } = await supabase
     .from('workers')
-    .select('id, full_name, phone, email, profile_photo_url, is_verified, is_available, avg_rating, total_jobs_completed, hourly_rate, address')
+    .select('id, full_name, phone, email, profile_photo_url, is_verified, is_available, avg_rating, total_jobs_completed, address')
     .eq('is_verified', true);
 
   if (error) {
@@ -44,7 +47,10 @@ export async function getWorkersByCategory(categoryId?: string) {
     return [];
   }
 
-  return data || [];
+  return (data || []).map((w: any) => ({
+    ...w,
+    hourly_rate: w.hourly_rate || 300,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +114,6 @@ export async function createWorkerRegistration(data: {
       email: data.email,
       aadhaar_number: data.aadhaarNumber || null,
       address: data.address || null,
-      hourly_rate: data.hourlyRate || 300,
       is_verified: true,
       is_available: true,
       verification_status: 'verified',

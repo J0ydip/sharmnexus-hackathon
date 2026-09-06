@@ -1,4 +1,4 @@
-# 🚀 SharmNexus Landing Page - Complete Product Design
+# 🚀 ShramNexus Landing Page - Complete Product Design
 
 **Connecting Skills. Creating Opportunities.**
 
@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-SharmNexus is a premium, modern service marketplace landing page designed to showcase a cooperative-owned digital service platform. The landing page features 18+ sections demonstrating how customers, workers, and cooperatives interact with the platform.
+ShramNexus is a premium, modern service marketplace landing page designed to showcase a cooperative-owned digital service platform. The landing page features 18+ sections demonstrating how customers, workers, and cooperatives interact with the platform.
 
 **Status:** ✅ Production-Ready
 **File Size:** ~65 KB total (HTML + CSS + JS)
@@ -18,9 +18,9 @@ SharmNexus is a premium, modern service marketplace landing page designed to sho
 ## 📂 Files
 
 ```
-sharmnexus-landing.html    →  Complete HTML structure (18 sections)
-sharmnexus-landing.css     →  Professional styling (1000+ lines)
-sharmnexus-landing.js      →  Full interactivity & animations
+shramnexus-landing.html    →  Complete HTML structure (18 sections)
+shramnexus-landing.css     →  Professional styling (1000+ lines)
+shramnexus-landing.js      →  Full interactivity & animations
 ```
 
 ---
@@ -58,7 +58,7 @@ sharmnexus-landing.js      →  Full interactivity & animations
 - Search component with placeholder
 - Location button (geolocation enabled)
 - "Find a Professional" CTA
-- "Become a SharmNexus Worker" secondary CTA
+- "Become a ShramNexus Worker" secondary CTA
 - Dashboard mockup visualization (animated)
 
 ### 3. **Service Categories**
@@ -142,7 +142,7 @@ sharmnexus-landing.js      →  Full interactivity & animations
 ### 15. **Multilingual & Accessibility**
 - Language bar (English, हिंदी, বাংলা, मराठी, தமிழ், తెలుగు)
 - 5 accessibility features
-- "Explore SharmNexus" CTA
+- "Explore ShramNexus" CTA
 
 ### 16. **Customer Testimonials**
 - 4 testimonial cards
@@ -156,7 +156,7 @@ sharmnexus-landing.js      →  Full interactivity & animations
 - Dual buttons: "Find a Service" + "Join as a Worker"
 
 ### 18. **Footer**
-- SharmNexus branding
+- ShramNexus branding
 - 5 column sections:
   - Platform (Services, Bookings, Emergency Services, Worker Directory)
   - For Workers (Join, Dashboard, Welfare, Training)
@@ -199,7 +199,7 @@ sharmnexus-landing.js      →  Full interactivity & animations
 
 ### 1. **Open in Browser**
 ```
-sharmnexus-landing.html
+shramnexus-landing.html
 ```
 Simply double-click or drag into browser.
 
@@ -228,7 +228,7 @@ See analytics events and page tracking logs.
 ## 🎨 Customization Guide
 
 ### Change Brand Colors
-Edit `sharmnexus-landing.css`, top of file:
+Edit `shramnexus-landing.css`, top of file:
 ```css
 :root {
     --primary: #001a4d;        /* Change to your color */
@@ -238,13 +238,13 @@ Edit `sharmnexus-landing.css`, top of file:
 ```
 
 ### Change Brand Name
-Edit `sharmnexus-landing.html`:
+Edit `shramnexus-landing.html`:
 ```html
-<span>SharmNexus</span>  <!-- Line ~27, navbar logo -->
+<span>ShramNexus</span>  <!-- Line ~27, navbar logo -->
 ```
 
 ### Add/Remove Services
-Edit `sharmnexus-landing.html`, service categories section:
+Edit `shramnexus-landing.html`, service categories section:
 ```html
 <div class="service-card">
     <div class="service-icon">⚡</div>
@@ -254,7 +254,7 @@ Edit `sharmnexus-landing.html`, service categories section:
 ```
 
 ### Change Testimonials
-Edit `sharmnexus-landing.html`, testimonials section:
+Edit `shramnexus-landing.html`, testimonials section:
 ```html
 <div class="testimonial-card">
     <div class="testimonial-rating">⭐⭐⭐⭐⭐</div>
@@ -265,7 +265,7 @@ Edit `sharmnexus-landing.html`, testimonials section:
 ```
 
 ### Update Worker Demo Data
-Edit `sharmnexus-landing.html`, search for "Raj Kumar" and change:
+Edit `shramnexus-landing.html`, search for "Raj Kumar" and change:
 - Name
 - Title
 - Rating
@@ -273,7 +273,7 @@ Edit `sharmnexus-landing.html`, search for "Raj Kumar" and change:
 - Metrics
 
 ### Connect to Backend APIs
-Edit `sharmnexus-landing.js`, add fetch calls:
+Edit `shramnexus-landing.js`, add fetch calls:
 ```javascript
 // Example: Fetch real workers
 async function getRealWorkers() {
@@ -298,7 +298,7 @@ function initLanguageSelector() {
 
 ## 📊 CSS Variables Reference
 
-All colors, spacing, and timing are controlled by CSS variables at the top of `sharmnexus-landing.css`:
+All colors, spacing, and timing are controlled by CSS variables at the top of `shramnexus-landing.css`:
 
 ### Colors
 ```css
@@ -352,7 +352,7 @@ All colors, spacing, and timing are controlled by CSS variables at the top of `s
 ```bash
 # Simple HTTP server
 python -m http.server 8000
-# Open: http://localhost:8000/sharmnexus-landing.html
+# Open: http://localhost:8000/shramnexus-landing.html
 ```
 
 ### Vercel
@@ -368,7 +368,7 @@ vercel
 
 ### Netlify
 ```bash
-# Drag and drop sharmnexus-landing.html to Netlify
+# Drag and drop shramnexus-landing.html to Netlify
 # Or use CLI
 netlify deploy
 ```
@@ -424,7 +424,7 @@ The page includes hooks for analytics. Connect your service:
 
 ### Google Analytics
 ```javascript
-// Add to sharmnexus-landing.js
+// Add to shramnexus-landing.js
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
@@ -514,6 +514,6 @@ For issues or questions:
 
 ---
 
-**Built with ❤️ for SharmNexus**
+**Built with ❤️ for ShramNexus**
 
 *Connecting Skills. Creating Opportunities.*

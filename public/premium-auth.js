@@ -1,5 +1,5 @@
 // ============================================================================
-// SharmNexus Premium Authentication System
+// ShramNexus Premium Authentication System
 // ============================================================================
 
 class PremiumAuth {
@@ -330,7 +330,7 @@ class PremiumAuth {
         await new Promise(r => setTimeout(r, 1200));
 
         this.currentUser = { fullName: this.fullName.value, role: this.selectedRole };
-        this.showSuccessAnimation('Account Created!', `Welcome to SharmNexus as a ${this.selectedRole}!`);
+        this.showSuccessAnimation('Account Created!', `Welcome to ShramNexus as a ${this.selectedRole}!`);
         setTimeout(() => this.handleAuthenticationSuccess(), 1800);
     }
 
@@ -376,14 +376,14 @@ class PremiumAuth {
         this.successModal?.classList.remove('active');
         
         // Save auth state to localStorage so the main landing page knows the user is logged in
-        localStorage.setItem('sharmnexus-auth', JSON.stringify({
+        localStorage.setItem('shramnexus-auth', JSON.stringify({
             isLoggedIn: true,
             role: this.selectedRole,
             name: this.currentUser?.fullName || this.currentUser?.email
         }));
         
         // Redirect back to the main landing page
-        window.location.href = 'sharmnexus-landing-updated.html';
+        window.location.href = 'shramnexus-landing-updated.html';
     }
     restoreSession() {}
 }

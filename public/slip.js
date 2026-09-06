@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Fetch bookings from LocalStorage
-    const storedBookings = localStorage.getItem('sharmnexus-bookings');
+    const storedBookings = localStorage.getItem('shramnexus-bookings');
     
     if (!storedBookings) {
         // If no booking exists, show error and redirect back to home

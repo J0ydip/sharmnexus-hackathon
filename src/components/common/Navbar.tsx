@@ -103,12 +103,12 @@ export function Navbar() {
               <div className="flex items-center gap-2.5 mb-6">
                 <img
                   src="/logo.png"
-                  alt="SharmNexus Logo"
+                  alt="ShramNexus Logo"
                   className="w-9 h-9 rounded-xl object-contain shadow-xs border border-gray-100 bg-white"
                 />
                 <div>
                   <span className="font-extrabold text-gray-900 text-lg leading-tight block">
-                    Sharm<span className="text-[#e6aa3b]">Nexus</span>
+                    Shram<span className="text-[#e6aa3b]">Nexus</span>
                   </span>
                   <span className="text-[10px] block text-gray-500 font-medium">Cooperative Gig Platform</span>
                 </div>
@@ -177,12 +177,12 @@ export function Navbar() {
           <Link href={homeLink} className="flex items-center gap-2.5 group">
             <img
               src="/logo.png"
-              alt="SharmNexus Logo"
+              alt="ShramNexus Logo"
               className="w-9 h-9 rounded-xl object-contain shadow-xs border border-gray-100 bg-white group-hover:scale-105 transition-transform"
             />
             <div>
               <span className="text-lg font-black tracking-tight text-gray-900 leading-tight">
-                Sharm<span className="text-[#e6aa3b]">Nexus</span>
+                Shram<span className="text-[#e6aa3b]">Nexus</span>
               </span>
               <span className="hidden sm:inline-block text-[10px] font-bold text-[#24172f] bg-[#fbf7ef] px-2 py-0.5 rounded-md ml-2 border border-[#e6aa3b]/30">
                 SIH 26089
@@ -325,7 +325,7 @@ export function Navbar() {
                     {user.user_metadata?.full_name || 'Priya Sharma'}
                   </div>
                   <div className="text-[10px] text-gray-500 truncate font-normal">
-                    {user.email || 'customer@sharmnexus.coop'}
+                    {user.email || 'customer@shramnexus.coop'}
                   </div>
                   <div className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-bold text-[#24172f] bg-[#fbf7ef] px-2 py-0.5 rounded-full border border-[#e6aa3b]/30">
                     <ShieldCheck className="w-3 h-3 text-[#7c5cf0]" />
@@ -351,6 +351,12 @@ export function Navbar() {
                 <DropdownMenuItem
                   className="text-xs text-red-600 hover:text-red-700 cursor-pointer rounded-lg flex items-center gap-2"
                   onClick={async () => {
+                    localStorage.removeItem('shramnexus-auth');
+                    localStorage.removeItem('shramnexus-admin-auth');
+                    localStorage.removeItem('sharmnexus-auth');
+                    localStorage.removeItem('sharmnexus-admin-auth');
+                    sessionStorage.clear();
+                    document.cookie = 'admin-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
                     await supabase.auth.signOut();
                     window.location.href = '/';
                   }}

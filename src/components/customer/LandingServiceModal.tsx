@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/lib/store/bookingStore';
 import { CheckCircle2, ArrowRight, ShieldCheck, MapPin, Sparkles, X, Clock, Calendar, Phone, User, Home } from 'lucide-react';
+import { getBookingOtp } from '@/lib/utils';
 
 export interface ServiceModalData {
   id: string;
@@ -198,9 +199,9 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
     e.preventDefault();
 
     const bookingId = `SNX-${Math.floor(1000 + Math.random() * 9000)}`;
-    const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    const bookingOtp = getBookingOtp(bookingId);
     setConfirmedBookingId(bookingId);
-    setOtp(randomOtp);
+    setOtp(bookingOtp);
 
     // Also persist in Zustand store if matching category exists
     const matchedCategory = categories.find((c) =>
@@ -235,7 +236,7 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
       time_slot: time,
       estimated_price: numericPrice,
       final_price: numericPrice,
-      otp: randomOtp,
+      otp: bookingOtp,
       payment_status: 'pending',
       payment_method: 'Pay after service (Cash / UPI)',
       created_at: new Date().toISOString(),
@@ -243,7 +244,7 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
 
     // Save to localStorage for quick compatibility with teammate scripts
     try {
-      const stored = JSON.parse(localStorage.getItem('sharmnexus-bookings') || '[]');
+      const stored = JSON.parse(localStorage.getItem('shramnexus-bookings') || localStorage.getItem('sharmnexus-bookings') || '[]');
       stored.push({
         id: bookingId,
         service: service.title,
@@ -256,6 +257,7 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
         requirements,
         timestamp: new Date().toISOString(),
       });
+      localStorage.setItem('shramnexus-bookings', JSON.stringify(stored));
       localStorage.setItem('sharmnexus-bookings', JSON.stringify(stored));
     } catch (err) {
       // ignore localstorage errors
@@ -545,7 +547,7 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
                 onClick={handleClose}
                 className="w-full bg-transparent hover:bg-black/5 text-gray-600 font-bold text-xs py-2.5 rounded-xl transition-colors cursor-pointer"
               >
-                Back to SharmNexus Home
+                Back to ShramNexus Home
               </button>
             </div>
           </div>

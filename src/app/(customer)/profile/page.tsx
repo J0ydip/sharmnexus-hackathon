@@ -55,6 +55,12 @@ export default function CustomerProfilePage() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('shramnexus-auth');
+    localStorage.removeItem('shramnexus-admin-auth');
+    localStorage.removeItem('sharmnexus-auth');
+    localStorage.removeItem('sharmnexus-admin-auth');
+    sessionStorage.clear();
+    document.cookie = 'admin-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     await supabase.auth.signOut();
     window.location.href = '/';
   };
@@ -76,7 +82,7 @@ export default function CustomerProfilePage() {
                 </span>
               </div>
               <p className="text-xs text-emerald-100 mt-0.5">
-                Member of SharmNexus Cooperative Community Network
+                Member of ShramNexus Cooperative Community Network
               </p>
             </div>
           </div>
@@ -192,7 +198,7 @@ export default function CustomerProfilePage() {
             <span>Your Cooperative Impact</span>
           </div>
           <p className="text-gray-600 leading-relaxed">
-            Through your bookings on SharmNexus, you have helped support <strong>2 local labour societies</strong> with direct fair wage payouts and funded accidental health cover contributions for verified craftsmen.
+            Through your bookings on ShramNexus, you have helped support <strong>2 local labour societies</strong> with direct fair wage payouts and funded accidental health cover contributions for verified craftsmen.
           </p>
         </div>
 

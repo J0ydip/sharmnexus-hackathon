@@ -15,6 +15,7 @@ import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/
 import { getBookingById as getBookingByIdAction } from '@/app/actions/bookings';
 import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
+import { getBookingOtp } from '@/lib/utils';
 import {
   ArrowLeft,
   Phone,
@@ -98,7 +99,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
               time_slot: 'Scheduled',
               estimated_price: b.estimated_price || 350,
               final_price: b.final_price || b.estimated_price || 350,
-              otp: '4892',
+              otp: getBookingOtp(b.id),
               payment_status: hasPaid ? 'completed' : 'pending',
               payment_method: hasPaid
                 ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
@@ -270,33 +271,63 @@ export default function BookingTrackingPage({ params }: PageProps) {
 
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 pt-6 space-y-6">
         {/* OTP Security Verification Strip */}
-        <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-6 h-6 text-emerald-300" />
+        {booking.status === 'completed' ? (
+          <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-950 text-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-emerald-500/30">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/20 backdrop-blur-md flex items-center justify-center shrink-0 text-emerald-300">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">
+                  Service Completed &amp; Verified
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5">
+                  Job verified via Customer Security PIN
+                </h3>
+                <p className="text-xs text-emerald-200 mt-0.5">
+                  Inspection confirmed. 30-day cooperative workmanship warranty is now active.
+                </p>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 block">
-                Cooperative Work Verification Code
-              </span>
-              <h3 className="text-base font-bold text-white mt-0.5">
-                Share this OTP with the worker only upon arrival
-              </h3>
-              <p className="text-xs text-emerald-100 mt-0.5">
-                Protects you from unverified dispatch and unlocks service guarantee.
-              </p>
-            </div>
-          </div>
 
-          <div className="bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center self-start sm:self-auto shrink-0 border border-white/20">
-            <span className="text-[10px] uppercase font-bold text-emerald-200 block">
-              Security OTP
-            </span>
-            <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
-              {booking.otp || '4829'}
-            </span>
+            <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center self-start sm:self-auto shrink-0 border border-emerald-400/20">
+              <span className="text-[10px] uppercase font-bold text-emerald-300 block">
+                Verified PIN
+              </span>
+              <span className="font-mono text-2xl font-black tracking-widest text-emerald-300" suppressHydrationWarning>
+                {getBookingOtp(booking.id, booking.otp)}
+              </span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6 text-emerald-300" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 block">
+                  Cooperative Work Completion PIN
+                </span>
+                <h3 className="text-base font-bold text-white mt-0.5">
+                  Share this 4-digit PIN with worker only upon completion
+                </h3>
+                <p className="text-xs text-emerald-100 mt-0.5">
+                  Worker must enter this PIN on their dashboard to verify task completion and disburse wages.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center self-start sm:self-auto shrink-0 border border-white/20">
+              <span className="text-[10px] uppercase font-bold text-emerald-200 block">
+                Completion OTP
+              </span>
+              <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
+                {getBookingOtp(booking.id, booking.otp)}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* 2-Column Grid: Left (Timeline + Map), Right (Worker Card + Invoice) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
