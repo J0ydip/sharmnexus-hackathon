@@ -293,7 +293,62 @@ export default function LandingPage() {
         <section className="final-cta"><div className="cta-sun"></div><div className="section-kicker" data-i18n="final_kicker">READY WHEN YOU ARE</div><h2 data-i18n-html="final_h2">Your next service is just<br /><em>a few clicks away.</em></h2><p data-i18n="final_p">Find trusted professionals. Support skilled workers. Strengthen local cooperatives.</p><div className="hero-actions"><a className="button button-dark" href="/auth/login"><span data-i18n="hero_cta_find">Find a service</span> <span>↗</span></a><a className="button button-outline-dark" href="/auth/login"><span data-i18n="hero_cta_join">Join as a worker</span> <span>↗</span></a></div></section>
     </main>
 
-    <footer className="footer"><div className="footer-top"><a className="brand brand-light" href="#home" aria-label="ShramNexus home"><img src="/logo.png" alt="ShramNexus" className="nav-logo-img" /><span className="brand-text text-white">Shram<span className="text-[#e6aa3b]">Nexus</span></span></a><p data-i18n-html="footer_tagline">Connecting skills.<br />Creating opportunities.</p><div className="footer-social"><strong>Follow Us</strong><div className="social-row"><a className="social-icon" href="#" aria-label="Facebook">f</a><a className="social-icon" href="#" aria-label="X (Twitter)">𝕏</a><a className="social-icon" href="#" aria-label="LinkedIn">in</a><a className="social-icon" href="#" aria-label="Email">✉</a></div></div><div className="footer-links"><div><strong>Platform</strong><a href="/services">Services</a><a href="#how-it-works">How it works</a><a href="#communities">For households</a></div><div><strong>Community</strong><a href="#communities">For workers</a><a href="#cooperatives">For cooperatives</a><a href="#about">Our mission</a></div><div><strong>Connect</strong><a href="/auth/login">Log in</a><a href="/auth/login">Get started</a><a href="mailto:hello@shramnexus.example">Contact us</a></div></div></div><div className="footer-bottom"><span>© 2024 ShramNexus. Cooperative ownership, community impact.</span><span>Made for the people who keep communities moving.</span></div></footer>
+    <footer className="footer">
+      <div className="footer-top">
+        <div className="footer-brand-col">
+          <a className="brand brand-light" href="#home" aria-label="ShramNexus home">
+            <img src="/logo.png" alt="ShramNexus" className="nav-logo-img" />
+            <span className="brand-text">Shram<span>Nexus</span></span>
+          </a>
+          <p className="footer-tagline" data-i18n-html="footer_tagline">
+            Connecting skills.<br />Creating opportunities.
+          </p>
+          <p className="footer-mission">
+            Empowering skilled workers and cooperatives across communities through trusted, dignified digital connections.
+          </p>
+          <div className="footer-social">
+            <strong>Follow Us</strong>
+            <div className="social-row">
+              <a className="social-icon" href="#" aria-label="Facebook">f</a>
+              <a className="social-icon" href="#" aria-label="X (Twitter)">𝕏</a>
+              <a className="social-icon" href="#" aria-label="LinkedIn">in</a>
+              <a className="social-icon" href="#" aria-label="Email">✉</a>
+            </div>
+          </div>
+        </div>
+
+        <div className="footer-links">
+          <div>
+            <strong>Platform</strong>
+            <a href="/services">Services</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#communities">For households</a>
+            <a href="#nearby-services">Live Network</a>
+            <a href="#platform-features">Features</a>
+          </div>
+          <div>
+            <strong>Community</strong>
+            <a href="#communities">For workers</a>
+            <a href="#cooperatives">For cooperatives</a>
+            <a href="#about">Our mission</a>
+            <a href="#testimonials">Worker Stories</a>
+            <a href="#accessibility">Accessibility</a>
+          </div>
+          <div>
+            <strong>Connect</strong>
+            <a href="/auth/login">Customer Login</a>
+            <a href="/auth/worker-register">Join as Worker</a>
+            <a href="/auth/login">Get Started</a>
+            <a href="mailto:support@shramnexus.com">Contact Support</a>
+          </div>
+        </div>
+      </div>
+
+      <div className="footer-bottom">
+        <span>© 2026 ShramNexus. Cooperative ownership, community impact.</span>
+        <span>Made for the people who keep communities moving.</span>
+      </div>
+    </footer>
 
 
 
