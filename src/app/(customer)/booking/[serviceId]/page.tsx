@@ -35,7 +35,28 @@ import {
   Flame,
   LayoutGrid,
   Map as MapIcon,
+  Navigation,
 } from 'lucide-react';
+
+const CITY_COORDINATES: Record<string, [number, number]> = {
+  kolkata: [22.5726, 88.3639],
+  patna: [25.5941, 85.1376],
+  delhi: [28.6139, 77.2090],
+  'new delhi': [28.6139, 77.2090],
+  mumbai: [19.0760, 72.8777],
+  bangalore: [12.9716, 77.5946],
+  bengaluru: [12.9716, 77.5946],
+  hyderabad: [17.3850, 78.4867],
+  chennai: [13.0827, 80.2707],
+  pune: [18.5204, 73.8567],
+  ahmedabad: [23.0225, 72.5714],
+  jaipur: [26.9124, 75.7873],
+  lucknow: [26.8467, 80.9462],
+  chandigarh: [30.7333, 76.7794],
+  ranchi: [23.3441, 85.3096],
+  bhubaneswar: [20.2961, 85.8245],
+  howrah: [22.5958, 88.2636],
+};
 
 interface PageProps {
   params: Promise<{ serviceId: string }>;
@@ -117,6 +138,86 @@ function BookingFlowContent({ params }: PageProps) {
     filteredWorkers[0] ||
     workers[0];
 
+  // GPS and Geocoding Detection
+  const [isLocating, setIsLocating] = useState(false);
+
+  // Initialize draft address from saved profile if available
+  useEffect(() => {
+    if (!draft.address || !draft.city) {
+      try {
+        const savedProfile = localStorage.getItem('shramnexus-customer-profile');
+        if (savedProfile) {
+          const p = JSON.parse(savedProfile);
+          setDraft({
+            address: draft.address || p.address || '',
+            city: draft.city || p.city || 'Kolkata',
+          });
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  const handleDetectLocation = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en' } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            const city = addr.city || addr.town || addr.municipality || addr.state_district || addr.county || 'Local Area';
+            const pincode = addr.postcode || '';
+            const road = addr.road || addr.suburb || addr.neighbourhood || '';
+            const house = addr.house_number ? `${addr.house_number}, ` : '';
+            const fullAddr = data.display_name ? data.display_name.split(',').slice(0, 3).join(', ') : `${house}${road}, ${city}`;
+
+            setDraft({
+              lat: latitude,
+              lng: longitude,
+              address: fullAddr,
+              city: city,
+              pincode: pincode,
+            });
+            toast.success(`Location detected: ${city} ${pincode ? `(${pincode})` : ''}`);
+          } else {
+            setDraft({ lat: latitude, lng: longitude });
+            toast.success('GPS coordinates detected!');
+          }
+        } catch (e) {
+          setDraft({ lat: latitude, lng: longitude });
+          toast.success('GPS coordinates detected!');
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (err) => {
+        setIsLocating(false);
+        toast.error(`Location access error: ${err.message}`);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleCityChange = (cityName: string) => {
+    const cleanCity = cityName.trim().toLowerCase();
+    const coords = CITY_COORDINATES[cleanCity];
+    if (coords) {
+      setDraft({ city: cityName, lat: coords[0], lng: coords[1] });
+      toast.info(`Updated map network to ${cityName}`);
+    } else {
+      setDraft({ city: cityName });
+    }
+  };
+
   // Handlers
   const handleFindWorkersSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,7 +284,7 @@ function BookingFlowContent({ params }: PageProps) {
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#f0e7d9] text-[#24172f] flex items-center justify-center">
                 <ServiceCategoryIcon name={currentCategory.icon_url} className="w-4 h-4" />
               </div>
               <div>
@@ -202,8 +303,8 @@ function BookingFlowContent({ params }: PageProps) {
             <span
               className={`px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
                 step === 'form'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-emerald-100 text-emerald-800'
+                  ? 'bg-[#24172f] text-white'
+                  : 'bg-[#f5dfad] text-[#24172f]'
               }`}
             >
               1. Request
@@ -212,9 +313,9 @@ function BookingFlowContent({ params }: PageProps) {
             <span
               className={`px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
                 step === 'match'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-[#24172f] text-white'
                   : step === 'confirm' || step === 'success'
-                  ? 'bg-emerald-100 text-emerald-800'
+                  ? 'bg-[#f5dfad] text-[#24172f]'
                   : 'bg-gray-100 text-gray-400'
               }`}
             >
@@ -224,7 +325,7 @@ function BookingFlowContent({ params }: PageProps) {
             <span
               className={`px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
                 step === 'confirm' || step === 'success'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-[#24172f] text-white'
                   : 'bg-gray-100 text-gray-400'
               }`}
             >
@@ -246,7 +347,7 @@ function BookingFlowContent({ params }: PageProps) {
                 {/* Service Overview Card */}
                 <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-2xl bg-[#f0e7d9] text-[#24172f] flex items-center justify-center shrink-0">
                       <ServiceCategoryIcon name={currentCategory.icon_url} className="w-6 h-6" />
                     </div>
                     <div>
@@ -256,7 +357,7 @@ function BookingFlowContent({ params }: PageProps) {
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-[10px] text-gray-400 uppercase font-semibold block">Base Rate</span>
-                    <span className="text-base font-extrabold text-emerald-700">₹{currentCategory.base_price}</span>
+                    <span className="text-base font-extrabold text-[#d96f4d]">₹{currentCategory.base_price}</span>
                   </div>
                 </div>
 
@@ -271,7 +372,7 @@ function BookingFlowContent({ params }: PageProps) {
                     value={draft.description}
                     onChange={(e) => setDraft({ description: e.target.value })}
                     required
-                    className="w-full text-xs sm:text-sm p-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50/50"
+                    className="w-full text-xs sm:text-sm p-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e6aa3b] bg-gray-50/50"
                   />
                   {/* Quick Suggestions */}
                   <div className="flex items-center gap-2 flex-wrap pt-1">
@@ -286,7 +387,7 @@ function BookingFlowContent({ params }: PageProps) {
                         key={i}
                         type="button"
                         onClick={() => setDraft({ description: sug })}
-                        className="text-[11px] bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 text-gray-700 px-2.5 py-1 rounded-lg transition-colors border border-gray-200/60"
+                        className="text-[11px] bg-gray-100 hover:bg-[#fbf7ef] hover:text-[#d96f4d] text-gray-700 px-2.5 py-1 rounded-lg transition-colors border border-gray-200/60"
                       >
                         {sug}
                       </button>
@@ -296,13 +397,34 @@ function BookingFlowContent({ params }: PageProps) {
 
                 {/* Location Input */}
                 <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <label className="text-xs font-bold text-gray-900 block">
                       Service Location / Address *
                     </label>
-                    <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5" /> Patna Network
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleDetectLocation}
+                        disabled={isLocating}
+                        className="text-[11px] font-bold text-[#d96f4d] hover:text-[#b5583b] bg-[#fbf7ef] hover:bg-[#f5e9d4] px-2.5 py-1 rounded-lg border border-[#e6aa3b]/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                      >
+                        {isLocating ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-[#d96f4d] border-t-transparent rounded-full animate-spin" />
+                            <span>Detecting GPS...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Navigation className="w-3 h-3 text-[#d96f4d]" />
+                            <span>Use Current Location</span>
+                          </>
+                        )}
+                      </button>
+                      <span className="text-[11px] text-[#24172f] font-semibold flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200">
+                        <MapPin className="w-3 h-3 text-[#d96f4d]" />
+                        {draft.city ? `${draft.city} Network` : 'Verified Network'}
+                      </span>
+                    </div>
                   </div>
                   <div className="relative">
                     <input
@@ -311,22 +433,23 @@ function BookingFlowContent({ params }: PageProps) {
                       value={draft.address}
                       onChange={(e) => setDraft({ address: e.target.value })}
                       required
-                      className="w-full text-xs sm:text-sm p-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50/50"
+                      className="w-full text-xs sm:text-sm p-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e6aa3b] bg-gray-50/50"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       type="text"
-                      placeholder="City (e.g. Patna)"
+                      placeholder="City (e.g. Kolkata, Patna, Delhi)"
                       value={draft.city}
-                      onChange={(e) => setDraft({ city: e.target.value })}
-                      className="text-xs sm:text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      onChange={(e) => handleCityChange(e.target.value)}
+                      className="text-xs sm:text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-[#e6aa3b]"
                     />
                     <input
                       type="text"
-                      placeholder="Pincode (e.g. 800020)"
-                      defaultValue="800020"
-                      className="text-xs sm:text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Pincode (e.g. 700001)"
+                      value={draft.pincode || ''}
+                      onChange={(e) => setDraft({ pincode: e.target.value })}
+                      className="text-xs sm:text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-[#e6aa3b]"
                     />
                   </div>
                 </div>
@@ -385,7 +508,7 @@ function BookingFlowContent({ params }: PageProps) {
                         value={draft.date}
                         min={new Date().toISOString().split('T')[0]}
                         onChange={(e) => setDraft({ date: e.target.value })}
-                        className="w-full text-xs sm:text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full text-xs sm:text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-[#e6aa3b] outline-none"
                       />
                     </div>
 
@@ -396,7 +519,7 @@ function BookingFlowContent({ params }: PageProps) {
                       <select
                         value={draft.timeSlot}
                         onChange={(e) => setDraft({ timeSlot: e.target.value })}
-                        className="w-full text-xs sm:text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full text-xs sm:text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-[#e6aa3b] outline-none"
                       >
                         <option value="Morning (09:00 AM - 12:00 PM)">Morning (09:00 AM - 12:00 PM)</option>
                         <option value="Afternoon (12:00 PM - 04:00 PM)">Afternoon (12:00 PM - 04:00 PM)</option>
@@ -419,8 +542,8 @@ function BookingFlowContent({ params }: PageProps) {
                         label: 'Normal',
                         sub: 'Standard schedule',
                         badge: 'Base Rate',
-                        color: 'border-gray-200 bg-white hover:border-emerald-400',
-                        activeColor: 'border-emerald-600 bg-emerald-50/40 ring-2 ring-emerald-500/20 text-emerald-900',
+                        color: 'border-gray-200 bg-white hover:border-[#d96f4d]',
+                        activeColor: 'border-[#24172f] bg-[#f0e7d9] ring-2 ring-[#24172f]/20 text-[#24172f]',
                       },
                       {
                         key: 'urgent',
@@ -476,8 +599,8 @@ function BookingFlowContent({ params }: PageProps) {
               {/* Right Column (1 Col): Live Price Breakdown & Next Action */}
               <div className="space-y-6">
                 <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm sticky top-36 space-y-4">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-800">
-                    <Receipt className="w-4 h-4 text-emerald-600" />
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#24172f]">
+                    <Receipt className="w-4 h-4 text-[#d96f4d]" />
                     Transparent Price Estimate
                   </div>
 
@@ -500,7 +623,7 @@ function BookingFlowContent({ params }: PageProps) {
                     )}
                     <div className="flex justify-between text-gray-400 text-[11px]">
                       <span>Cooperative Society Guarantee</span>
-                      <span className="text-emerald-600 font-medium">Included (Free)</span>
+                      <span className="text-[#d96f4d] font-medium">Included (Free)</span>
                     </div>
 
                     <div className="pt-3 border-t border-gray-200 flex items-baseline justify-between text-gray-900">
@@ -508,7 +631,7 @@ function BookingFlowContent({ params }: PageProps) {
                         <span className="text-xs font-bold block">Estimated Total</span>
                         <span className="text-[10px] text-gray-400">Pay after job completion</span>
                       </div>
-                      <span className="text-2xl font-black text-emerald-700">
+                      <span className="text-2xl font-black text-[#d96f4d]">
                         ₹{draft.estimatedPrice}
                       </span>
                     </div>
@@ -516,15 +639,15 @@ function BookingFlowContent({ params }: PageProps) {
 
                   <Button
                     type="submit"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm h-11 rounded-xl shadow-md transition-transform hover:scale-[1.01]"
+                    className="w-full bg-[#24172f] hover:bg-[#3d2b48] text-white font-bold text-sm h-11 rounded-xl shadow-md transition-transform hover:scale-[1.01]"
                   >
                     <span>Find Verified Workers</span>
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
 
-                  <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100 text-[11px] text-gray-600 space-y-1">
-                    <div className="flex items-center gap-1.5 font-bold text-emerald-800">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="bg-[#fbf7ef] p-3 rounded-xl border border-[#e6dcd0] text-[11px] text-gray-600 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-[#24172f]">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#d96f4d]" />
                       Cooperative Trust Guarantee
                     </div>
                     <p className="text-[10px] leading-relaxed">
@@ -543,16 +666,16 @@ function BookingFlowContent({ params }: PageProps) {
         {step === 'match' && (
           <div className="space-y-6 animate-in fade-in-50 duration-200">
             {/* Header Banner with SIH Multi-Factor Match Indicator */}
-            <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 rounded-2xl p-5 sm:p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] rounded-2xl p-5 sm:p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 bg-emerald-700/60 text-emerald-200 text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1.5 border border-emerald-600/40">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+                <div className="inline-flex items-center gap-1.5 bg-[#24172f]/80 text-[#f5dfad] border border-[#e6aa3b]/30 text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#e6aa3b]" />
                   <span>Fair Opportunity &amp; Proximity Allocation</span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-white">
                   Verified Workers Near You
                 </h2>
-                <p className="text-xs text-emerald-100 mt-1 max-w-lg">
+                <p className="text-xs text-[#c8bacb] mt-1 max-w-lg">
                   Ranked by the SIH 26089 multi-factor score (Skills 35%, Proximity 20%, Availability 15%, Rating 10%, Workload 10%, Fairness 10%).
                 </p>
               </div>
@@ -565,7 +688,7 @@ function BookingFlowContent({ params }: PageProps) {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     matchViewMode === 'list'
                       ? 'bg-white text-gray-900 shadow-xs'
-                      : 'text-emerald-100 hover:text-white'
+                      : 'text-[#c8bacb] hover:text-white'
                   }`}
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
@@ -577,7 +700,7 @@ function BookingFlowContent({ params }: PageProps) {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     matchViewMode === 'map'
                       ? 'bg-white text-gray-900 shadow-xs'
-                      : 'text-emerald-100 hover:text-white'
+                      : 'text-[#c8bacb] hover:text-white'
                   }`}
                 >
                   <MapIcon className="w-3.5 h-3.5" />
@@ -590,7 +713,7 @@ function BookingFlowContent({ params }: PageProps) {
             <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-gray-700 flex items-center gap-1">
-                  <Filter className="w-3.5 h-3.5 text-emerald-600" />
+                  <Filter className="w-3.5 h-3.5 text-[#d96f4d]" />
                   Filters:
                 </span>
                 <button
@@ -598,7 +721,7 @@ function BookingFlowContent({ params }: PageProps) {
                   onClick={() => setFilterVerifiedOnly(!filterVerifiedOnly)}
                   className={`px-2.5 py-1 rounded-lg border font-semibold transition-colors ${
                     filterVerifiedOnly
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      ? 'bg-[#f0e7d9] text-[#24172f] border-[#e6aa3b]'
                       : 'border-gray-200 text-gray-600'
                   }`}
                 >
@@ -678,13 +801,41 @@ function BookingFlowContent({ params }: PageProps) {
               </div>
             ) : (
               <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-                <div className="h-[450px] w-full rounded-xl overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-800">
+                      Interactive Cooperative Dispatch Radius ({draft.city || 'Local Area'})
+                    </h4>
+                    <p className="text-[11px] text-gray-500">
+                      Click anywhere on the map to relocate your service pin. Available craftsmen cluster dynamically around you.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDetectLocation}
+                    disabled={isLocating}
+                    className="text-[11px] font-bold text-[#d96f4d] hover:text-[#b5583b] bg-[#fbf7ef] hover:bg-[#f5e9d4] px-2.5 py-1 rounded-lg border border-[#e6aa3b]/40 flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto shrink-0 disabled:opacity-50"
+                  >
+                    <Navigation className="w-3 h-3 text-[#d96f4d]" />
+                    <span>{isLocating ? 'Locating...' : 'Center on GPS'}</span>
+                  </button>
+                </div>
+                <div className="h-[450px] w-full rounded-xl overflow-hidden border border-gray-100">
                   <MapView
                     workers={filteredWorkers}
                     onSelectWorker={(w) => setSelectedWorkerModal(w)}
-                    center={[25.5941, 85.1376]}
-                    userLocation={[25.5941, 85.1376]}
-                    addressName={draft.address}
+                    center={[draft.lat || 22.5726, draft.lng || 88.3639]}
+                    userLocation={[draft.lat || 22.5726, draft.lng || 88.3639]}
+                    addressName={draft.address || `${draft.city || 'Your Area'} Hub`}
+                    city={draft.city || 'Kolkata'}
+                    onLocationSelect={(coords, addr) => {
+                      setDraft({
+                        lat: coords[0],
+                        lng: coords[1],
+                        ...(addr ? { address: addr } : {}),
+                      });
+                      toast.success(`Service pin moved to ${addr || `${coords[0].toFixed(3)}, ${coords[1].toFixed(3)}`}`);
+                    }}
                   />
                 </div>
               </div>
@@ -706,21 +857,21 @@ function BookingFlowContent({ params }: PageProps) {
                     <img
                       src={selectedWorker.profile_photo_url}
                       alt={selectedWorker.full_name}
-                      className="w-14 h-14 rounded-2xl object-cover border border-emerald-200 shadow-xs"
+                      className="w-14 h-14 rounded-2xl object-cover border border-[#e6dcd0] shadow-xs"
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
                         <h3 className="text-base font-bold text-gray-900">
                           {selectedWorker.full_name}
                         </h3>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-bold text-[#8ba58b] bg-[#e2eee4] px-2 py-0.5 rounded-full">
                           ✓ Verified
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {selectedWorker.primary_skill} • {selectedWorker.years_experience} yrs exp • {selectedWorker.avg_rating}★ ({selectedWorker.total_jobs_completed} jobs)
                       </p>
-                      <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1 mt-1">
+                      <p className="text-[11px] text-[#d96f4d] font-medium flex items-center gap-1 mt-1">
                         <Building2 className="w-3.5 h-3.5" />
                         {selectedWorker.society_name}
                       </p>
@@ -759,7 +910,7 @@ function BookingFlowContent({ params }: PageProps) {
                       <strong className="text-gray-900 text-sm mt-0.5 block">
                         {draft.date}
                       </strong>
-                      <span className="text-[11px] text-emerald-700 font-semibold mt-0.5 block">
+                      <span className="text-[11px] text-[#d96f4d] font-semibold mt-0.5 block">
                         {draft.timeSlot}
                       </span>
                     </div>
@@ -823,13 +974,13 @@ function BookingFlowContent({ params }: PageProps) {
                     )}
                     <div className="flex justify-between text-[11px] text-gray-400">
                       <span>Cooperative Welfare Levy</span>
-                      <span className="text-emerald-600 font-medium">Included</span>
+                      <span className="text-[#d96f4d] font-medium">Included</span>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-xs font-bold text-gray-900">Total Estimated Amount</span>
-                    <span className="text-2xl font-black text-emerald-700">
+                    <span className="text-2xl font-black text-[#d96f4d]">
                       ₹{draft.estimatedPrice}
                     </span>
                   </div>
@@ -838,22 +989,22 @@ function BookingFlowContent({ params }: PageProps) {
                     <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
                       Payment Mode
                     </span>
-                    <div className="p-3 rounded-xl border border-emerald-300 bg-emerald-50/50 flex items-center justify-between text-xs">
+                    <div className="p-3 rounded-xl border border-[#e6aa3b] bg-[#fbf7ef] flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-emerald-700" />
+                        <CreditCard className="w-4 h-4 text-[#d96f4d]" />
                         <div>
                           <strong className="text-gray-900 block">Pay After Service</strong>
                           <span className="text-[10px] text-gray-500">Cash, UPI, or Card upon completion</span>
                         </div>
                       </div>
-                      <Check className="w-4 h-4 text-emerald-600" />
+                      <Check className="w-4 h-4 text-[#d96f4d]" />
                     </div>
                   </div>
 
                   <Button
                     type="button"
                     onClick={handleConfirmBooking}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm h-11 rounded-xl shadow-md transition-transform hover:scale-[1.01]"
+                    className="w-full bg-[#24172f] hover:bg-[#3d2b48] text-white font-bold text-sm h-11 rounded-xl shadow-md transition-transform hover:scale-[1.01]"
                   >
                     Confirm Booking
                   </Button>
@@ -871,13 +1022,13 @@ function BookingFlowContent({ params }: PageProps) {
         {/* STEP 4: CELEBRATION / BOOKING SUCCESS                     */}
         {/* ========================================================= */}
         {step === 'success' && createdBooking && (
-          <div className="max-w-xl mx-auto bg-white p-6 sm:p-8 rounded-3xl border border-emerald-200 shadow-xl text-center space-y-6 animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+          <div className="max-w-xl mx-auto bg-white p-6 sm:p-8 rounded-3xl border border-[#e6dcd0] shadow-xl text-center space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 rounded-full bg-[#f0e7d9] text-[#e6aa3b] flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#24172f] bg-[#f0e7d9] px-3 py-1 rounded-full border border-[#e6dcd0]">
                 Booking Confirmed (Status: Requested)
               </span>
               <h2 className="text-2xl font-black text-gray-900 mt-3">
@@ -900,14 +1051,14 @@ function BookingFlowContent({ params }: PageProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Scheduled Time:</span>
-                <span className="font-semibold text-emerald-700">{createdBooking.scheduled_at}</span>
+                <span className="font-semibold text-[#d96f4d]">{createdBooking.scheduled_at}</span>
               </div>
-              <div className="flex justify-between items-center bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200/60">
+              <div className="flex justify-between items-center bg-[#e2eee4] p-2.5 rounded-xl border border-[#8ba58b]/30">
                 <div>
-                  <span className="text-xs font-bold text-emerald-900 block">Completion PIN (OTP):</span>
-                  <span className="text-[10px] text-emerald-700">Share with worker only after job completion</span>
+                  <span className="text-xs font-bold text-[#24172f] block">Completion PIN (OTP):</span>
+                  <span className="text-[10px] text-[#d96f4d]">Share with worker only after job completion</span>
                 </div>
-                <span className="font-mono font-black text-emerald-800 text-base bg-white px-3 py-1 rounded-lg border border-emerald-300 tracking-wider">
+                <span className="font-mono font-black text-[#24172f] text-base bg-white px-3 py-1 rounded-lg border border-[#e6aa3b]/50 tracking-wider">
                   {createdBooking.otp || getBookingOtp(createdBooking.id)}
                 </span>
               </div>
@@ -921,7 +1072,7 @@ function BookingFlowContent({ params }: PageProps) {
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
               <Link
                 href={`/track/${createdBooking.id}`}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-transform hover:scale-[1.01]"
+                className="w-full bg-[#24172f] hover:bg-[#3d2b48] text-white font-bold text-xs sm:text-sm h-11 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-transform hover:scale-[1.01]"
               >
                 <span>Track Booking Status &amp; Timeline</span>
                 <ArrowRight className="w-4 h-4" />

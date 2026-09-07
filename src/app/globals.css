@@ -162,3 +162,79 @@ body { top: 0 !important; }
 /* Hide Google Translate Widget */
 .skiptranslate { display: none !important; }
 body { top: 0px !important; }
+
+/* SHRAMNEXUS LUXURY BRAND PALETTE INTEGRATION */
+:root {
+  --ink: #24172f;
+  --ink-soft: #3d2b48;
+  --cream: #fbf7ef;
+  --cream-dark: #f0e7d9;
+  --gold: #e6aa3b;
+  --gold-soft: #f5dfad;
+  --terracotta: #d96f4d;
+  --sage: #8ba58b;
+  --mint: #e2eee4;
+  --red: #c94b3e;
+  --violet: #7c5cf0;
+  --violet-deep: #5b3fc9;
+  --text-brand: #342d39;
+  --muted-brand: #776e79;
+  --border-brand: #e6dcd0;
+}
+
+.font-script {
+  font-family: 'Great Vibes', cursive;
+}
+
+.font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* BUGATTI CINEMATIC ANIMATIONS */
+@keyframes cinematic-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
+}
+
+@keyframes fade-up-slow {
+  0% { opacity: 0; transform: translateY(40px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-bg-zoom {
+  animation: cinematic-zoom 25s linear infinite alternate;
+}
+
+.animate-fade-up {
+  animation: fade-up-slow 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ACETERNITY ANIMATED BORDER BUTTON */
+@keyframes spin-slow {
+  100% { transform: rotate(360deg); }
+}
+
+.animated-border-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.animated-border-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(transparent, #c94b3e, transparent 30%);
+  animation: spin-slow 3s linear infinite;
+}
+
+.animated-border-btn-inner {
+  position: absolute;
+  inset: 2px;
+  background: white;
+  border-radius: inherit;
+  z-index: 1;
+}
+

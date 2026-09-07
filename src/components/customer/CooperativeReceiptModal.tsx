@@ -69,21 +69,21 @@ export function CooperativeReceiptModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md w-full max-h-[88vh] flex flex-col p-0 rounded-3xl border-0 shadow-2xl bg-white overflow-hidden z-[10000]">
         {/* Receipt Header Banner (Pinned at top) */}
-        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-6 shrink-0 relative overflow-hidden pr-14">
+        <div className="bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] text-white p-6 shrink-0 relative overflow-hidden pr-14">
           <div className="relative z-10">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold tracking-widest uppercase bg-emerald-900/60 px-2.5 py-1 rounded-full text-emerald-200 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" />
+              <span className="text-[10px] font-extrabold tracking-widest uppercase bg-[#24172f]/80 border border-[#e6aa3b]/30 px-2.5 py-1 rounded-full text-[#f5dfad] flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-[#e6aa3b]" />
                 Cooperative Certified
               </span>
-              <span className="text-xs font-semibold text-emerald-100">
+              <span className="text-xs font-semibold text-[#f5dfad]">
                 SIH 26089
               </span>
             </div>
             <h2 className="text-xl font-black mt-2 tracking-tight">
               Official Service Receipt
             </h2>
-            <p className="text-xs text-emerald-100/90 mt-0.5">
+            <p className="text-xs text-[#c8bacb] mt-0.5">
               ShramNexus Labour Cooperative Federation
             </p>
           </div>
@@ -99,8 +99,8 @@ export function CooperativeReceiptModal({
               <p className="text-xs font-mono font-bold text-gray-800">{transactionId}</p>
             </div>
             <div className="text-right">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#8ba58b] bg-[#e2eee4] px-2.5 py-1 rounded-full border border-[#8ba58b]/30">
+                <CheckCircle2 className="w-3 h-3 text-[#8ba58b]" />
                 Payment Settled
               </span>
               <p className="text-[10px] text-gray-400 mt-0.5">
@@ -125,7 +125,7 @@ export function CooperativeReceiptModal({
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500 font-medium">Cooperative Society</span>
-              <span className="font-semibold text-emerald-800">
+              <span className="font-semibold text-[#24172f]">
                 {booking.worker?.society_name || 'District Labour Cooperative'}
               </span>
             </div>
@@ -138,7 +138,7 @@ export function CooperativeReceiptModal({
           {/* Transparent Fair-Share Breakdown Table */}
           <div className="space-y-2.5">
             <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-              <HeartHandshake className="w-3.5 h-3.5 text-emerald-600" />
+              <HeartHandshake className="w-3.5 h-3.5 text-[#d96f4d]" />
               Transparent Cooperative Split
             </h4>
 
@@ -153,28 +153,28 @@ export function CooperativeReceiptModal({
 
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <div>
-                  <span className="font-semibold text-emerald-800 block">Worker Welfare & Healthcare</span>
-                  <span className="text-[10px] text-emerald-600">5% pension, accident & health fund</span>
+                  <span className="font-semibold text-[#24172f] block">Worker Welfare &amp; Healthcare</span>
+                  <span className="text-[10px] text-[#8ba58b]">5% pension, accident &amp; health fund</span>
                 </div>
-                <span className="font-bold text-emerald-700">₹{cooperativeWelfare}</span>
+                <span className="font-bold text-[#d96f4d]">₹{cooperativeWelfare}</span>
               </div>
 
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <div>
                   <span className="font-semibold text-gray-800 block">Cooperative Federation Operations</span>
-                  <span className="text-[10px] text-gray-500">10% tech maintenance & dispute support</span>
+                  <span className="text-[10px] text-gray-500">10% tech maintenance &amp; dispute support</span>
                 </div>
                 <span className="font-bold text-gray-900">₹{platformFee}</span>
               </div>
             </div>
 
             {/* Total Paid */}
-            <div className="bg-emerald-50/80 border border-emerald-100 rounded-2xl p-4 flex items-baseline justify-between">
+            <div className="bg-[#fbf7ef] border border-[#e6dcd0] rounded-2xl p-4 flex items-baseline justify-between">
               <div>
-                <span className="text-xs font-bold text-emerald-950 block">Total Paid via Razorpay / UPI</span>
-                <span className="text-[10px] text-emerald-700">All applicable cooperative taxes included</span>
+                <span className="text-xs font-bold text-[#24172f] block">Total Paid via Razorpay / UPI</span>
+                <span className="text-[10px] text-gray-500">All applicable cooperative taxes included</span>
               </div>
-              <span className="text-2xl font-black text-emerald-800">
+              <span className="text-2xl font-black text-[#24172f]">
                 ₹{totalAmount}
               </span>
             </div>
@@ -186,7 +186,7 @@ export function CooperativeReceiptModal({
               <QRCodeSVG value={verificationUrl} size={64} level="M" />
             </div>
             <div className="text-[11px] text-gray-600 leading-relaxed">
-              <p className="font-bold text-gray-900">Digital Seal & Verification</p>
+              <p className="font-bold text-gray-900">Digital Seal &amp; Verification</p>
               <p className="text-gray-500 text-[10px]">
                 Scan QR code to verify this transaction on the public cooperative ledger.
               </p>
@@ -207,7 +207,7 @@ export function CooperativeReceiptModal({
             <Button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white"
+              className="flex-1 rounded-xl text-xs font-bold bg-[#24172f] hover:bg-[#3d2b48] text-[#fbf7ef]"
             >
               Done
             </Button>

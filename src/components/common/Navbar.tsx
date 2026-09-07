@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Sparkles,
   CheckCircle2,
+  Clock,
 } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -31,27 +32,62 @@ import {
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useBookingStore } from '@/lib/store/bookingStore';
+import { useCustomerI18n, CustomerLanguage } from '@/lib/i18n/customerTranslations';
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
-  const [unreadCount, setUnreadCount] = useState(2);
+  const [unreadCount, setUnreadCount] = useState(0);
   const bookings = useBookingStore((state) => state.bookings);
   const activeBookings = bookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled');
 
   useEffect(() => {
+    // 1. Check if notifications have been read
+    try {
+      const isRead = localStorage.getItem('shramnexus_notifications_read');
+      if (!isRead) {
+        setUnreadCount(2);
+      } else {
+        setUnreadCount(0);
+      }
+    } catch (e) {}
+
+    // 2. Load authenticated user immediately
     async function getUser() {
       try {
+        const localAuth = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
+        let initialUser = null;
+        if (localAuth) {
+          try {
+            const p = JSON.parse(localAuth);
+            initialUser = {
+              email: p.email,
+              user_metadata: { full_name: p.name }
+            };
+            setUser(initialUser);
+          } catch (e) {}
+        }
         const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
+        if (session?.user) {
+          setUser(session.user);
+        } else if (!initialUser) {
+          setUser(null);
+        }
       } catch (e) {
         setUser(null);
       }
     }
     getUser();
   }, []);
+
+  const handleMarkAllNotificationsRead = () => {
+    setUnreadCount(0);
+    try {
+      localStorage.setItem('shramnexus_notifications_read', 'true');
+    } catch (e) {}
+  };
 
   const isAdmin = pathname.startsWith('/admin');
   const isWorker = pathname.startsWith('/worker');
@@ -66,10 +102,12 @@ export function Navbar() {
     homeLink = '/worker-dashboard';
   }
 
-  const switchLanguage = (lang: string) => {
-    document.cookie = `googtrans=/en/${lang}; path=/`;
-    document.cookie = `googtrans=/en/${lang}; path=/; domain=${window.location.hostname}`;
-    window.location.reload();
+  const { lang, changeLang, t } = useCustomerI18n();
+
+  const switchLanguage = (newLang: CustomerLanguage) => {
+    changeLang(newLang);
+    document.cookie = `googtrans=/en/${newLang}; path=/`;
+    document.cookie = `googtrans=/en/${newLang}; path=/; domain=${window.location.hostname}`;
   };
 
   const navLinks: Array<{
@@ -81,6 +119,12 @@ export function Navbar() {
   }> = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/services', label: 'Services', icon: Search },
+    {
+      href: '/history',
+      label: 'Bookings',
+      icon: CalendarClock,
+      badge: activeBookings.length > 0 ? activeBookings.length : undefined,
+    },
     {
       href: '/emergency',
       label: 'Emergency SOS',
@@ -247,7 +291,7 @@ export function Navbar() {
                 <span className="text-xs font-bold text-gray-900">Cooperative Notifications</span>
                 <button
                   type="button"
-                  onClick={() => setUnreadCount(0)}
+                  onClick={handleMarkAllNotificationsRead}
                   className="text-[10px] text-[#d96f4d] font-semibold hover:underline"
                 >
                   Mark all as read
@@ -260,7 +304,7 @@ export function Navbar() {
                   </div>
                   <div>
                     <strong className="text-gray-900 block text-[11px]">Worker Rajesh Kumar Assigned</strong>
-                    <p className="text-gray-500 text-[11px] mt-0.5">Patna District Labour Society assigned plumber for booking SN-2026-8941.</p>
+                    <p className="text-gray-500 text-[11px] mt-0.5">Local Labour Society assigned plumber for booking SN-2026-8941.</p>
                     <span className="text-[10px] text-gray-400 mt-1 block">10 mins ago</span>
                   </div>
                 </div>
@@ -282,7 +326,7 @@ export function Navbar() {
           <DropdownMenu>
             <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-xl text-gray-600 hover:bg-gray-100 h-9 px-2.5 text-xs font-semibold transition-colors">
               <Globe className="h-4 w-4 text-gray-500" />
-              <span className="hidden sm:inline">EN</span>
+              <span className="hidden sm:inline">{lang.toUpperCase()}</span>
               <ChevronDown className="h-3 w-3 opacity-50" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-xl">
@@ -312,17 +356,17 @@ export function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 hover:bg-gray-100 h-9 px-3 text-xs font-semibold transition-colors">
                 <div className="w-5 h-5 rounded-full bg-[#24172f] text-white flex items-center justify-center font-bold text-[10px]">
-                  {user.email?.[0]?.toUpperCase() || 'P'}
+                  {user.user_metadata?.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                 </div>
-                <span className="max-w-[100px] truncate text-gray-800">
-                  {user.user_metadata?.full_name || 'Priya S.'}
+                <span className="max-w-[100px] truncate text-gray-800 font-medium">
+                  {user.user_metadata?.full_name || user.email?.split('@')[0] || 'My Account'}
                 </span>
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5 shadow-xl border border-gray-200">
                 <DropdownMenuLabel className="px-3 py-2">
                   <div className="font-bold text-gray-900 text-xs">
-                    {user.user_metadata?.full_name || 'Priya Sharma'}
+                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer'}
                   </div>
                   <div className="text-[10px] text-gray-500 truncate font-normal">
                     {user.email || 'customer@shramnexus.coop'}

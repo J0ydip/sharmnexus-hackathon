@@ -4,12 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/lib/store/bookingStore';
-import { ServiceCard } from '@/components/customer/ServiceCard';
-import { WorkerCard } from '@/components/customer/WorkerCard';
-import { WorkerProfileModal } from '@/components/customer/WorkerProfileModal';
-import { BookingStatusBadge } from '@/components/customer/BookingStatusBadge';
-import { WorkerProfile } from '@/lib/data/mockData';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { useCustomerI18n } from '@/lib/i18n/customerTranslations';
 import {
   Search,
   Zap,
@@ -24,326 +19,272 @@ import {
   CheckCircle2,
   Users,
   ChevronRight,
+  Droplet,
+  Hammer,
+  Paintbrush,
+  Wrench,
+  Car,
+  Leaf,
+  Heart,
+  Home,
+  Check,
 } from 'lucide-react';
+
+const ICON_MAP: Record<string, any> = {
+  droplet: Droplet,
+  zap: Zap,
+  hammer: Hammer,
+  paintbrush: Paintbrush,
+  sparkles: Sparkles,
+  wrench: Wrench,
+  car: Car,
+  leaf: Leaf,
+  heart: Heart,
+  home: Home,
+};
 
 export function CustomerDashboard() {
   const router = useRouter();
-  const { categories, workers, bookings, selectServiceForBooking, selectWorkerForBooking, setDraft } =
-    useBookingStore();
+  const { lang, t, categoriesData, workersData } = useCustomerI18n();
+  const { categories, workers, bookings, selectServiceForBooking, selectWorkerForBooking, setDraft } = useBookingStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedWorkerForModal, setSelectedWorkerForModal] = useState<WorkerProfile | null>(null);
+  const [homeSearch, setHomeSearch] = useState('');
 
-  // Active / Upcoming booking preview
+  // Check if there is an active booking
   const activeBooking = bookings.find((b) => b.status !== 'completed' && b.status !== 'cancelled');
-
-  // Filter categories by search
-  const filteredCategories = categories.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.name_hi && c.name_hi.includes(searchQuery))
-  );
-
-  // Featured top recommended workers (e.g. Rajesh Kumar, Priya Das, Dr. Anita Rao)
-  const topWorkers = workers.slice(0, 3);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      // Find matching category or go to services
+    if (homeSearch.trim()) {
       const matched = categories.find((c) =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+        c.name.toLowerCase().includes(homeSearch.toLowerCase())
+      ) || categories[0];
       if (matched) {
         selectServiceForBooking(matched);
-        setDraft({ description: searchQuery });
+        setDraft({ description: homeSearch });
         router.push(`/booking/${matched.id}`);
       } else {
-        router.push(`/services?q=${encodeURIComponent(searchQuery)}`);
+        router.push(`/services?q=${encodeURIComponent(homeSearch)}`);
       }
+    } else {
+      router.push('/services');
     }
   };
 
-  const handleBookWorker = (worker: WorkerProfile) => {
-    // Find matching category
-    const cat = categories.find((c) => c.name.toLowerCase() === worker.primary_skill.toLowerCase()) || categories[0];
-    selectServiceForBooking(cat);
-    selectWorkerForBooking(worker);
-    setDraft({
-      selectedWorkerId: worker.id,
-      selectedWorker: worker,
-    });
-    router.push(`/booking/${cat.id}?step=confirm&worker=${worker.id}`);
+  const handleCategoryClick = (categoryId: string) => {
+    const matched = categories.find((c) =>
+      c.name.toLowerCase() === categoryId.toLowerCase() || c.id === categoryId
+    ) || categories[0];
+    if (matched) {
+      selectServiceForBooking(matched);
+      router.push(`/booking/${matched.id}`);
+    } else {
+      router.push(`/booking/${categoryId.toLowerCase()}`);
+    }
+  };
+
+  const handleWorkerClick = (w: any) => {
+    const matchedCat = categories.find((c) =>
+      c.name.toLowerCase() === w.skill.toLowerCase()
+    ) || categories[0];
+    selectServiceForBooking(matchedCat);
+    router.push(`/booking/${matchedCat.id}`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12">
-      {/* Top Welcome & Notification Bar */}
-      <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white pt-6 pb-12 sm:pb-16 px-4 sm:px-6 shadow-sm">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-emerald-100 mb-2.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-                <span>Cooperative-Owned Verified Workforce</span>
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-                What service do you need today?
-              </h1>
-              <p className="text-emerald-100 text-xs sm:text-sm mt-1 max-w-xl">
-                Find trusted, verified cooperative workers near you with transparent fair rates and guaranteed quality.
-              </p>
-            </div>
-
-            {/* Quick Location Badge */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/15 px-3.5 py-2 rounded-2xl flex items-center gap-2.5 shrink-0 text-xs text-white">
-              <MapPin className="w-4 h-4 text-emerald-300 shrink-0" />
-              <div>
-                <span className="text-[10px] text-emerald-200 block uppercase font-bold">Service Area</span>
-                <span className="font-semibold">Patna Central & Kankarbagh</span>
-              </div>
-            </div>
+    <div className="bg-[#fbf7ef] text-[#342d39] min-h-screen flex flex-col font-sans">
+      <main className="flex-1 pb-16">
+        {/* Cinematic Luxury Hero Banner (Bugatti Style) */}
+        <div className="relative h-[82vh] min-h-[520px] w-full overflow-hidden bg-[#24172f] flex items-center justify-center border-b border-[#3d2b48]">
+          {/* Background Image with Slow Cinematic Zoom */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-[#24172f]/60 z-10" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#24172f]/80 via-transparent to-[#24172f] z-10" />
+            <img
+              src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=2069"
+              className="w-full h-full object-cover animate-bg-zoom opacity-40 grayscale"
+              alt="Craftsman Background"
+            />
           </div>
 
-          {/* Prominent Search Bar */}
-          <form
-            onSubmit={handleSearchSubmit}
-            className="mt-6 sm:mt-8 bg-white p-2 sm:p-2.5 rounded-2xl shadow-xl flex items-center gap-2 border border-gray-100"
-          >
-            <div className="pl-3 text-gray-400">
-              <Search className="w-5 h-5 text-emerald-600" />
+          {/* Centered Elegant Content */}
+          <div className="relative z-20 text-center flex flex-col items-center justify-center px-4 w-full pt-6 sm:pt-10">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 bg-[#24172f]/80 backdrop-blur-md border border-[#e6aa3b]/30 px-5 py-2 rounded-full text-xs font-semibold text-[#f5dfad] mb-6 shadow-[0_0_15px_rgba(230,170,59,0.2)] animate-fade-up">
+              <ShieldCheck className="w-4 h-4 text-[#e6aa3b]" />
+              <span>{t?.badge || 'Cooperative-Owned Verified Gig Workforce'}</span>
             </div>
-            <input
-              type="text"
-              placeholder="Try searching “plumber for kitchen leak” or “electrician for fan”..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-sm text-gray-800 placeholder-gray-400 bg-transparent border-none outline-hidden focus:ring-0 px-2"
-            />
-            <Button
-              type="submit"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm px-4 sm:px-6 h-10 rounded-xl shadow-xs shrink-0"
-            >
-              Search
-            </Button>
-          </form>
 
-          {/* Quick Suggestion Chips */}
-          <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 text-xs text-emerald-100 scrollbar-none">
-            <span className="text-[11px] opacity-80 shrink-0 font-medium">Popular:</span>
-            {['Kitchen Pipe Leak', 'AC Service', 'Ceiling Fan Repair', 'Deep Cleaning', 'Door Lock Fix'].map(
-              (tag, idx) => (
+            {/* Script Title */}
+            <h1 className="font-script text-[#fbf7ef] text-5xl sm:text-7xl md:text-[100px] leading-tight mb-4 animate-fade-up drop-shadow-2xl">
+              What service do you need today?
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-[#c8bacb] text-[10px] sm:text-xs tracking-[0.3em] uppercase font-semibold animate-fade-up mb-8 max-w-2xl leading-relaxed whitespace-pre-line">
+              {t?.heroSub || 'A story of verified craftsmanship.\nCooperative-Owned Gig Workforce.'}
+            </p>
+
+            {/* Minimal Search Bar */}
+            <div className="animate-fade-up w-full max-w-xl">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="bg-[#3d2b48]/80 backdrop-blur-md border border-[#e6dcd0]/20 p-1.5 rounded-full flex items-center shadow-2xl transition-all focus-within:border-[#e6aa3b] focus-within:bg-[#3d2b48]"
+              >
+                <div className="pl-5 text-[#c8bacb]">
+                  <Search className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  value={homeSearch}
+                  onChange={(e) => setHomeSearch(e.target.value)}
+                  placeholder={t?.searchPlaceholder || 'What service do you need today?'}
+                  className="w-full bg-transparent text-[#fbf7ef] placeholder-[#c8bacb]/60 text-sm px-4 outline-none"
+                />
                 <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery(tag);
-                    const cat = categories.find((c) =>
-                      tag.toLowerCase().includes(c.name.toLowerCase())
-                    ) || categories[0];
-                    selectServiceForBooking(cat);
-                    setDraft({ description: tag });
-                    router.push(`/booking/${cat.id}`);
-                  }}
-                  className="bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors shrink-0"
+                  type="submit"
+                  className="bg-[#e6aa3b] text-[#24172f] px-6 sm:px-8 py-3 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-[#f5dfad] transition-colors shrink-0 shadow-md"
                 >
-                  {tag}
+                  {t?.bookBtn || 'Book Service'}
                 </button>
-              )
-            )}
+              </form>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="container mx-auto max-w-6xl px-4 sm:px-6 -mt-6 space-y-8">
-        {/* Active Booking Card (if customer has an active booking) */}
-        {activeBooking && (
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-200/90 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in-50 duration-300">
-            <div className="flex items-start sm:items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                <CalendarClock className="w-6 h-6" />
+        {/* 10 Categories Grid & Recommended Workers */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 space-y-8 relative z-20">
+          {/* Active Request Banner */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e6dcd0] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-[#e2eee4] text-[#8ba58b] flex items-center justify-center font-bold shrink-0">
+                <CalendarClock className="w-5 h-5" />
               </div>
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-                    Active Service Request
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#d96f4d]">
+                    {t?.activeBadge || 'Active Request'}
                   </span>
-                  <BookingStatusBadge status={activeBooking.status} size="sm" />
+                  <span className="text-[10px] font-bold bg-[#f5dfad] text-[#24172f] px-2 py-0.5 rounded-full border border-[#e6aa3b]/30">
+                    {t?.activeStatus || 'Worker Assigned'}
+                  </span>
                 </div>
-                <h4 className="text-base font-bold text-gray-900 mt-0.5">
-                  {activeBooking.service_name} • {activeBooking.id}
+                <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
+                  {activeBooking
+                    ? `${activeBooking.service_name} • Booking ${activeBooking.id}`
+                    : t?.activeTitle || 'Plumber • Booking SN-2026-8941'}
                 </h4>
-                <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">
-                  Assigned to <strong className="text-gray-800">{activeBooking.worker?.full_name || 'Rajesh Kumar'}</strong> ({activeBooking.worker?.society_name || 'Patna District Labour Society'})
+                <p className="text-xs text-[#776e79]">
+                  {activeBooking?.worker
+                    ? `Assigned to ${activeBooking.worker.full_name} (${activeBooking.worker.society_name || 'Labour Cooperative Society'})`
+                    : t?.activeDesc || 'Assigned to Rajesh Kumar (Labour Cooperative Society)'}
                 </p>
               </div>
             </div>
+            <Link
+              href={activeBooking ? `/track/${activeBooking.id}` : '/track'}
+              className="bg-[#24172f] hover:bg-[#3d2b48] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start sm:self-auto transition-transform hover:scale-[1.02] flex items-center gap-1.5"
+            >
+              <span>{t?.activeTrack || 'Track Live Status →'}</span>
+            </Link>
+          </div>
 
-            <div className="flex items-center gap-2.5 sm:shrink-0">
-              <Link
-                href={`/track/${activeBooking.id}`}
-                className={buttonVariants({
-                  className:
-                    'bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 px-4 rounded-xl shadow-xs',
-                })}
-              >
-                Track Worker & Status
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+          {/* Categories Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-[#24172f] font-serif">
+                {t?.tradesTitle || '10 Verified Trades'}
+              </h2>
+              <Link href="/services" className="text-xs font-bold text-[#d96f4d] hover:underline">
+                View All Services ↗
               </Link>
             </div>
-          </div>
-        )}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {categoriesData.map((c) => {
+                const localizedName = c.names[lang] || c.names.en;
+                const englishName = c.names.en;
+                const IconComp = ICON_MAP[c.icon] || Sparkles;
 
-        {/* Emergency SOS Banner */}
-        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 rounded-2xl p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-              <Zap className="w-6 h-6 text-yellow-300 fill-current animate-pulse" />
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => handleCategoryClick(c.id)}
+                    className="group cursor-pointer bg-white p-4 rounded-2xl border border-[#e6dcd0] hover:border-[#d96f4d] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col items-center justify-center relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#fbf7ef] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="w-12 h-12 rounded-xl bg-[#f0e7d9] text-[#24172f] group-hover:bg-[#d96f4d] group-hover:text-white flex items-center justify-center font-bold mb-3 transition-colors duration-300 z-10">
+                      <IconComp className="w-6 h-6" />
+                    </div>
+                    <span className="text-sm font-semibold text-[#24172f] z-10 text-center">{localizedName}</span>
+                    <span className="text-[10px] text-[#776e79] z-10 mb-1">
+                      {lang === 'en' ? '' : englishName}
+                    </span>
+                    <span className="text-xs font-bold text-[#d96f4d] bg-[#f5dfad]/30 px-2 py-1 rounded-md z-10 mt-1 border border-[#d96f4d]/20">
+                      ₹{c.price}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  ⚡ Emergency SOS
+          </div>
+
+          {/* Recommended Workers Preview */}
+          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-[#e6dcd0] shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#d96f4d]">
+                  {t?.recomAlgo || 'SIH 26089 Algorithm'}
                 </span>
-                <span className="text-xs text-red-100 font-medium">15–25 min dispatch</span>
+                <h3 className="text-base sm:text-lg font-bold text-[#24172f] font-serif">
+                  {t?.recommendedTitle || 'Recommended Verified Craftsmen'}
+                </h3>
               </div>
-              <h3 className="text-lg font-extrabold text-white mt-0.5">
-                Need urgent assistance right now?
-              </h3>
-              <p className="text-xs text-red-100 mt-0.5 max-w-lg">
-                Burst pipe, electrical outage, or security lock failure? Immediate priority dispatch for local cooperative workers.
-              </p>
+              <Link
+                href="/services"
+                className="text-xs font-bold text-[#d96f4d] hover:underline"
+              >
+                {t?.viewAll || 'View All ↗'}
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {workersData.map((w, idx) => (
+                <div key={idx} className="p-4 rounded-2xl border border-[#e6dcd0] bg-white shadow-2xs space-y-3">
+                  <div className="flex items-center gap-3">
+                    <img src={w.img} alt={w.name} className="w-12 h-12 rounded-xl object-cover" />
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <strong className="text-sm text-[#24172f]">{w.name}</strong>
+                        <span className="text-[10px] text-[#8ba58b] bg-[#e2eee4] font-bold px-1.5 py-0.2 rounded">
+                          {t?.verifiedBadge || '✓ Verified'}
+                        </span>
+                      </div>
+                      <span className="text-xs text-[#776e79]">
+                        {w.skill} • {w.exp} yrs exp
+                      </span>
+                      <span className="text-[11px] text-[#d96f4d] block font-medium">{w.society}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-xs pt-2 border-t border-[#e6dcd0]">
+                    <span className="font-bold text-[#24172f]">Match: {w.match}%</span>
+                    <button
+                      onClick={() => handleWorkerClick(w)}
+                      className="bg-[#24172f] text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-xs hover:bg-[#3d2b48] transition-colors"
+                    >
+                      {t?.bookNowBtn || 'Book Now'}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          <Link
-            href="/emergency"
-            className="bg-white text-red-700 hover:bg-red-50 font-bold text-xs h-10 px-5 rounded-xl shadow-md flex items-center justify-center shrink-0 transition-transform hover:scale-105"
-          >
-            Instant Emergency Booking
-            <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-          </Link>
         </div>
+      </main>
 
-        {/* Service Categories Section */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                Explore Verified Services
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                10 cooperative-backed trades with certified standards & transparent pricing
-              </p>
-            </div>
-            <Link
-              href="/services"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group"
-            >
-              <span>View All 10 Services</span>
-              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {filteredCategories.map((category) => (
-              <ServiceCard
-                key={category.id}
-                category={category}
-                compact={true}
-                onSelect={(cat) => selectServiceForBooking(cat)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* Recommended Verified Workers */}
-        <section className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-200/90 shadow-xs">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 mb-1">
-                <Sparkles className="w-3.5 h-3.5" />
-                Fair Matching Network
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                Nearby Verified Cooperative Workers
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Allocated through registered Labour Cooperative Societies with balanced workloads
-              </p>
-            </div>
-
-            <Link
-              href="/services"
-              className="text-xs font-semibold text-gray-600 hover:text-emerald-700 hidden sm:flex items-center gap-1"
-            >
-              <span>See more</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {topWorkers.map((worker) => (
-              <WorkerCard
-                key={worker.id}
-                worker={worker}
-                onViewProfile={(w) => setSelectedWorkerForModal(w)}
-                onBookNow={(w) => handleBookWorker(w)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* Cooperative Advantage & Welfare Strip */}
-        <section className="bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100/50 rounded-2xl p-5 sm:p-6 border border-emerald-200/80">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-gray-900 text-sm">100% Verified Identity</h4>
-                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                  Every worker is verified by state cooperative federations with skills and background certification.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs shrink-0">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-gray-900 text-sm">Cooperative-Owned Model</h4>
-                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                  Not a middleman app. 90%+ of fees go directly to workers, funding health insurance and pensions.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs shrink-0">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-gray-900 text-sm">Transparent Fair Allocation</h4>
-                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                  SIH 26089 algorithm distributes bookings evenly, preventing burnout and giving all skilled members fair income.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* Worker Profile Modal */}
-      <WorkerProfileModal
-        worker={selectedWorkerForModal}
-        isOpen={!!selectedWorkerForModal}
-        onClose={() => setSelectedWorkerForModal(null)}
-        onBook={(w) => handleBookWorker(w)}
-      />
+      {/* FOOTER */}
+      <footer className="bg-[#24172f] border-t border-[#3d2b48] py-6 text-center text-xs text-[#c8bacb]">
+        {t?.footerText || 'ShramNexus © 2026. Built for SIH Problem Statement 26089 (Cooperative Gig Services Platform).'}
+      </footer>
     </div>
   );
 }

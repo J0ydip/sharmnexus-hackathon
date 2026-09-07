@@ -29,7 +29,7 @@ export function FairMatchExplainer({
       percentage: (breakdown.skillMatchScore / 35) * 100,
       icon: Award,
       desc: `Verified certification in ${worker.primary_skill}`,
-      color: 'bg-emerald-500',
+      color: 'bg-[#e6aa3b]',
     },
     {
       title: 'Distance & Proximity',
@@ -65,7 +65,7 @@ export function FairMatchExplainer({
       percentage: (breakdown.workloadScore / 10) * 100,
       icon: Scale,
       desc: 'Balanced hours ensuring rested, high-quality craft service',
-      color: 'bg-teal-500',
+      color: 'bg-[#d96f4d]',
     },
     {
       title: 'Opportunity Fairness',
@@ -74,16 +74,16 @@ export function FairMatchExplainer({
       percentage: (breakdown.opportunityScore / 10) * 100,
       icon: Sparkles,
       desc: `Fair allocation through ${worker.society_name}`,
-      color: 'bg-indigo-500',
+      color: 'bg-[#24172f]',
     },
   ];
 
   return (
-    <div className="bg-gradient-to-br from-emerald-50/70 to-teal-50/50 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 shadow-xs">
+    <div className="bg-gradient-to-br from-[#fbf7ef] to-[#f0e7d9]/60 border border-[#e6dcd0] rounded-2xl p-4 sm:p-5 shadow-xs">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-800">
-            <Sparkles className="h-4 w-4 text-emerald-600" />
+          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#d96f4d]">
+            <Sparkles className="h-4 w-4 text-[#e6aa3b]" />
             Cooperative Fair Allocation Score
           </div>
           <h4 className="text-base font-bold text-gray-900 mt-0.5">
@@ -91,19 +91,19 @@ export function FairMatchExplainer({
           </h4>
         </div>
         <div className="flex flex-col items-end">
-          <div className="flex items-baseline gap-1 bg-emerald-700 text-white px-3 py-1 rounded-xl shadow-xs">
+          <div className="flex items-baseline gap-1 bg-[#24172f] text-white px-3 py-1 rounded-xl shadow-xs border border-[#e6aa3b]/30">
             <span className="text-lg font-black">{breakdown.totalScore}%</span>
-            <span className="text-[10px] font-medium uppercase opacity-90">Match</span>
+            <span className="text-[10px] font-medium uppercase opacity-90 text-[#f5dfad]">Match</span>
           </div>
           <span className="text-[10px] text-gray-500 mt-0.5 font-medium">SIH 26089 Algorithm</span>
         </div>
       </div>
 
       {/* Highlights checklist */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 bg-white/80 p-3 rounded-xl border border-emerald-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 bg-white/90 p-3 rounded-xl border border-[#e6dcd0]">
         {breakdown.whyHighlights.map((hl, i) => (
           <div key={i} className="flex items-center gap-2 text-xs font-medium text-gray-700">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#8ba58b] shrink-0" />
             <span>{hl}</span>
           </div>
         ))}
@@ -124,7 +124,7 @@ export function FairMatchExplainer({
                     <Icon className="h-3.5 w-3.5 text-gray-500" />
                     <span>{f.title} <span className="text-gray-400 font-normal">({f.weight})</span></span>
                   </div>
-                  <span className="font-mono text-[11px] text-emerald-700 font-bold">{f.score}</span>
+                  <span className="font-mono text-[11px] text-[#d96f4d] font-bold">{f.score}</span>
                 </div>
                 <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
                   <div

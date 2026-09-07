@@ -138,9 +138,12 @@ select {
   font: inherit;
 }
 
-h1,
-h2,
-h3 {
+body:has(#home) h1,
+body:has(.hero) h1,
+body:has(#home) h2,
+body:has(.hero) h2,
+body:has(#home) h3,
+body:has(.hero) h3 {
   font-family: var(--display);
   font-weight: 700;
   line-height: 1.04;
@@ -148,23 +151,28 @@ h3 {
   color: var(--ink);
 }
 
-h1 {
+body:has(#home) h1,
+body:has(.hero) h1 {
   font-size: clamp(3.1rem, 6.1vw, 6.2rem);
 }
 
-h2 {
+body:has(#home) h2,
+body:has(.hero) h2 {
   font-size: clamp(2.5rem, 4.3vw, 4.8rem);
 }
 
-h3 {
+body:has(#home) h3,
+body:has(.hero) h3 {
   font-size: 1.35rem;
 }
 
-p {
+body:has(#home) p,
+body:has(.hero) p {
   color: var(--muted);
 }
 
-em {
+body:has(#home) em,
+body:has(.hero) em {
   font-style: normal;
   color: var(--terracotta);
 }

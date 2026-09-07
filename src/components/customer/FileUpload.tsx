@@ -51,7 +51,7 @@ export function FileUpload({
       <div className="flex items-center justify-between">
         <label className="text-xs font-bold text-gray-700 block">{label}</label>
         {preview && (
-          <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+          <span className="text-[11px] text-[#8ba58b] font-semibold flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" /> Photo Attached
           </span>
         )}
@@ -68,7 +68,7 @@ export function FileUpload({
       />
 
       {preview ? (
-        <div className="relative rounded-2xl overflow-hidden border border-emerald-300 max-w-sm bg-gray-50">
+        <div className="relative rounded-2xl overflow-hidden border border-[#e6aa3b]/40 max-w-sm bg-gray-50">
           <img
             src={preview}
             alt="Issue preview"
@@ -87,16 +87,16 @@ export function FileUpload({
         <div className="space-y-2">
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-gray-200 hover:border-emerald-500 rounded-2xl p-5 text-center cursor-pointer bg-gray-50/50 hover:bg-emerald-50/30 transition-all duration-200 flex flex-col items-center justify-center gap-2"
+            className="border-2 border-dashed border-gray-200 hover:border-[#e6aa3b] rounded-2xl p-5 text-center cursor-pointer bg-gray-50/50 hover:bg-[#fbf7ef] transition-all duration-200 flex flex-col items-center justify-center gap-2"
           >
-            <div className="w-10 h-10 rounded-full bg-emerald-100/60 text-emerald-700 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-[#f0e7d9] text-[#24172f] flex items-center justify-center">
               <UploadCloud className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-bold text-emerald-700 hover:underline">
+              <span className="text-xs font-bold text-[#24172f] hover:underline">
                 Click to upload photo
               </span>
-              <span className="text-xs text-gray-500"> or drag & drop</span>
+              <span className="text-xs text-gray-500"> or drag &amp; drop</span>
             </div>
             <span className="text-[10px] text-gray-400">PNG, JPG, JPEG up to 5MB</span>
           </div>
@@ -111,7 +111,7 @@ export function FileUpload({
                   'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80'
                 )
               }
-              className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200/60 transition-colors"
+              className="text-[10px] font-semibold text-[#24172f] bg-[#f0e7d9] hover:bg-[#e6dcd0] px-2 py-0.5 rounded-md border border-[#e6dcd0] transition-colors"
             >
               Pipe Leak Sample
             </button>
@@ -122,7 +122,7 @@ export function FileUpload({
                   'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop&q=80'
                 )
               }
-              className="text-[10px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200/60 transition-colors"
+              className="text-[10px] font-semibold text-[#24172f] bg-[#f0e7d9] hover:bg-[#e6dcd0] px-2 py-0.5 rounded-md border border-[#e6dcd0] transition-colors"
             >
               Switchboard Sample
             </button>

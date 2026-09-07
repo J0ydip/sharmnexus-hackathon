@@ -11,12 +11,8 @@ export default async function CustomerLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/auth/login');
-  }
-
   // Workers shouldn't access the customer portal
-  if (user.user_metadata?.user_type === 'worker') {
+  if (user && user.user_metadata?.user_type === 'worker') {
     redirect('/worker-dashboard');
   }
 

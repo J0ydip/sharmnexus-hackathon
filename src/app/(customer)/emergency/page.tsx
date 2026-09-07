@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/lib/store/bookingStore';
@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Building2,
+  Navigation,
 } from 'lucide-react';
 
 export default function EmergencyBookingPage() {
@@ -33,11 +34,67 @@ export default function EmergencyBookingPage() {
 
   const [selectedCategoryId, setSelectedCategoryId] = useState('cat-plumber');
   const [description, setDescription] = useState('Urgent pipe burst under kitchen counter. Water leaking heavily.');
-  const [address, setAddress] = useState('Flat 402, Green Valley Apartments, Kankarbagh Main Rd, Patna');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('Kolkata');
+  const [coords, setCoords] = useState<[number, number]>([22.5726, 88.3639]);
+  const [isLocating, setIsLocating] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(true);
   const [selectedWorkerModal, setSelectedWorkerModal] = useState<WorkerProfile | null>(null);
+
+  useEffect(() => {
+    try {
+      const savedProfile = localStorage.getItem('shramnexus-customer-profile');
+      if (savedProfile) {
+        const p = JSON.parse(savedProfile);
+        if (p.address && !p.address.includes('Green Valley')) setAddress(p.address);
+        if (p.city) setCity(p.city);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleDetectLocation = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setCoords([latitude, longitude]);
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en' } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            const detCity = addr.city || addr.town || addr.municipality || addr.state_district || 'Local Area';
+            const road = addr.road || addr.suburb || addr.neighbourhood || '';
+            const house = addr.house_number ? `${addr.house_number}, ` : '';
+            const fullAddr = data.display_name ? data.display_name.split(',').slice(0, 3).join(', ') : `${house}${road}, ${detCity}`;
+
+            setAddress(fullAddr);
+            setCity(detCity);
+            toast.success(`Location detected: ${detCity}`);
+          } else {
+            toast.success('GPS coordinates detected!');
+          }
+        } catch (e) {
+          toast.success('GPS coordinates detected!');
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (err) => {
+        setIsLocating(false);
+        toast.error(`Location error: ${err.message}`);
+      }
+    );
+  };
 
   // Selected category object
   const selectedCategory =
@@ -79,8 +136,10 @@ export default function EmergencyBookingPage() {
       emergencyMultiplier: emergencyMultiplier,
       estimatedPrice: Math.round(selectedCategory.base_price * emergencyMultiplier),
       description: description,
-      address: address,
-      city: 'Patna',
+      address: address || 'Emergency Dispatch Location',
+      city: city || 'Kolkata',
+      lat: coords[0],
+      lng: coords[1],
       date: new Date().toISOString().split('T')[0],
       timeSlot: 'Immediate (Emergency SOS)',
       bookingType: 'emergency',
@@ -143,6 +202,53 @@ export default function EmergencyBookingPage() {
       </div>
 
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 -mt-6 space-y-6">
+        {/* Instant 1-Click SOS Dispatch Cards from Teammates */}
+        <div className="bg-white p-6 rounded-2xl border border-[#c94b3e]/30 shadow-md space-y-4">
+          <h3 className="text-base font-bold text-[#24172f] font-serif">
+            Need Immediate Emergency Plumber / Electrician?
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl border border-[#c94b3e]/30 bg-[#f5d8d1]/30 flex justify-between items-center">
+              <div>
+                <h4 className="font-bold text-[#24172f] text-sm">Emergency Plumber</h4>
+                <span className="text-xs text-[#776e79] block">ETA: ~15 mins • 2.4 km away</span>
+                <span className="block text-xs font-black text-[#c94b3e] mt-1">₹450 (1.5x Multiplier)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const plumberWorker = emergencyWorkers.find(w => w.primary_skill.toLowerCase().includes('plumb')) || emergencyWorkers[0];
+                  if (plumberWorker) handleDirectEmergencyBook(plumberWorker);
+                }}
+                className="animated-border-btn rounded-xl shadow-lg w-32 h-10 transition-transform hover:scale-105 shrink-0"
+              >
+                <span className="animated-border-btn-inner flex items-center justify-center text-[#c94b3e] font-bold text-xs hover:bg-[#f5d8d1] transition-colors">
+                  Dispatch Now
+                </span>
+              </button>
+            </div>
+            <div className="p-4 rounded-xl border border-[#c94b3e]/30 bg-[#f5d8d1]/30 flex justify-between items-center">
+              <div>
+                <h4 className="font-bold text-[#24172f] text-sm">Emergency Electrician</h4>
+                <span className="text-xs text-[#776e79] block">ETA: ~20 mins • 3.1 km away</span>
+                <span className="block text-xs font-black text-[#c94b3e] mt-1">₹525 (1.5x Multiplier)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const elecWorker = emergencyWorkers.find(w => w.primary_skill.toLowerCase().includes('elec')) || emergencyWorkers[0];
+                  if (elecWorker) handleDirectEmergencyBook(elecWorker);
+                }}
+                className="animated-border-btn rounded-xl shadow-lg w-32 h-10 transition-transform hover:scale-105 shrink-0"
+              >
+                <span className="animated-border-btn-inner flex items-center justify-center text-[#c94b3e] font-bold text-xs hover:bg-[#f5d8d1] transition-colors">
+                  Dispatch Now
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Emergency Dispatch Form */}
         <form
           onSubmit={handleSearchEmergencyWorkers}
@@ -207,11 +313,23 @@ export default function EmergencyBookingPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700 block">
-                Your Exact Location / Landmark *
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700 block">
+                  Your Exact Location / Landmark *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleDetectLocation}
+                  disabled={isLocating}
+                  className="text-[11px] font-bold text-red-600 hover:text-red-700 flex items-center gap-1 bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Navigation className="w-3 h-3" />
+                  <span>{isLocating ? 'Locating...' : 'Use Current GPS'}</span>
+                </button>
+              </div>
               <textarea
                 rows={2}
+                placeholder="Enter street address, flat no, landmark..."
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 required
@@ -289,7 +407,7 @@ export default function EmergencyBookingPage() {
                             <h4 className="font-bold text-gray-900 text-sm">
                               {worker.full_name}
                             </h4>
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
+                            <span className="text-[10px] font-bold text-[#8ba58b] bg-[#e2eee4] px-1.5 py-0.2 rounded">
                               ✓ Verified
                             </span>
                           </div>
@@ -312,7 +430,7 @@ export default function EmergencyBookingPage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Cooperative Society:</span>
-                        <span className="font-semibold text-emerald-700 truncate max-w-[150px]">
+                        <span className="font-semibold text-[#d96f4d] truncate max-w-[150px]">
                           {worker.society_name}
                         </span>
                       </div>

@@ -41,15 +41,15 @@ export function WorkerProfileModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-2xl border border-gray-200">
         {/* Header Banner */}
-        <div className="relative bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-6 pt-7">
+        <div className="relative bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] text-white p-6 pt-7">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="relative">
               <img
                 src={worker.profile_photo_url}
                 alt={worker.full_name}
-                className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md"
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-white/20 shadow-md"
               />
-              <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full ring-2 ring-white">
+              <span className="absolute -bottom-1 -right-1 bg-[#8ba58b] text-white p-1 rounded-full ring-2 ring-[#24172f]">
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </span>
             </div>
@@ -57,18 +57,18 @@ export function WorkerProfileModal({
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-xl font-bold text-white">{worker.full_name}</h3>
-                <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full">
-                  <ShieldCheck className="w-3 h-3" />
+                <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-white/10">
+                  <ShieldCheck className="w-3 h-3 text-[#e6aa3b]" />
                   Verified Cooperative Craftsman
                 </span>
               </div>
 
-              <p className="text-emerald-100 text-xs mt-1 flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5" />
+              <p className="text-[#c8bacb] text-xs mt-1 flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5 text-[#e6aa3b]" />
                 {worker.society_name}
               </p>
 
-              <div className="flex items-center gap-3 text-xs text-emerald-50 mt-2.5 flex-wrap">
+              <div className="flex items-center gap-3 text-xs text-[#f5dfad] mt-2.5 flex-wrap">
                 <div className="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded-md">
                   <StarRating rating={worker.avg_rating} size="sm" />
                 </div>
@@ -88,20 +88,20 @@ export function WorkerProfileModal({
             <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
               <div className="text-[11px] text-gray-500 font-medium">Proximity</div>
               <div className="text-sm font-bold text-gray-900 mt-0.5 flex items-center justify-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                <MapPin className="w-3.5 h-3.5 text-[#d96f4d]" />
                 {worker.approx_distance_km.toFixed(1)} km
               </div>
             </div>
             <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
               <div className="text-[11px] text-gray-500 font-medium">Response ETA</div>
               <div className="text-sm font-bold text-gray-900 mt-0.5 flex items-center justify-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-blue-600" />
+                <Clock className="w-3.5 h-3.5 text-[#7c5cf0]" />
                 ~{worker.response_time_mins} mins
               </div>
             </div>
             <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
               <div className="text-[11px] text-gray-500 font-medium">Standard Rate</div>
-              <div className="text-sm font-bold text-emerald-700 mt-0.5">
+              <div className="text-sm font-bold text-[#d96f4d] mt-0.5">
                 ₹{worker.hourly_rate} base
               </div>
             </div>
@@ -120,7 +120,7 @@ export function WorkerProfileModal({
           {/* Verified Skills & Certifications */}
           <div>
             <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">
-              Verified Skills & Certifications
+              Verified Skills &amp; Certifications
             </h4>
             <div className="space-y-2">
               {worker.skills.map((skill, index) => (
@@ -129,15 +129,15 @@ export function WorkerProfileModal({
                   className="flex items-start justify-between p-3 rounded-xl bg-white border border-gray-200/80 shadow-2xs"
                 >
                   <div className="flex items-start gap-2.5">
-                    <div className="p-2 bg-emerald-50 text-emerald-700 rounded-lg shrink-0 mt-0.5">
-                      <Award className="w-4 h-4" />
+                    <div className="p-2 bg-[#fbf7ef] text-[#24172f] border border-[#e6dcd0] rounded-lg shrink-0 mt-0.5">
+                      <Award className="w-4 h-4 text-[#e6aa3b]" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-gray-900">
                           {skill.service_name}
                         </span>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] bg-[#f0e7d9] text-[#24172f] font-bold px-1.5 py-0.5 rounded">
                           {skill.years_experience} yrs exp
                         </span>
                       </div>
@@ -148,8 +148,8 @@ export function WorkerProfileModal({
                       )}
                     </div>
                   </div>
-                  <span className="text-xs font-medium text-emerald-600 flex items-center gap-1 shrink-0">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium text-[#8ba58b] flex items-center gap-1 shrink-0">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#8ba58b]" />
                     Verified
                   </span>
                 </div>
@@ -170,7 +170,7 @@ export function WorkerProfileModal({
               <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                 Cooperative Community Reviews
               </h4>
-              <span className="text-xs text-emerald-600 font-semibold">
+              <span className="text-xs text-[#e6aa3b] font-semibold">
                 {worker.reviews.length} Verified Reviews
               </span>
             </div>
@@ -212,7 +212,7 @@ export function WorkerProfileModal({
               Cancel
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 shadow-xs"
+              className="bg-[#24172f] hover:bg-[#3d2b48] text-[#fbf7ef] font-semibold px-5 shadow-xs"
               onClick={() => {
                 onBook(worker);
                 onClose();

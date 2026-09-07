@@ -228,10 +228,10 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
       status: 'assigned',
       urgency: 'normal',
       description: requirements || `${service.title} booking from landing page`,
-      address: address || 'Patna Central, Bihar',
-      city: 'Patna',
-      lat: 25.5941,
-      lng: 85.1376,
+      address: address || 'Cooperative Enclave',
+      city: 'Kolkata',
+      lat: 22.5726,
+      lng: 88.3639,
       scheduled_at: `${date} ${time}`,
       time_slot: time,
       estimated_price: numericPrice,
@@ -390,7 +390,7 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Priya Sharma"
+                    placeholder="e.g. Rahul Sen"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-[#e6dcd0] rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#d96f4d] cursor-text"
@@ -424,7 +424,7 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Flat 4B, Bailey Road, Patna"
+                    placeholder="e.g. Flat 4B, Park Street, Kolkata"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-[#e6dcd0] rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#d96f4d] cursor-text"
@@ -496,11 +496,11 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
         {/* ================= STEP 3: SUCCESS CELEBRATION ================= */}
         {step === 'success' && (
           <div className="text-center py-4">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-inner">
+            <div className="w-16 h-16 rounded-full bg-[#f0e7d9] text-[#e6aa3b] flex items-center justify-center mx-auto mb-3 shadow-inner">
               <CheckCircle2 className="w-9 h-9" />
             </div>
 
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#24172f] bg-[#f0e7d9] px-3 py-1 rounded-full border border-[#e6dcd0]">
               Cooperative Dispatch Confirmed
             </span>
 

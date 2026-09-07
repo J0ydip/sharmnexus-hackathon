@@ -33,8 +33,8 @@ export function WorkerCard({
   return (
     <div
       className={cn(
-        'group bg-white rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between shadow-xs hover:shadow-md hover:border-emerald-300',
-        isSelected ? 'border-emerald-600 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-gray-200/90'
+        'group bg-white rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between shadow-xs hover:shadow-md hover:border-[#d96f4d]',
+        isSelected ? 'border-[#e6aa3b] ring-2 ring-[#e6aa3b]/20 bg-[#fbf7ef]' : 'border-gray-200/90'
       )}
     >
       {/* Header: Avatar, Name, Verified Badge, Match Score */}
@@ -48,7 +48,7 @@ export function WorkerCard({
                 className="w-14 h-14 rounded-2xl object-cover border border-gray-100 shadow-xs"
               />
               <span
-                className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full ring-2 ring-white"
+                className="absolute -bottom-1 -right-1 bg-[#8ba58b] text-white p-0.5 rounded-full ring-2 ring-white"
                 title="Verified Cooperative Worker"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -57,10 +57,10 @@ export function WorkerCard({
 
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <h3 className="font-bold text-gray-900 text-base group-hover:text-emerald-700 transition-colors">
+                <h3 className="font-bold text-gray-900 text-base group-hover:text-[#d96f4d] transition-colors">
                   {worker.full_name}
                 </h3>
-                <span className="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center text-[10px] font-bold text-[#8ba58b] bg-[#e2eee4] px-2 py-0.5 rounded-full">
                   ✓ Verified Worker
                 </span>
               </div>
@@ -72,7 +72,7 @@ export function WorkerCard({
               </div>
 
               <div className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1">
-                <Building2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                <Building2 className="w-3 h-3 text-[#d96f4d] shrink-0" />
                 <span className="truncate max-w-[180px] sm:max-w-[220px]">{worker.society_name}</span>
               </div>
             </div>
@@ -80,8 +80,8 @@ export function WorkerCard({
 
           {/* Match Score Badge */}
           <div className="flex flex-col items-end shrink-0">
-            <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs font-bold px-2.5 py-1 rounded-xl shadow-xs">
-              <Sparkles className="w-3 h-3 text-emerald-200" />
+            <div className="flex items-center gap-1 bg-gradient-to-r from-[#24172f] to-[#3d2b48] text-white text-xs font-bold px-2.5 py-1 rounded-xl shadow-xs">
+              <Sparkles className="w-3 h-3 text-[#e6aa3b]" />
               <span>{matchScore}%</span>
             </div>
             <span className="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">
@@ -104,15 +104,15 @@ export function WorkerCard({
           <div className="flex flex-col min-w-0">
             <span className="text-[10px] text-gray-400 font-medium truncate">Proximity</span>
             <div className="flex items-center gap-1 font-bold text-gray-800 mt-0.5 whitespace-nowrap">
-              <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+              <MapPin className="w-3 h-3 text-[#d96f4d] shrink-0" />
               <span className="text-xs">{worker.approx_distance_km.toFixed(1)} km</span>
             </div>
           </div>
 
           <div className="flex flex-col min-w-0">
             <span className="text-[10px] text-gray-400 font-medium truncate">Availability</span>
-            <div className="flex items-center gap-1 font-bold text-emerald-700 mt-0.5 min-w-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <div className="flex items-center gap-1 font-bold text-[#8ba58b] mt-0.5 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#8ba58b] animate-pulse shrink-0" />
               <span className="text-xs truncate">Available</span>
             </div>
           </div>
@@ -120,15 +120,15 @@ export function WorkerCard({
 
         {/* "Why this worker?" highlights */}
         {worker.why_recommended && worker.why_recommended.length > 0 && (
-          <div className="mt-3 bg-emerald-50/60 rounded-xl p-2.5 border border-emerald-100/80">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 mb-1 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+          <div className="mt-3 bg-[#fbf7ef] rounded-xl p-2.5 border border-[#e6dcd0]">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#24172f] mb-1 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-[#d96f4d]" />
               Why this worker?
             </div>
             <div className="space-y-1">
               {worker.why_recommended.slice(0, 2).map((reason, idx) => (
                 <div key={idx} className="flex items-center gap-1.5 text-[11px] text-gray-700 font-medium">
-                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span className="text-[#d96f4d] font-bold">✓</span>
                   <span className="truncate">{reason}</span>
                 </div>
               ))}
@@ -152,7 +152,7 @@ export function WorkerCard({
             type="button"
             variant="outline"
             size="sm"
-            className="text-xs h-8 px-3 border-gray-200 text-gray-700 hover:text-emerald-700 hover:border-emerald-300"
+            className="text-xs h-8 px-3 border-gray-200 text-gray-700 hover:text-[#8ba58b] hover:border-[#d96f4d]"
             onClick={() => onViewProfile(worker)}
           >
             View Profile
@@ -160,7 +160,7 @@ export function WorkerCard({
           <Button
             type="button"
             size="sm"
-            className="text-xs h-8 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs"
+            className="text-xs h-8 px-4 bg-[#24172f] hover:bg-[#3d2b48] text-white font-semibold shadow-xs"
             onClick={() => onBookNow(worker)}
           >
             Book Now

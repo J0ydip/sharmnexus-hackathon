@@ -15,16 +15,22 @@ interface MapViewProps {
   height?: string;
   userLocation?: [number, number];
   addressName?: string;
+  city?: string;
+  onLocationSelect?: (coords: [number, number], address?: string) => void;
+  interactive?: boolean;
 }
 
 // Internal map component rendered only on client
 function LeafletMapInner({
   workers,
   onSelectWorker,
-  center = [25.5941, 85.1376],
+  center = [22.5726, 88.3639],
   zoom = 13,
-  userLocation = [25.5941, 85.1376],
-  addressName = 'Your Location (Kankarbagh, Patna)',
+  userLocation = [22.5726, 88.3639],
+  addressName = 'Your Service Location',
+  city,
+  onLocationSelect,
+  interactive = true,
 }: MapViewProps) {
   const [L, setL] = useState<any>(null);
   const [selectedMarkerWorker, setSelectedMarkerWorker] = useState<WorkerProfile | null>(null);
@@ -47,21 +53,54 @@ function LeafletMapInner({
     return (
       <div className="w-full h-full min-h-[300px] flex items-center justify-center bg-gray-100 rounded-2xl text-gray-400 text-xs">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-          Loading OpenStreetMap cooperative coverage...
+          <div className="w-4 h-4 border-2 border-[#e6aa3b] border-t-transparent rounded-full animate-spin" />
+          Loading interactive OpenStreetMap coverage...
         </div>
       </div>
     );
   }
 
   // Load React Leaflet components dynamically
-  const { MapContainer, TileLayer, Marker, Popup, Circle } = require('react-leaflet');
+  const { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } = require('react-leaflet');
 
-  // Custom emerald worker icon
+  // Helper component to re-center map dynamically when props change
+  function ChangeMapView({ targetCenter, targetZoom }: { targetCenter: [number, number]; targetZoom: number }) {
+    const map = useMap();
+    useEffect(() => {
+      if (targetCenter && targetCenter[0] && targetCenter[1]) {
+        map.flyTo(targetCenter, targetZoom, { duration: 1.2 });
+      }
+    }, [targetCenter[0], targetCenter[1], targetZoom, map]);
+    return null;
+  }
+
+  // Helper component to handle user clicking on map to place pin
+  function MapClickHandler({ onSelect }: { onSelect?: (coords: [number, number], address?: string) => void }) {
+    useMapEvents({
+      click: async (e: any) => {
+        if (!onSelect || !interactive) return;
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+          const data = await res.json();
+          const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood || '';
+          const detectedCity = data.address?.city || data.address?.town || data.address?.state_district || 'Local Area';
+          const fullAddr = [road, detectedCity].filter(Boolean).join(', ') || data.display_name;
+          onSelect([lat, lng], fullAddr);
+        } catch (err) {
+          onSelect([lat, lng]);
+        }
+      },
+    });
+    return null;
+  }
+
+  // Custom luxury worker icon
   const workerIcon = new L.DivIcon({
     className: 'custom-worker-pin',
     html: `
-      <div style="background-color: #059669; color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); font-weight: bold; font-size: 13px;">
+      <div style="background-color: #24172f; color: #f5dfad; border: 2px solid #e6aa3b; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); font-weight: bold; font-size: 13px;">
         🛠️
       </div>
     `,
@@ -74,13 +113,31 @@ function LeafletMapInner({
   const userIcon = new L.DivIcon({
     className: 'custom-user-pin',
     html: `
-      <div style="background-color: #2563eb; color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); font-weight: bold; font-size: 13px;">
+      <div style="background-color: #d96f4d; color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); font-weight: bold; font-size: 13px;">
         📍
       </div>
     `,
     iconSize: [34, 34],
     iconAnchor: [17, 34],
     popupAnchor: [0, -34],
+  });
+
+  // Dynamically cluster workers around active user location or center if user is not in Patna
+  const isCustomLocation = Math.abs(userLocation[0] - 25.5941) > 0.1 || Math.abs(userLocation[1] - 85.1376) > 0.1;
+  const displayWorkers = workers.map((w, idx) => {
+    if (!isCustomLocation && w.lat && w.lng) return w;
+    // Offset workers nicely around the user location (~1.2 to 4 km)
+    const angle = (idx * (360 / Math.max(workers.length, 1))) * (Math.PI / 180);
+    const dist = 0.012 + (idx % 3) * 0.01;
+    const lat = userLocation[0] + Math.cos(angle) * dist;
+    const lng = userLocation[1] + Math.sin(angle) * dist;
+    const localSociety = city ? `${city} Labour Cooperative Federation` : 'Local Labour Cooperative Society';
+    return {
+      ...w,
+      lat,
+      lng,
+      society_name: localSociety,
+    };
   });
 
   return (
@@ -96,12 +153,20 @@ function LeafletMapInner({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <ChangeMapView targetCenter={center} targetZoom={zoom} />
+        {onLocationSelect && <MapClickHandler onSelect={onLocationSelect} />}
+
         {/* User Service Location Marker */}
         <Marker position={userLocation} icon={userIcon}>
           <Popup>
             <div className="p-1 text-xs">
-              <span className="font-bold text-blue-700 block">Service Address</span>
+              <span className="font-bold text-[#d96f4d] block">Service Location</span>
               <p className="text-gray-600 mt-0.5">{addressName}</p>
+              {interactive && (
+                <span className="text-[10px] text-gray-400 mt-1 block italic">
+                  Tap or click map to reposition pin
+                </span>
+              )}
             </div>
           </Popup>
         </Marker>
@@ -110,11 +175,11 @@ function LeafletMapInner({
         <Circle
           center={userLocation}
           radius={5000}
-          pathOptions={{ color: '#059669', fillColor: '#10b981', fillOpacity: 0.08, weight: 1.5, dashArray: '4' }}
+          pathOptions={{ color: '#d96f4d', fillColor: '#e6aa3b', fillOpacity: 0.1, weight: 1.5, dashArray: '4' }}
         />
 
         {/* Worker Markers */}
-        {workers.map((worker) => (
+        {displayWorkers.map((worker) => (
           <Marker
             key={worker.id}
             position={[worker.lat || center[0], worker.lng || center[1]]}
@@ -135,15 +200,15 @@ function LeafletMapInner({
                   />
                   <div>
                     <strong className="text-gray-900 block">{worker.full_name}</strong>
-                    <span className="text-[10px] text-emerald-700 font-semibold">{worker.primary_skill}</span>
+                    <span className="text-[10px] text-[#d96f4d] font-semibold">{worker.primary_skill}</span>
                   </div>
                 </div>
                 <div className="text-[11px] text-gray-500 mb-2">
-                  {worker.society_name} • {worker.approx_distance_km.toFixed(1)} km away
+                  {worker.society_name} • {worker.approx_distance_km ? `${worker.approx_distance_km.toFixed(1)} km away` : 'Nearby'}
                 </div>
                 <Button
                   size="sm"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] h-7"
+                  className="w-full bg-[#24172f] hover:bg-[#3d2b48] text-white text-[11px] h-7"
                   onClick={() => onSelectWorker?.(worker)}
                 >
                   Select This Worker
@@ -156,15 +221,22 @@ function LeafletMapInner({
 
       {/* Map Legend Overlay */}
       <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs p-2.5 rounded-xl border border-gray-200/90 shadow-md text-[11px] space-y-1.5 z-10 pointer-events-auto">
-        <div className="font-bold text-gray-700 mb-1">Coverage Map</div>
+        <div className="font-bold text-gray-700 mb-1">
+          {city ? `${city} Network` : 'Cooperative Coverage'}
+        </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-blue-600 inline-block" />
+          <span className="w-3 h-3 rounded-full bg-[#d96f4d] inline-block" />
           <span className="text-gray-600">Your Location</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
-          <span className="text-gray-600">Verified Society Workers ({workers.length})</span>
+          <span className="w-3 h-3 rounded-full bg-[#24172f] inline-block border border-[#e6aa3b]" />
+          <span className="text-gray-600">Verified Society Workers ({displayWorkers.length})</span>
         </div>
+        {interactive && (
+          <div className="text-[10px] text-gray-400 pt-1 border-t border-gray-100 italic">
+            Click map to adjust pin
+          </div>
+        )}
       </div>
     </div>
   );

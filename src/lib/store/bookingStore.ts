@@ -20,6 +20,7 @@ export interface BookingDraft {
   description: string;
   address: string;
   city: string;
+  pincode?: string;
   lat: number;
   lng: number;
   date: string;
@@ -38,11 +39,12 @@ const DEFAULT_DRAFT: BookingDraft = {
   serviceIcon: 'Droplet',
   basePrice: 300,
   emergencyMultiplier: 1.5,
-  description: 'Kitchen sink pipe is leaking.',
-  address: 'Flat 402, Green Valley Apartments, Kankarbagh Main Rd',
-  city: 'Patna',
-  lat: 25.594,
-  lng: 85.138,
+  description: '',
+  address: '',
+  city: '',
+  pincode: '',
+  lat: 22.5726,
+  lng: 88.3639,
   date: new Date().toISOString().split('T')[0],
   timeSlot: 'Morning (09:00 AM - 12:00 PM)',
   bookingType: 'scheduled',
@@ -133,11 +135,29 @@ export const useBookingStore = create<BookingStoreState>()(
         const newBookingId = `SN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
         const bookingOtp = getBookingOtp(newBookingId);
 
+        let customerName = 'Customer';
+        let customerPhone = '+91 98765 43210';
+        if (typeof window !== 'undefined') {
+          try {
+            const profileStr = localStorage.getItem('shramnexus-customer-profile');
+            const authStr = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
+            if (profileStr) {
+              const p = JSON.parse(profileStr);
+              if (p.fullName || p.name) customerName = p.fullName || p.name;
+              if (p.phone) customerPhone = p.phone;
+            } else if (authStr) {
+              const a = JSON.parse(authStr);
+              if (a.name) customerName = a.name;
+              if (a.phone) customerPhone = a.phone;
+            }
+          } catch (e) {}
+        }
+
         const newBooking: Booking = {
           id: newBookingId,
           customer_id: 'customer-auth-user',
-          customer_name: 'Priya Sharma',
-          customer_phone: '+91 99887 76655',
+          customer_name: customerName,
+          customer_phone: customerPhone,
           worker_id: draft.selectedWorkerId || 'worker-rajesh-kumar',
           worker: draft.selectedWorker || get().workers.find((w) => w.id === draft.selectedWorkerId) || get().workers[0],
           service_category_id: draft.serviceCategoryId,

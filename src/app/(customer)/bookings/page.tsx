@@ -32,9 +32,9 @@ export default async function BookingsPage() {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    booking.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
-                    booking.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    booking.status === 'pending' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
+                    booking.status === 'accepted' ? 'bg-[#f0e7d9] text-[#24172f] border border-[#e6dcd0]' :
+                    booking.status === 'completed' ? 'bg-[#e2eee4] text-[#8ba58b] border border-[#8ba58b]/30' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}

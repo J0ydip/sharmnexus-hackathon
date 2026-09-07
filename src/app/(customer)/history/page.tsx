@@ -88,7 +88,7 @@ export default function HistoryPage() {
               urgency: 'normal',
               description: b.description || '',
               address: b.address || '',
-              city: 'Patna',
+              city: b.city || 'Kolkata',
               scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
               time_slot: 'Scheduled',
               estimated_price: b.estimated_price || 350,
@@ -188,14 +188,14 @@ export default function HistoryPage() {
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12">
-        <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white pt-8 pb-10 px-4 sm:px-6 shadow-xs">
+        <div className="bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] text-white pt-8 pb-10 px-4 sm:px-6 shadow-xs">
           <div className="container mx-auto max-w-5xl">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">My Bookings</h1>
-            <p className="text-xs text-emerald-100 mt-1">Track and manage your scheduled and past cooperative services.</p>
+            <p className="text-xs text-[#c8bacb] mt-1">Track and manage your scheduled and past cooperative services.</p>
           </div>
         </div>
         <div className="container mx-auto max-w-5xl px-4 sm:px-6 pt-16 flex justify-center">
-          <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-3 border-[#e6aa3b] border-t-transparent rounded-full animate-spin" />
         </div>
       </div>
     );
@@ -204,25 +204,25 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white pt-8 pb-10 px-4 sm:px-6 shadow-xs">
+      <div className="bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] text-white pt-8 pb-10 px-4 sm:px-6 shadow-xs">
         <div className="container mx-auto max-w-5xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 bg-emerald-700/60 text-emerald-200 text-xs font-semibold px-2.5 py-0.5 rounded-full mb-2">
-                <CalendarClock className="w-3.5 h-3.5 text-emerald-300" />
+              <div className="inline-flex items-center gap-1.5 bg-[#24172f]/80 text-[#f5dfad] text-xs font-semibold px-2.5 py-0.5 rounded-full mb-2 border border-[#e6aa3b]/30">
+                <CalendarClock className="w-3.5 h-3.5 text-[#e6aa3b]" />
                 <span>Customer Bookings &amp; Service History</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 My Bookings
               </h1>
-              <p className="text-emerald-100 text-xs sm:text-sm mt-0.5">
+              <p className="text-[#c8bacb] text-xs sm:text-sm mt-0.5">
                 Track live service status, view transparent invoices, and rate verified cooperative workers.
               </p>
             </div>
 
             <Link
               href="/services"
-              className="bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-bold px-4 py-2 rounded-xl shadow-xs shrink-0 transition-transform hover:scale-105"
+              className="bg-[#e6aa3b] hover:bg-[#d96f4d] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs shrink-0 transition-transform hover:scale-105"
             >
               + Book New Service
             </Link>
@@ -238,7 +238,7 @@ export default function HistoryPage() {
             onClick={() => setActiveTab('upcoming')}
             className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 ${
               activeTab === 'upcoming'
-                ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                ? 'bg-[#24172f] text-[#fbf7ef] font-bold shadow-xs'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
@@ -246,7 +246,7 @@ export default function HistoryPage() {
             {upcomingBookings.length > 0 && (
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                  activeTab === 'upcoming' ? 'bg-white text-emerald-800' : 'bg-emerald-100 text-emerald-800'
+                  activeTab === 'upcoming' ? 'bg-[#e6aa3b] text-[#24172f]' : 'bg-[#f0e7d9] text-[#24172f]'
                 }`}
               >
                 {upcomingBookings.length}
@@ -259,7 +259,7 @@ export default function HistoryPage() {
             onClick={() => setActiveTab('completed')}
             className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 ${
               activeTab === 'completed'
-                ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                ? 'bg-[#24172f] text-[#fbf7ef] font-bold shadow-xs'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
@@ -267,7 +267,7 @@ export default function HistoryPage() {
             {completedBookings.length > 0 && (
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                  activeTab === 'completed' ? 'bg-white text-emerald-800' : 'bg-gray-200 text-gray-700'
+                  activeTab === 'completed' ? 'bg-[#e6aa3b] text-[#24172f]' : 'bg-gray-200 text-gray-700'
                 }`}
               >
                 {completedBookings.length}
@@ -280,7 +280,7 @@ export default function HistoryPage() {
             onClick={() => setActiveTab('cancelled')}
             className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 ${
               activeTab === 'cancelled'
-                ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                ? 'bg-[#24172f] text-[#fbf7ef] font-bold shadow-xs'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
@@ -288,7 +288,7 @@ export default function HistoryPage() {
             {cancelledBookings.length > 0 && (
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                  activeTab === 'cancelled' ? 'bg-white text-emerald-800' : 'bg-gray-200 text-gray-700'
+                  activeTab === 'cancelled' ? 'bg-[#e6aa3b] text-[#24172f]' : 'bg-gray-200 text-gray-700'
                 }`}
               >
                 {cancelledBookings.length}
@@ -302,12 +302,12 @@ export default function HistoryPage() {
           {displayedList.map((booking) => (
             <div
               key={booking.id}
-              className="bg-white rounded-2xl border border-gray-200/90 hover:border-emerald-300 p-5 shadow-xs hover:shadow-md transition-all duration-200 space-y-4"
+              className="bg-white rounded-2xl border border-gray-200/90 hover:border-[#e6aa3b]/50 p-5 shadow-xs hover:shadow-md transition-all duration-200 space-y-4"
             >
               {/* Header: Service, Booking ID, Status Badge */}
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                  <div className="w-11 h-11 rounded-xl bg-[#fbf7ef] text-[#24172f] border border-[#e6dcd0] flex items-center justify-center shrink-0">
                     <ServiceCategoryIcon name={booking.service_icon} className="w-5 h-5" />
                   </div>
                   <div>
@@ -333,8 +333,8 @@ export default function HistoryPage() {
 
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {booking.payment_status === 'completed' && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-100/90 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-300">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#e2eee4] text-[#8ba58b] px-2.5 py-0.5 rounded-full border border-[#8ba58b]/30">
+                      <CheckCircle2 className="w-3 h-3 text-[#8ba58b]" />
                       Paid
                     </span>
                   )}
@@ -358,7 +358,7 @@ export default function HistoryPage() {
                       {booking.worker?.full_name || 'Assigned Craftsman'}
                     </span>
                     <span className="text-[10px] text-gray-400 block truncate max-w-[150px]">
-                      {booking.worker?.society_name || 'Patna District Labour Society'}
+                      {booking.worker?.society_name || 'Labour Cooperative Society'}
                     </span>
                   </div>
                 </div>
@@ -423,7 +423,7 @@ export default function HistoryPage() {
                       </button>
                       <Link
                         href={`/track/${booking.id}`}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1"
+                        className="bg-[#24172f] hover:bg-[#3d2b48] text-[#fbf7ef] border border-[#e6aa3b]/30 font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1"
                       >
                         <Clock className="w-3.5 h-3.5" />
                         <span>Track Live</span>
@@ -442,9 +442,9 @@ export default function HistoryPage() {
                               setReceiptBooking(booking);
                               setReceiptPaymentData(null);
                             }}
-                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200 font-bold text-xs h-9 px-3 rounded-xl flex items-center gap-1 shadow-xs"
+                            className="bg-[#fbf7ef] hover:bg-[#f0e7d9] text-[#24172f] border-[#e6dcd0] font-bold text-xs h-9 px-3 rounded-xl flex items-center gap-1 shadow-xs"
                           >
-                            <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                            <Receipt className="w-3.5 h-3.5 text-[#24172f]" />
                             <span>Receipt</span>
                           </Button>
                           <button
@@ -461,7 +461,7 @@ export default function HistoryPage() {
                               setBookingPaymentStatus(booking.id, 'pending');
                               toast.info('Payment status reset to pending for testing.');
                             }}
-                            className="text-[10px] text-gray-400 hover:text-emerald-700 underline px-1 cursor-pointer transition-colors"
+                            className="text-[10px] text-gray-400 hover:text-[#d96f4d] underline px-1 cursor-pointer transition-colors"
                           >
                             ↺ Reset
                           </button>
@@ -515,7 +515,7 @@ export default function HistoryPage() {
                       {!booking.rating && (
                         <Button
                           size="sm"
-                          className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs"
+                          className="bg-[#e6aa3b] hover:bg-[#d96f4d] text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs"
                           onClick={() => {
                             setRatingBooking(booking);
                             setUserStars(5);
@@ -532,7 +532,7 @@ export default function HistoryPage() {
                   {booking.status === 'cancelled' && (
                     <Link
                       href={`/booking/${booking.service_category_id}`}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1"
+                      className="bg-[#24172f] hover:bg-[#3d2b48] text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Rebook</span>
@@ -554,7 +554,7 @@ export default function HistoryPage() {
               </p>
               <Link
                 href="/services"
-                className="inline-flex bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs mt-2"
+                className="inline-flex bg-[#e6aa3b] hover:bg-[#d96f4d] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs mt-2"
               >
                 Browse Services
               </Link>
@@ -596,7 +596,7 @@ export default function HistoryPage() {
                   placeholder="Share feedback on punctuality, craftsmanship, and verified pricing..."
                   value={userReviewText}
                   onChange={(e) => setUserReviewText(e.target.value)}
-                  className="w-full text-xs p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none bg-gray-50/50"
+                  className="w-full text-xs p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#e6aa3b] outline-none bg-gray-50/50"
                 />
               </div>
 
@@ -604,7 +604,7 @@ export default function HistoryPage() {
                 <Button variant="outline" type="button" onClick={() => setRatingBooking(null)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
+                <Button type="submit" className="bg-[#24172f] hover:bg-[#3d2b48] text-white font-bold text-xs">
                   Submit Verified Rating
                 </Button>
               </div>

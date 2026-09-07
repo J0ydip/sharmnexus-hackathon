@@ -52,16 +52,16 @@ export function BookingStatusBadge({
     in_progress: {
       label: 'In Progress / On Way',
       icon: Wrench,
-      bg: 'bg-emerald-50',
-      text: 'text-emerald-700',
-      border: 'border-emerald-200',
+      bg: 'bg-[#f5dfad]/30',
+      text: 'text-[#d96f4d]',
+      border: 'border-[#e6aa3b]/30',
     },
     completed: {
       label: 'Completed',
       icon: Sparkles,
-      bg: 'bg-emerald-100',
-      text: 'text-emerald-800',
-      border: 'border-emerald-300',
+      bg: 'bg-[#e2eee4]',
+      text: 'text-[#8ba58b]',
+      border: 'border-[#8ba58b]/40',
     },
     cancelled: {
       label: 'Cancelled',
