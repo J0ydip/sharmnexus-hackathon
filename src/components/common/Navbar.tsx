@@ -366,14 +366,14 @@ export function Navbar() {
               <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5 shadow-xl border border-gray-200">
                 <DropdownMenuLabel className="px-3 py-2">
                   <div className="font-bold text-gray-900 text-xs">
-                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer'}
+                    {user.user_metadata?.full_name || user.email?.split('@')[0] || (user.user_metadata?.user_type === 'worker' ? 'Worker Member' : 'Customer')}
                   </div>
                   <div className="text-[10px] text-gray-500 truncate font-normal">
-                    {user.email || 'customer@shramnexus.coop'}
+                    {user.email || 'member@shramnexus.coop'}
                   </div>
                   <div className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-bold text-[#24172f] bg-[#fbf7ef] px-2 py-0.5 rounded-full border border-[#e6aa3b]/30">
                     <ShieldCheck className="w-3 h-3 text-[#7c5cf0]" />
-                    Verified Customer
+                    {user.user_metadata?.user_type === 'worker' ? 'Verified Worker' : 'Verified Customer'}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

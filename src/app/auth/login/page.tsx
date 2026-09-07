@@ -130,7 +130,7 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ 
+      const { data: authData, error } = await supabase.auth.signInWithPassword({ 
         email: loginEmail, 
         password: loginPassword 
       });
@@ -138,22 +138,65 @@ export default function AuthPage() {
         toast.error(error.message);
         return;
       }
-      toast.success(`Successfully logged in as ${selectedRole.toUpperCase()}!`);
-      const { data: { user } } = await supabase.auth.getUser();
-      const role = user?.user_metadata?.user_type || selectedRole;
+
+      const user = authData?.user;
+      if (!user) {
+        toast.error('Unable to retrieve user credentials.');
+        return;
+      }
+
+      // 1. Determine authentic registered role
+      let actualRole: 'customer' | 'worker' = user.user_metadata?.user_type;
+
+      // 2. Fallback check against database tables if metadata is missing
+      if (!actualRole) {
+        const { data: workerRec } = await supabase
+          .from('workers')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (workerRec) {
+          actualRole = 'worker';
+        } else {
+          actualRole = 'customer';
+        }
+      }
+
+      // 3. Strict Role Matching Validation
+      if (selectedRole === 'customer' && actualRole === 'worker') {
+        await supabase.auth.signOut();
+        localStorage.removeItem('shramnexus-auth');
+        localStorage.removeItem('sharmnexus-auth');
+        setSelectedRole('worker');
+        toast.error('Access Denied: This account is registered as a WORKER. Please sign in under the "Worker" tab.');
+        return;
+      }
+
+      if (selectedRole === 'worker' && actualRole === 'customer') {
+        await supabase.auth.signOut();
+        localStorage.removeItem('shramnexus-auth');
+        localStorage.removeItem('sharmnexus-auth');
+        setSelectedRole('customer');
+        toast.error('Access Denied: This account is registered as a CUSTOMER. Please sign in under the "Customer" tab.');
+        return;
+      }
+
+      // 4. Successful authenticated session matching selected role
+      toast.success(`Successfully logged in as ${actualRole.toUpperCase()}!`);
 
       try {
         const authPayload = JSON.stringify({
           isLoggedIn: true,
-          role: role,
-          name: user?.user_metadata?.full_name || loginEmail.split('@')[0],
+          role: actualRole,
+          name: user.user_metadata?.full_name || loginEmail.split('@')[0],
           email: loginEmail,
         });
         localStorage.setItem('shramnexus-auth', authPayload);
         localStorage.setItem('sharmnexus-auth', authPayload);
       } catch (e) {}
 
-      const defaultTarget = role === 'worker' ? '/worker-dashboard' : '/';
+      const defaultTarget = actualRole === 'worker' ? '/worker-dashboard' : '/';
       window.location.href = getRedirectTarget(defaultTarget);
     } catch (err) {
       toast.error('An unexpected error occurred during login.');

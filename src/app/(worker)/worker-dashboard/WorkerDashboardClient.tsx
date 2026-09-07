@@ -236,6 +236,32 @@ export function WorkerDashboardClient() {
       }
     } catch (e) {}
 
+    // Verify worker access - strictly restrict customer accounts
+    async function verifyWorkerAccess() {
+      try {
+        const localAuth = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
+        let currentRole = null;
+        if (localAuth) {
+          try {
+            const parsed = JSON.parse(localAuth);
+            currentRole = parsed.role;
+          } catch (e) {}
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          currentRole = session.user.user_metadata?.user_type || currentRole;
+        }
+
+        if (currentRole === 'customer') {
+          showToast('⚠️ Access restricted: Customer accounts cannot access the Worker Portal.');
+          router.replace('/');
+          return;
+        }
+      } catch (e) {}
+    }
+    verifyWorkerAccess();
+
     // Fetch live backend data if available with deduplication
     getWorkerDashboardData()
       .then((res) => {
