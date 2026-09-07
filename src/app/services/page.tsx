@@ -10,6 +10,7 @@ import { WorkerCard } from '@/components/customer/WorkerCard';
 import { WorkerProfileModal } from '@/components/customer/WorkerProfileModal';
 import { WorkerProfile, ServiceCategory } from '@/lib/data/mockData';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import {
   Search,
@@ -39,6 +40,7 @@ const CITY_COORDINATES: Record<string, [number, number]> = {
 
 function ServicesContent() {
   const router = useRouter();
+  const supabase = createClient();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
 
@@ -121,12 +123,21 @@ function ServicesContent() {
     return matchesSearch;
   });
 
-  const handleSelectCategory = (cat: ServiceCategory) => {
+  const handleSelectCategory = async (cat: ServiceCategory) => {
     selectServiceForBooking(cat);
+    const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session?.user && !localAuth) {
+      toast.info(`Please sign in to book ${cat.name} service`);
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/booking/${cat.id}`)}`);
+      return;
+    }
+
     router.push(`/booking/${cat.id}`);
   };
 
-  const handleBookWorker = (worker: WorkerProfile) => {
+  const handleBookWorker = async (worker: WorkerProfile) => {
     const cat =
       categories.find((c) => c.name.toLowerCase() === worker.primary_skill.toLowerCase()) ||
       categories[0];
@@ -136,7 +147,18 @@ function ServicesContent() {
       selectedWorkerId: worker.id,
       selectedWorker: worker,
     });
-    router.push(`/booking/${cat.id}?step=confirm&worker=${worker.id}`);
+
+    const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
+    const { data: { session } } = await supabase.auth.getSession();
+    const targetUrl = `/booking/${cat.id}?step=confirm&worker=${worker.id}`;
+
+    if (!session?.user && !localAuth) {
+      toast.info(`Please sign in to book ${worker.full_name}`);
+      router.push(`/auth/login?redirect=${encodeURIComponent(targetUrl)}`);
+      return;
+    }
+
+    router.push(targetUrl);
   };
 
   return (

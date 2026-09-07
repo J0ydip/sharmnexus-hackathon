@@ -73,6 +73,8 @@ interface BookingStoreState {
   addBooking: (booking: Booking) => void;
   getBookingById: (bookingId: string) => Booking | undefined;
   getMatchedWorkers: (categoryId?: string, urgency?: 'normal' | 'urgent' | 'emergency') => WorkerProfile[];
+  loadSampleBookings: () => void;
+  resetBookings: () => void;
 }
 
 export const useBookingStore = create<BookingStoreState>()(
@@ -80,8 +82,16 @@ export const useBookingStore = create<BookingStoreState>()(
     (set, get) => ({
       categories: INITIAL_SERVICE_CATEGORIES,
       workers: INITIAL_WORKERS,
-      bookings: INITIAL_DEMO_BOOKINGS,
+      bookings: [],
       draft: DEFAULT_DRAFT,
+
+      loadSampleBookings: () => {
+        set({ bookings: INITIAL_DEMO_BOOKINGS });
+      },
+
+      resetBookings: () => {
+        set({ bookings: [] });
+      },
 
       setDraft: (partial) => {
         set((state) => {
@@ -258,7 +268,7 @@ export const useBookingStore = create<BookingStoreState>()(
       },
     }),
     {
-      name: 'shramnexus-customer-store-v2',
+      name: 'shramnexus-customer-store-v3',
     }
   )
 );

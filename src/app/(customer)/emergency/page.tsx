@@ -12,6 +12,7 @@ import { MapView } from '@/components/customer/MapView';
 import { WorkerProfile, ServiceCategory } from '@/lib/data/mockData';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 import { createBooking } from '@/app/actions/bookings';
 import {
   Zap,
@@ -29,6 +30,7 @@ import {
 
 export default function EmergencyBookingPage() {
   const router = useRouter();
+  const supabase = createClient();
   const { categories, workers, selectServiceForBooking, selectWorkerForBooking, setDraft, createBookingFromDraft } =
     useBookingStore();
 
@@ -125,7 +127,15 @@ export default function EmergencyBookingPage() {
     }, 600);
   };
 
-  const handleDirectEmergencyBook = (worker: WorkerProfile) => {
+  const handleDirectEmergencyBook = async (worker: WorkerProfile) => {
+    const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user && !localAuth) {
+      toast.info('Please sign in to dispatch an Emergency SOS request');
+      router.push('/auth/login?redirect=/emergency');
+      return;
+    }
+
     selectServiceForBooking(selectedCategory);
     selectWorkerForBooking(worker);
     setDraft({

@@ -4,14 +4,12 @@ import React, { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { createClient } from '@/lib/supabase/client';
 import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
-import { LandingServiceModal, LANDING_SERVICES, ServiceModalData } from '@/components/customer/LandingServiceModal';
 import './landing.css';
 
 export default function LandingPage() {
   const [lang, setLang] = useState('en');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
-  const [activeServiceModal, setActiveServiceModal] = useState<ServiceModalData | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -121,13 +119,12 @@ export default function LandingPage() {
                             <div className="match-details"><span>★ <b>4.8</b> rating</span><span>⌖ 1.8 km away</span><span className="available"><i></i> Available today</span></div>
                             <div className="match-foot">
                               <div><small>MATCH SCORE</small><strong>94%</strong></div>
-                              <button
-                                type="button"
+                              <a
+                                href="/services?q=Plumber"
                                 className="button button-dark button-small"
-                                onClick={() => setActiveServiceModal(LANDING_SERVICES.plumbing)}
                               >
-                                Book now <span>↗</span>
-                              </button>
+                                Explore & Book <span>↗</span>
+                              </a>
                             </div>
                         </div>
                         <div className="mini-stats"><div><small>NETWORK RATING</small><strong>4.8 <span>★</span></strong></div><div><small>SERVICES COMPLETED</small><strong>25k<span>+</span></strong></div><div><small>COOPERATIVES</small><strong>50<span>+</span></strong></div></div>
@@ -153,12 +150,9 @@ export default function LandingPage() {
             <a className="arrow-link" href="/services"><span data-i18n="services_explore">Explore all services</span> ↗</a>
           </div>
           <div className="service-grid">
-            <div 
+            <a 
+              href="/services?q=Plumber"
               className="service-card service-featured cursor-pointer" 
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveServiceModal(LANDING_SERVICES.plumbing)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.plumbing); }}
             >
               <img src="/plumbing.jfif" alt="Plumbing repair service" />
               <div className="service-overlay">
@@ -166,14 +160,11 @@ export default function LandingPage() {
                 <h3 data-i18n="svc_plumbing_t">Plumbing</h3>
                 <p data-i18n="svc_plumbing_d">Repairs, fittings & maintenance</p>
               </div>
-            </div>
+            </a>
 
-            <div 
+            <a 
+              href="/services?q=Electrician"
               className="service-card cursor-pointer" 
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveServiceModal(LANDING_SERVICES.electrical)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.electrical); }}
             >
               <img src="/electral.jfif" alt="Electrical repair service" />
               <div className="service-overlay">
@@ -181,14 +172,11 @@ export default function LandingPage() {
                 <h3 data-i18n="svc_electrical_t">Electrical</h3>
                 <p data-i18n="svc_electrical_d">Repairs & installation</p>
               </div>
-            </div>
+            </a>
 
-            <div 
+            <a 
+              href="/services?q=Cleaning"
               className="service-card cursor-pointer" 
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveServiceModal(LANDING_SERVICES.cleaning)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.cleaning); }}
             >
               <img src="/cleaning.jfif" alt="Home cleaning service" />
               <div className="service-overlay">
@@ -196,14 +184,11 @@ export default function LandingPage() {
                 <h3 data-i18n="svc_cleaning_t">Cleaning</h3>
                 <p data-i18n="svc_cleaning_d">Home & office care</p>
               </div>
-            </div>
+            </a>
 
-            <div 
+            <a 
+              href="/services?q=Elderly Care"
               className="service-card cursor-pointer" 
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveServiceModal(LANDING_SERVICES.caregiving)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.caregiving); }}
             >
               <img src="/caregiving.jfif" alt="Caregiving service" />
               <div className="service-overlay">
@@ -211,14 +196,11 @@ export default function LandingPage() {
                 <h3 data-i18n="svc_caregiving_t">Caregiving</h3>
                 <p data-i18n="svc_caregiving_d">Support when it matters</p>
               </div>
-            </div>
+            </a>
 
-            <div 
+            <a 
+              href="/services?q=Carpenter"
               className="service-card cursor-pointer" 
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveServiceModal(LANDING_SERVICES.carpentry)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.carpentry); }}
             >
               <img src="/carpentry.jfif" alt="Carpentry and furniture service" />
               <div className="service-overlay">
@@ -226,14 +208,11 @@ export default function LandingPage() {
                 <h3 data-i18n="svc_carpentry_t">Carpentry</h3>
                 <p data-i18n="svc_carpentry_d">Furniture & repairs</p>
               </div>
-            </div>
+            </a>
 
-            <div 
+            <a 
+              href="/services?q=Driving"
               className="service-card cursor-pointer" 
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveServiceModal(LANDING_SERVICES.driving)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.driving); }}
             >
               <img src="/driving.jfif" alt="Driving and delivery service" />
               <div className="service-overlay">
@@ -241,14 +220,11 @@ export default function LandingPage() {
                 <h3 data-i18n="svc_driving_t">Driving</h3>
                 <p data-i18n="svc_driving_d">Transport & delivery</p>
               </div>
-            </div>
+            </a>
 
-            <div 
+            <a 
+              href="/services?q=Gardener"
               className="service-card cursor-pointer" 
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveServiceModal(LANDING_SERVICES.gardening)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.gardening); }}
             >
               <img src="/gardening.jfif" alt="Gardening and landscaping service" />
               <div className="service-overlay">
@@ -256,14 +232,11 @@ export default function LandingPage() {
                 <h3 data-i18n="svc_gardening_t">Gardening</h3>
                 <p data-i18n="svc_gardening_d">Landscaping & maintenance</p>
               </div>
-            </div>
+            </a>
 
-            <div 
+            <a 
+              href="/services?q=Technician"
               className="service-card cursor-pointer" 
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveServiceModal(LANDING_SERVICES.technician)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveServiceModal(LANDING_SERVICES.technician); }}
             >
               <img src="/technician.jfif" alt="Technical repair and support service" />
               <div className="service-overlay">
@@ -271,7 +244,7 @@ export default function LandingPage() {
                 <h3 data-i18n="svc_technician_t">Technician</h3>
                 <p data-i18n="svc_technician_d">Tech repair & support</p>
               </div>
-            </div>
+            </a>
           </div>
         </section>
 
@@ -325,11 +298,6 @@ export default function LandingPage() {
 
 
 
-      {/* Dynamic Service Booking Modal */}
-      <LandingServiceModal
-        service={activeServiceModal}
-        onClose={() => setActiveServiceModal(null)}
-      />
 
       <div id="google_translate_element" style={{ display: 'none' }}></div>
       <Script src="/js/script.js" strategy="afterInteractive" />

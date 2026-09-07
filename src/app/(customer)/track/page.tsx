@@ -14,7 +14,7 @@ export default function TrackIndexPage() {
     if (active) {
       router.replace(`/track/${active.id}`);
     } else {
-      router.replace('/track/SN-2026-8941');
+      router.replace('/history');
     }
   }, [bookings, router]);
 

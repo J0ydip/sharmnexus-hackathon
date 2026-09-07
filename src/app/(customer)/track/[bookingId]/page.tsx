@@ -120,8 +120,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const booking =
     dbBooking ||
     getBookingById(bookingId) ||
-    bookings.find((b) => b.id.toLowerCase() === bookingId.toLowerCase()) ||
-    bookings[0];
+    bookings.find((b) => b.id.toLowerCase() === bookingId.toLowerCase());
 
   const worker =
     booking?.worker ||
@@ -187,10 +186,11 @@ export default function BookingTrackingPage({ params }: PageProps) {
     }
   };
 
-  const currentStepIdx = getStepIndex(booking.status);
+  const currentStepIdx = booking ? getStepIndex(booking.status) : 0;
 
   // Prototype Live Demo Status Simulator
   const handleSimulateNextStatus = async () => {
+    if (!booking) return;
     const nextStatuses: Booking['status'][] = [
       'assigned',
       'accepted',
@@ -212,11 +212,15 @@ export default function BookingTrackingPage({ params }: PageProps) {
   };
 
   const handleCallWorker = () => {
-    toast.info(`Calling verified cooperative worker: ${worker.phone}`);
+    if (worker?.phone) {
+      toast.info(`Calling verified cooperative worker: ${worker.phone}`);
+    }
   };
 
   const handleChatWorker = () => {
-    toast.info(`Connecting to secure cooperative messenger with ${worker.full_name}`);
+    if (worker?.full_name) {
+      toast.info(`Connecting to secure cooperative messenger with ${worker.full_name}`);
+    }
   };
 
   if (!mounted) {
@@ -225,6 +229,34 @@ export default function BookingTrackingPage({ params }: PageProps) {
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-3 border-[#24172f] border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-gray-500 font-medium">Loading tracking status...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <div className="min-h-screen bg-[#fbf7ef] flex items-center justify-center p-4">
+        <div className="bg-white border border-[#e6dcd0] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-sm">
+          <Clock className="w-12 h-12 text-gray-400 mx-auto" />
+          <h2 className="text-lg font-bold text-[#24172f]">Booking Not Found</h2>
+          <p className="text-xs text-gray-500">
+            We couldn't locate booking <span className="font-mono font-bold text-gray-700">#{bookingId}</span>. It may have been completed, cancelled, or placed from another account.
+          </p>
+          <div className="pt-2 flex justify-center gap-3">
+            <Link
+              href="/history"
+              className="bg-[#24172f] hover:bg-[#3d2b48] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs"
+            >
+              View My Bookings
+            </Link>
+            <Link
+              href="/services"
+              className="bg-[#e6aa3b] hover:bg-[#d96f4d] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs"
+            >
+              Book a Service
+            </Link>
+          </div>
         </div>
       </div>
     );

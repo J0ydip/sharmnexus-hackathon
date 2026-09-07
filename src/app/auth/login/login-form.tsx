@@ -70,7 +70,9 @@ export function LoginForm() {
         return;
       }
       toast.success('Successfully logged in!');
-      window.location.href = '/';
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const redirect = params?.get('redirect');
+      window.location.href = redirect && redirect.startsWith('/') ? redirect : '/';
     } catch (err: any) {
       toast.error('An unexpected error occurred.');
     } finally {

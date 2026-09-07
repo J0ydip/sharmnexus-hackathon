@@ -13,6 +13,7 @@ import { MapView } from '@/components/customer/MapView';
 import { WorkerProfile, Booking } from '@/lib/data/mockData';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 import { createBooking } from '@/app/actions/bookings';
 import { getBookingOtp } from '@/lib/utils';
 import {
@@ -66,6 +67,7 @@ function BookingFlowContent({ params }: PageProps) {
   const resolvedParams = use(params);
   const serviceId = resolvedParams.serviceId;
   const router = useRouter();
+  const supabase = createClient();
   const searchParams = useSearchParams();
 
   const initialStep = (searchParams.get('step') as 'form' | 'match' | 'confirm') || 'form';
@@ -140,6 +142,20 @@ function BookingFlowContent({ params }: PageProps) {
 
   // GPS and Geocoding Detection
   const [isLocating, setIsLocating] = useState(false);
+
+  // Check authentication on booking page mount
+  useEffect(() => {
+    async function verifyAuth() {
+      const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user && !localAuth) {
+        toast.info('Please sign in to configure and book a service');
+        const currentPath = window.location.pathname + window.location.search;
+        router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+      }
+    }
+    verifyAuth();
+  }, []);
 
   // Initialize draft address from saved profile if available
   useEffect(() => {
@@ -241,6 +257,15 @@ function BookingFlowContent({ params }: PageProps) {
   };
 
   const handleConfirmBooking = async () => {
+    const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user && !localAuth) {
+      toast.error('You must be signed in to confirm your booking.');
+      const currentPath = window.location.pathname + window.location.search;
+      router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
     const newBooking = createBookingFromDraft();
     setCreatedBooking(newBooking);
     setStep('success');

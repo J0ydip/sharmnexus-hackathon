@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { useBookingStore } from '@/lib/store/bookingStore';
 import { BookingStatusBadge } from '@/components/customer/BookingStatusBadge';
 import { ServiceCategoryIcon } from '@/components/customer/ServiceCategoryIcon';
@@ -35,12 +37,29 @@ import {
 import { getBookingOtp } from '@/lib/utils';
 
 export default function HistoryPage() {
-  const { bookings, updateBookingStatus, setBookingPaymentStatus, rateBooking } = useBookingStore();
+  const router = useRouter();
+  const supabase = createClient();
+  const { bookings, updateBookingStatus, setBookingPaymentStatus, rateBooking, loadSampleBookings } = useBookingStore();
   const [mounted, setMounted] = useState(false);
   const [dbBookings, setDbBookings] = useState<Booking[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null);
   const [receiptPaymentData, setReceiptPaymentData] = useState<any>(null);
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user || localAuth) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    }
+    checkAuth();
+  }, [supabase]);
 
   useEffect(() => {
     setMounted(true);
@@ -231,8 +250,39 @@ export default function HistoryPage() {
       </div>
 
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 -mt-4 space-y-6">
-        {/* Navigation Tabs */}
-        <div className="bg-white p-1.5 rounded-2xl border border-gray-200 shadow-xs flex items-center gap-2 text-xs font-semibold">
+        {isAuthenticated === false ? (
+          <div className="bg-white rounded-3xl border border-gray-200/90 p-8 sm:p-12 text-center shadow-xs space-y-5 max-w-xl mx-auto my-8">
+            <div className="w-16 h-16 rounded-2xl bg-[#fbf7ef] text-[#24172f] border border-[#e6aa3b]/30 flex items-center justify-center mx-auto shadow-2xs">
+              <CalendarClock className="w-8 h-8 text-[#e6aa3b]" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-black text-gray-900 tracking-tight">
+                Log In to View Your Bookings
+              </h2>
+              <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
+                Sign in to track live jobs, communicate with assigned cooperative workers, verify service PINs, and access official tax invoices.
+              </p>
+            </div>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/auth/login?redirect=/history"
+                className="w-full sm:w-auto bg-[#24172f] hover:bg-[#3d2b48] text-[#fbf7ef] font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <span>Log In / Register</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/services"
+                className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-sm px-6 py-3 rounded-xl transition-colors text-center"
+              >
+                Explore Services
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Navigation Tabs */}
+            <div className="bg-white p-1.5 rounded-2xl border border-gray-200 shadow-xs flex items-center gap-2 text-xs font-semibold">
           <button
             type="button"
             onClick={() => setActiveTab('upcoming')}
@@ -552,16 +602,30 @@ export default function HistoryPage() {
               <p className="text-xs text-gray-500 max-w-sm mx-auto">
                 Need household help? Browse our 10 verified trades and connect with local cooperative workers.
               </p>
-              <Link
-                href="/services"
-                className="inline-flex bg-[#e6aa3b] hover:bg-[#d96f4d] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs mt-2"
-              >
-                Browse Services
-              </Link>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <Link
+                  href="/services"
+                  className="inline-flex bg-[#24172f] hover:bg-[#3d2b48] text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs"
+                >
+                  Browse Services
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadSampleBookings();
+                    toast.success('Loaded sample cooperative booking for testing!');
+                  }}
+                  className="inline-flex bg-[#fbf7ef] hover:bg-[#f5dfad]/50 text-[#24172f] border border-[#e6aa3b]/40 text-xs font-semibold px-3 py-2 rounded-xl transition-colors"
+                >
+                  ✨ Load Sample Booking
+                </button>
+              </div>
             </div>
           )}
         </div>
-      </div>
+      </>
+    )}
+  </div>
 
       {/* Rate Worker Modal */}
       {ratingBooking && (

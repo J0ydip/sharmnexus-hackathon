@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { setAdminSession } from '@/app/actions/admin';
@@ -11,6 +11,36 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'customer' | 'worker'>('customer');
+  const [redirectNotice, setRedirectNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      if (redirect) {
+        if (redirect.includes('/booking')) {
+          setRedirectNotice('Please sign in or register to complete your service booking.');
+        } else if (redirect.includes('/emergency')) {
+          setRedirectNotice('Please sign in or register to dispatch your emergency SOS request.');
+        } else if (redirect.includes('/history')) {
+          setRedirectNotice('Please sign in or register to view your booking history and track services.');
+        } else {
+          setRedirectNotice('Please sign in or register to proceed.');
+        }
+      }
+    }
+  }, []);
+
+  function getRedirectTarget(defaultTarget: string): string {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect') || params.get('returnUrl');
+      if (redirect && redirect.startsWith('/')) {
+        return redirect;
+      }
+    }
+    return defaultTarget;
+  }
   
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -123,7 +153,8 @@ export default function AuthPage() {
         localStorage.setItem('sharmnexus-auth', authPayload);
       } catch (e) {}
 
-      window.location.href = role === 'worker' ? '/worker-dashboard' : '/';
+      const defaultTarget = role === 'worker' ? '/worker-dashboard' : '/';
+      window.location.href = getRedirectTarget(defaultTarget);
     } catch (err) {
       toast.error('An unexpected error occurred during login.');
     } finally {
@@ -192,7 +223,8 @@ export default function AuthPage() {
       }
 
       toast.success(`Account created successfully as ${signupUserType.toUpperCase()}!`);
-      window.location.href = signupUserType === 'worker' ? '/worker-dashboard' : '/';
+      const defaultTarget = signupUserType === 'worker' ? '/worker-dashboard' : '/';
+      window.location.href = getRedirectTarget(defaultTarget);
     } catch (err) {
       toast.error('An unexpected error occurred during registration.');
     } finally {
@@ -297,6 +329,26 @@ export default function AuthPage() {
               </svg>
               Back to Home
             </a>
+
+            {redirectNotice && (
+              <div style={{
+                padding: '12px 16px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(230, 170, 59, 0.14)',
+                border: '1px solid #e6aa3b',
+                color: '#24172f',
+                fontSize: '12px',
+                fontWeight: '600',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+              }}>
+                <span style={{ fontSize: '15px' }}>🔒</span>
+                <span>{redirectNotice}</span>
+              </div>
+            )}
 
             {/* Login Form Container */}
             <div className={`form-container ${isLogin ? 'active' : ''}`} id="loginContainer">

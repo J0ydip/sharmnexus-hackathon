@@ -56,16 +56,7 @@ export function CustomerDashboard() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (homeSearch.trim()) {
-      const matched = categories.find((c) =>
-        c.name.toLowerCase().includes(homeSearch.toLowerCase())
-      ) || categories[0];
-      if (matched) {
-        selectServiceForBooking(matched);
-        setDraft({ description: homeSearch });
-        router.push(`/booking/${matched.id}`);
-      } else {
-        router.push(`/services?q=${encodeURIComponent(homeSearch)}`);
-      }
+      router.push(`/services?q=${encodeURIComponent(homeSearch.trim())}`);
     } else {
       router.push('/services');
     }
@@ -75,20 +66,11 @@ export function CustomerDashboard() {
     const matched = categories.find((c) =>
       c.name.toLowerCase() === categoryId.toLowerCase() || c.id === categoryId
     ) || categories[0];
-    if (matched) {
-      selectServiceForBooking(matched);
-      router.push(`/booking/${matched.id}`);
-    } else {
-      router.push(`/booking/${categoryId.toLowerCase()}`);
-    }
+    router.push(`/services?q=${encodeURIComponent(matched.name)}`);
   };
 
   const handleWorkerClick = (w: any) => {
-    const matchedCat = categories.find((c) =>
-      c.name.toLowerCase() === w.skill.toLowerCase()
-    ) || categories[0];
-    selectServiceForBooking(matchedCat);
-    router.push(`/booking/${matchedCat.id}`);
+    router.push(`/services?q=${encodeURIComponent(w.skill)}`);
   };
 
   return (
@@ -154,40 +136,40 @@ export function CustomerDashboard() {
 
         {/* 10 Categories Grid & Recommended Workers */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 space-y-8 relative z-20">
-          {/* Active Request Banner */}
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e6dcd0] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-[#e2eee4] text-[#8ba58b] flex items-center justify-center font-bold shrink-0">
-                <CalendarClock className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#d96f4d]">
-                    {t?.activeBadge || 'Active Request'}
-                  </span>
-                  <span className="text-[10px] font-bold bg-[#f5dfad] text-[#24172f] px-2 py-0.5 rounded-full border border-[#e6aa3b]/30">
-                    {t?.activeStatus || 'Worker Assigned'}
-                  </span>
+          {/* Active Request Banner - Only shown when user has an active ongoing booking */}
+          {activeBooking && (
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e6dcd0] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-[#e2eee4] text-[#8ba58b] flex items-center justify-center font-bold shrink-0">
+                  <CalendarClock className="w-5 h-5" />
                 </div>
-                <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
-                  {activeBooking
-                    ? `${activeBooking.service_name} • Booking ${activeBooking.id}`
-                    : t?.activeTitle || 'Plumber • Booking SN-2026-8941'}
-                </h4>
-                <p className="text-xs text-[#776e79]">
-                  {activeBooking?.worker
-                    ? `Assigned to ${activeBooking.worker.full_name} (${activeBooking.worker.society_name || 'Labour Cooperative Society'})`
-                    : t?.activeDesc || 'Assigned to Rajesh Kumar (Labour Cooperative Society)'}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#d96f4d]">
+                      {t?.activeBadge || 'Active Request'}
+                    </span>
+                    <span className="text-[10px] font-bold bg-[#f5dfad] text-[#24172f] px-2 py-0.5 rounded-full border border-[#e6aa3b]/30">
+                      {activeBooking.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
+                    {activeBooking.service_name} • Booking {activeBooking.id}
+                  </h4>
+                  <p className="text-xs text-[#776e79]">
+                    {activeBooking.worker
+                      ? `Assigned to ${activeBooking.worker.full_name} (${activeBooking.worker.society_name || 'Labour Cooperative Society'})`
+                      : 'Assigning nearest verified cooperative worker...'}
+                  </p>
+                </div>
               </div>
+              <Link
+                href={`/track/${activeBooking.id}`}
+                className="bg-[#24172f] hover:bg-[#3d2b48] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start sm:self-auto transition-transform hover:scale-[1.02] flex items-center gap-1.5"
+              >
+                <span>{t?.activeTrack || 'Track Live Status →'}</span>
+              </Link>
             </div>
-            <Link
-              href={activeBooking ? `/track/${activeBooking.id}` : '/track'}
-              className="bg-[#24172f] hover:bg-[#3d2b48] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start sm:self-auto transition-transform hover:scale-[1.02] flex items-center gap-1.5"
-            >
-              <span>{t?.activeTrack || 'Track Live Status →'}</span>
-            </Link>
-          </div>
+          )}
 
           {/* Categories Section */}
           <div>
