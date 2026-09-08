@@ -18,6 +18,7 @@ import {
   toggleToolReservationAction,
   createAssemblyProposalAction,
   voteAssemblyProposalAction,
+  toggleSquadStatusAction,
   updateContractStatusAction,
   updateSquadMembersAction,
   createWelfareClaimAction,
@@ -58,6 +59,24 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  // User voting persistence
+  const [userVotes, setUserVotes] = useState<Record<string, 'yes' | 'no'>>({});
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('shramnexus-coop-votes');
+      if (stored) setUserVotes(JSON.parse(stored));
+    } catch (e) {}
+  }, []);
+
+  // Filter states
+  const [rosterSearch, setRosterSearch] = useState('');
+  const [rosterTradeFilter, setRosterTradeFilter] = useState('All');
+  const [contractsFilter, setContractsFilter] = useState<'All' | 'Active' | 'Pending' | 'Completed'>('All');
+  const [squadsFilter, setSquadsFilter] = useState<'All' | 'Active' | 'Standby'>('All');
+  const [toolsFilter, setToolsFilter] = useState<'All' | 'Available' | 'In Use' | 'Maintenance'>('All');
+  const [assemblyFilter, setAssemblyFilter] = useState<'All' | 'Active' | 'Approved'>('All');
+
   // Modals state
   const [showContractModal, setShowContractModal] = useState(false);
   const [showSquadModal, setShowSquadModal] = useState(false);
@@ -73,6 +92,13 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
   const [showWelfareClaimModal, setShowWelfareClaimModal] = useState(false);
   const [welfareClaimForm, setWelfareClaimForm] = useState({ title: '', amount: 15000, type: 'Healthcare Emergency', workerName: '' });
   const [showDividendLedgerModal, setShowDividendLedgerModal] = useState(false);
+
+  // Additional Interactive Modals
+  const [selectedProposalForDetails, setSelectedProposalForDetails] = useState<AssemblyProposalItem | null>(null);
+  const [selectedToolForReserve, setSelectedToolForReserve] = useState<CooperativeToolItem | null>(null);
+  const [reserveBorrowerName, setReserveBorrowerName] = useState('');
+  const [selectedWorkerForTaskAssign, setSelectedWorkerForTaskAssign] = useState<CooperativeWorkerItem | null>(null);
+  const [assignContractTitle, setAssignContractTitle] = useState('Green Valley Residency');
 
   // Forms state
   const [contractForm, setContractForm] = useState({ rwa: '', service: '', workersNeeded: 4, durationDays: 14, budget: '₹ 75,000' });
@@ -367,26 +393,93 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
     showToast(`Added ${newTool.name} to Tool Bank!`);
   };
 
-  // Tool Reservation Toggle
+  // Tool Reservation Handlers
   const handleToggleTool = async (tool: CooperativeToolItem) => {
-    const isNowAvailable = tool.status === 'In Use';
-    const nextStatus: 'Available' | 'In Use' = isNowAvailable ? 'Available' : 'In Use';
-    const nextClass = isNowAvailable ? 'status-green' : 'status-gold';
-    const borrower = isNowAvailable ? undefined : 'Current Worker';
+    if (tool.status === 'Available') {
+      setSelectedToolForReserve(tool);
+      setReserveBorrowerName(data.workers[0]?.name || 'Aman Sharma');
+      return;
+    }
+    handleReturnTool(tool);
+  };
 
+  const handleConfirmReserveTool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedToolForReserve) return;
+    const borrower = reserveBorrowerName || 'Aman Sharma';
     try {
-      await toggleToolReservationAction(tool.id, borrower);
+      await toggleToolReservationAction(selectedToolForReserve.id, borrower);
+    } catch (err) {}
+
+    setData((prev) => ({
+      ...prev,
+      tools: prev.tools.map((t) =>
+        t.id === selectedToolForReserve.id
+          ? { ...t, status: 'In Use', statusClass: 'status-gold', currentBorrower: borrower }
+          : t
+      ),
+      activities: [
+        {
+          id: `act-${Date.now()}`,
+          icon: '🧰',
+          title: `Tool Bank checked out "${selectedToolForReserve.name}" to ${borrower}.`,
+          time: 'Just now',
+        },
+        ...prev.activities,
+      ],
+    }));
+    setSelectedToolForReserve(null);
+    showToast(`Checked out ${selectedToolForReserve.name} to ${borrower}!`);
+  };
+
+  const handleReturnTool = async (tool: CooperativeToolItem) => {
+    try {
+      await toggleToolReservationAction(tool.id, undefined);
     } catch (err) {}
 
     setData((prev) => ({
       ...prev,
       tools: prev.tools.map((t) =>
         t.id === tool.id
-          ? { ...t, status: nextStatus, statusClass: nextClass, currentBorrower: borrower }
+          ? { ...t, status: 'Available', statusClass: 'status-green', currentBorrower: undefined }
           : t
       ),
+      activities: [
+        {
+          id: `act-${Date.now()}`,
+          icon: '🧰',
+          title: `Tool Bank logged return of "${tool.name}".`,
+          time: 'Just now',
+        },
+        ...prev.activities,
+      ],
     }));
-    showToast(isNowAvailable ? `Tool ${tool.name} returned to deposit bank.` : `Tool ${tool.name} checked out.`);
+    showToast(`Tool ${tool.name} returned to deposit bank.`);
+  };
+
+  // Toggle Squad Deployment Status
+  const handleToggleSquadStatus = async (squad: CooperativeSquadItem) => {
+    const nextStatus = squad.status === 'Active' ? 'Standby' : 'Active';
+    try {
+      await toggleSquadStatusAction(squad.id, squad.status);
+    } catch (err) {}
+
+    setData((prev) => ({
+      ...prev,
+      squads: prev.squads.map((sq) =>
+        sq.id === squad.id ? { ...sq, status: nextStatus as any } : sq
+      ),
+      activities: [
+        {
+          id: `act-${Date.now()}`,
+          icon: '🛡️',
+          title: `Squad "${squad.name}" status switched to ${nextStatus}.`,
+          time: 'Just now',
+        },
+        ...prev.activities,
+      ],
+    }));
+    showToast(`Squad "${squad.name}" set to ${nextStatus}!`);
   };
 
   // Create Proposal
@@ -405,7 +498,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       yesVotes: 1,
       noVotes: 0,
       status: 'Active',
-      badgeClass: 'badge-gold',
+      badgeClass: 'coop-badge-gold',
     };
     try {
       await createAssemblyProposalAction(newProp);
@@ -413,33 +506,138 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
     setData((prev) => ({
       ...prev,
       proposals: [newProp, ...prev.proposals],
+      activities: [
+        {
+          id: `act-${Date.now()}`,
+          icon: '🗳️',
+          title: `New Assembly Proposal published: "${newProp.title}".`,
+          time: 'Just now',
+        },
+        ...prev.activities,
+      ],
     }));
     setShowProposalModal(false);
     setProposalForm({ title: '', description: '', cost: 25000 });
     showToast('Democratic proposal posted to Member Assembly!');
   };
 
-  // Vote on Proposal
+  // Vote on Proposal with Multi-vote prevention & quorum status progression
   const handleVoteProposal = async (proposalId: string, vote: 'yes' | 'no') => {
+    const prevVote = userVotes[proposalId];
+    if (prevVote === vote) {
+      showToast(`You have already voted ${vote.toUpperCase()} on this proposal.`);
+      return;
+    }
+
     try {
-      await voteAssemblyProposalAction(proposalId, vote);
+      await voteAssemblyProposalAction(proposalId, vote, prevVote);
     } catch (err) {}
+
+    const updatedVotes = { ...userVotes, [proposalId]: vote };
+    setUserVotes(updatedVotes);
+    try {
+      localStorage.setItem('shramnexus-coop-votes', JSON.stringify(updatedVotes));
+    } catch (e) {}
 
     setData((prev) => ({
       ...prev,
       proposals: prev.proposals.map((p) => {
         if (p.id === proposalId) {
+          let newYes = p.yesVotes;
+          let newNo = p.noVotes;
+          if (prevVote === 'yes') newYes = Math.max(0, newYes - 1);
+          if (prevVote === 'no') newNo = Math.max(0, newNo - 1);
+          if (vote === 'yes') newYes += 1;
+          if (vote === 'no') newNo += 1;
+
+          const total = newYes + newNo;
+          const isApproved = total >= 30 && (newYes / total) >= 0.65;
+          const nextStatus = isApproved ? 'Approved' : p.status;
+          const nextBadge = isApproved ? 'coop-badge-verified' : p.badgeClass;
+
           return {
             ...p,
-            yesVotes: vote === 'yes' ? p.yesVotes + 1 : p.yesVotes,
-            noVotes: vote === 'no' ? p.noVotes + 1 : p.noVotes,
+            yesVotes: newYes,
+            noVotes: newNo,
+            status: nextStatus as any,
+            badgeClass: nextBadge,
           };
         }
         return p;
       }),
+      activities: [
+        {
+          id: `act-${Date.now()}`,
+          icon: '🗳️',
+          title: `Member vote cast (${vote.toUpperCase()}) on cooperative resolution.`,
+          time: 'Just now',
+        },
+        ...prev.activities,
+      ],
     }));
-    showToast(`Your vote (${vote.toUpperCase()}) was recorded!`);
+
+    if (selectedProposalForDetails && selectedProposalForDetails.id === proposalId) {
+      let newYes = selectedProposalForDetails.yesVotes;
+      let newNo = selectedProposalForDetails.noVotes;
+      if (prevVote === 'yes') newYes = Math.max(0, newYes - 1);
+      if (prevVote === 'no') newNo = Math.max(0, newNo - 1);
+      if (vote === 'yes') newYes += 1;
+      if (vote === 'no') newNo += 1;
+      setSelectedProposalForDetails({
+        ...selectedProposalForDetails,
+        yesVotes: newYes,
+        noVotes: newNo,
+      });
+    }
+
+    showToast(prevVote ? `Changed your vote to ${vote.toUpperCase()}!` : `Your vote (${vote.toUpperCase()}) was recorded!`);
   };
+
+  // Confirm Task Assignment from Modal
+  const handleConfirmTaskAssignment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWorkerForTaskAssign) return;
+    handleAssignFairWork(selectedWorkerForTaskAssign.name, assignContractTitle);
+    setSelectedWorkerForTaskAssign(null);
+  };
+
+  // Computed FairWork Metrics
+  const balancedWorkers = data.workers.filter((w) => w.status === 'Balanced');
+  const underutilizedWorkers = data.workers.filter((w) => w.status === 'Under-utilized');
+  const overloadedWorkers = data.workers.filter((w) => w.status === 'Overloaded');
+  const avgFairnessScore = data.workers.length > 0
+    ? Math.round(data.workers.reduce((sum, w) => sum + w.fairnessScore, 0) / data.workers.length)
+    : 84;
+
+  // Dynamic candidate worker and target contract for recommendation
+  const candidateWorker = [...data.workers].sort((a, b) => a.fairnessScore - b.fairnessScore)[0] || data.workers[0];
+  const activeContractForRec = data.contracts.find((c) => c.status === 'Active') || data.contracts[0];
+
+  // Filtered lists
+  const filteredWorkers = data.workers.filter((w) => {
+    const matchesSearch =
+      w.name.toLowerCase().includes(rosterSearch.toLowerCase()) ||
+      w.id.toLowerCase().includes(rosterSearch.toLowerCase()) ||
+      w.trade.toLowerCase().includes(rosterSearch.toLowerCase());
+    const matchesTrade = rosterTradeFilter === 'All' || w.trade.toLowerCase().includes(rosterTradeFilter.toLowerCase());
+    return matchesSearch && matchesTrade;
+  });
+
+  const filteredContracts = contractsFilter === 'All'
+    ? data.contracts
+    : data.contracts.filter((c) => c.status === contractsFilter);
+
+  const filteredSquads = squadsFilter === 'All'
+    ? data.squads
+    : data.squads.filter((s) => s.status === squadsFilter);
+
+  const filteredTools = toolsFilter === 'All'
+    ? data.tools
+    : data.tools.filter((t) => t.status === toolsFilter);
+
+  const filteredProposals = assemblyFilter === 'All'
+    ? data.proposals
+    : data.proposals.filter((p) => p.status === assemblyFilter);
 
   return (
     <div className="coop-portal-root">
@@ -613,28 +811,28 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
           {activeTab === 'view-dashboard' && (
             <div>
               <div className="coop-kpi-grid">
-                <div className="coop-kpi-card">
-                  <span className="coop-kpi-label">Worker Members</span>
+                <div className="coop-kpi-card coop-kpi-clickable" onClick={() => setActiveTab('view-workers')} title="Click to view Worker Roster">
+                  <span className="coop-kpi-label">Worker Members ↗</span>
                   <strong className="coop-kpi-value">{data.society.memberCount}</strong>
                 </div>
-                <div className="coop-kpi-card">
-                  <span className="coop-kpi-label">Active Members</span>
+                <div className="coop-kpi-card coop-kpi-clickable" onClick={() => setActiveTab('view-fairwork')} title="Click to view FairWork Engine">
+                  <span className="coop-kpi-label">Active Members ↗</span>
                   <strong className="coop-kpi-value text-green">{data.society.activeMembers}</strong>
                 </div>
-                <div className="coop-kpi-card">
-                  <span className="coop-kpi-label">Jobs This Month</span>
+                <div className="coop-kpi-card coop-kpi-clickable" onClick={() => setActiveTab('view-contracts')} title="Click to view Contracts">
+                  <span className="coop-kpi-label">Jobs This Month ↗</span>
                   <strong className="coop-kpi-value">{data.society.jobsThisMonth}</strong>
                 </div>
-                <div className="coop-kpi-card">
-                  <span className="coop-kpi-label">Community Contracts</span>
-                  <strong className="coop-kpi-value text-violet">{data.society.contractsCount}</strong>
+                <div className="coop-kpi-card coop-kpi-clickable" onClick={() => setActiveTab('view-contracts')} title="Click to view Community Contracts">
+                  <span className="coop-kpi-label">Community Contracts ↗</span>
+                  <strong className="coop-kpi-value text-violet">{data.contracts.length}</strong>
                 </div>
-                <div className="coop-kpi-card">
-                  <span className="coop-kpi-label">Cooperative Revenue (10%)</span>
+                <div className="coop-kpi-card coop-kpi-clickable" onClick={() => setActiveTab('view-payments')} title="Click to view Transparent Earnings">
+                  <span className="coop-kpi-label">Cooperative Revenue (10%) ↗</span>
                   <strong className="coop-kpi-value text-gold">₹ {(data.society.revenue / 100000).toFixed(1)}L</strong>
                 </div>
-                <div className="coop-kpi-card">
-                  <span className="coop-kpi-label">Welfare Fund Pool</span>
+                <div className="coop-kpi-card coop-kpi-clickable" onClick={() => setActiveTab('view-welfare')} title="Click to view Welfare Fund">
+                  <span className="coop-kpi-label">Welfare Fund Pool ↗</span>
                   <strong className="coop-kpi-value text-terracotta">₹ {(data.society.welfareFund / 100000).toFixed(1)}L</strong>
                 </div>
               </div>
@@ -666,7 +864,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
           {activeTab === 'view-workers' && (
             <div>
               {/* Pending Membership Requests */}
-              <div className="coop-card" style={{ borderColor: 'var(--gold)' }}>
+              <div className="coop-card" style={{ borderColor: 'var(--gold)', marginBottom: '1.5rem' }}>
                 <div className="coop-card-header">
                   <div>
                     <h3>Pending Membership Requests</h3>
@@ -728,7 +926,12 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
               {/* Active Roster */}
               <div className="coop-card">
                 <div className="coop-card-header">
-                  <h3>Active Society Roster ({data.workers.length})</h3>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Active Society Roster ({filteredWorkers.length})</h3>
+                    <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0.2rem 0 0 0' }}>
+                      Verified members registered under {data.society.name}
+                    </p>
+                  </div>
                   <button
                     type="button"
                     className="coop-btn coop-btn-dark coop-btn-sm"
@@ -737,6 +940,32 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                     📥 Export Registry (CSV)
                   </button>
                 </div>
+
+                {/* Search and Trade Filter Bar */}
+                <div style={{ marginTop: '1rem' }}>
+                  <input
+                    type="text"
+                    className="coop-form-control"
+                    placeholder="🔍 Search worker by name, trade, or member ID..."
+                    value={rosterSearch}
+                    onChange={(e) => setRosterSearch(e.target.value)}
+                    style={{ marginBottom: '0.85rem' }}
+                  />
+
+                  <div className="coop-filter-bar">
+                    {['All', 'Electrician', 'Painter', 'Plumber', 'Driver', 'Caregiving'].map((trade) => (
+                      <button
+                        key={trade}
+                        type="button"
+                        className={`coop-filter-btn ${rosterTradeFilter === trade ? 'active' : ''}`}
+                        onClick={() => setRosterTradeFilter(trade)}
+                      >
+                        {trade}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="coop-table-responsive">
                   <table className="coop-data-table">
                     <thead>
@@ -752,35 +981,43 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                       </tr>
                     </thead>
                     <tbody>
-                      {data.workers.map((w) => (
-                        <tr key={w.id}>
-                          <td><strong>{w.name}</strong></td>
-                          <td><code>{w.id}</code></td>
-                          <td>{w.trade}</td>
-                          <td>
-                            <span style={{ color: w.availability === 'Available' ? 'var(--green)' : 'var(--muted)' }}>
-                              ● {w.availability}
-                            </span>
-                          </td>
-                          <td>{w.jobs}</td>
-                          <td>{w.earnings}</td>
-                          <td>
-                            <span className={`coop-${w.statusClass}`}>
-                              {w.fairnessScore}/100 ({w.status})
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              className="coop-btn coop-btn-outline coop-btn-sm"
-                              onClick={() => setSelectedWorkerForPass(w)}
-                              title="View Member Digital Pass"
-                            >
-                              🪪 Member Pass
-                            </button>
+                      {filteredWorkers.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="text-center text-muted" style={{ padding: '2rem' }}>
+                            No workers matching the search or trade filter.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredWorkers.map((w) => (
+                          <tr key={w.id}>
+                            <td><strong>{w.name}</strong></td>
+                            <td><code>{w.id}</code></td>
+                            <td>{w.trade}</td>
+                            <td>
+                              <span style={{ color: w.availability === 'Available' ? 'var(--green)' : 'var(--muted)' }}>
+                                ● {w.availability}
+                              </span>
+                            </td>
+                            <td>{w.jobs}</td>
+                            <td>{w.earnings}</td>
+                            <td>
+                              <span className={`coop-${w.statusClass}`}>
+                                {w.fairnessScore}/100 ({w.status})
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="coop-btn coop-btn-outline coop-btn-sm"
+                                onClick={() => setSelectedWorkerForPass(w)}
+                                title="View Member Digital Pass"
+                              >
+                                🪪 Member Pass
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -803,37 +1040,37 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
               <div className="coop-kpi-grid" style={{ marginBottom: '1.8rem' }}>
                 <div className="coop-kpi-card">
                   <span className="coop-kpi-label">Balanced Members</span>
-                  <strong className="coop-kpi-value text-green">142</strong>
+                  <strong className="coop-kpi-value text-green">{balancedWorkers.length}</strong>
                 </div>
                 <div className="coop-kpi-card">
                   <span className="coop-kpi-label">Under-utilized</span>
-                  <strong className="coop-kpi-value text-gold">38</strong>
+                  <strong className="coop-kpi-value text-gold">{underutilizedWorkers.length}</strong>
                 </div>
                 <div className="coop-kpi-card">
                   <span className="coop-kpi-label">Overloaded</span>
-                  <strong className="coop-kpi-value text-red">12</strong>
+                  <strong className="coop-kpi-value text-red">{overloadedWorkers.length}</strong>
                 </div>
                 <div className="coop-kpi-card">
                   <span className="coop-kpi-label">Avg Fairness Score</span>
-                  <strong className="coop-kpi-value">84 / 100</strong>
+                  <strong className="coop-kpi-value">{avgFairnessScore} / 100</strong>
                 </div>
               </div>
 
-              {/* Recommendation Panel */}
+              {/* Dynamic Recommendation Panel */}
               <div className="coop-recommendation-panel">
                 <div className="coop-recommendation-icon">💡</div>
                 <div className="coop-recommendation-text">
                   <h3>Fair Allocation Recommendation</h3>
                   <p>
-                    Assign the upcoming <strong>"Green Valley Painting Contract"</strong> to <strong>Aman Sharma</strong>.
-                    He currently has a lower workload (Fairness Score: 58) compared to overloaded members.
+                    Assign upcoming <strong>"{activeContractForRec?.service || 'Community Task'}"</strong> at <strong>{activeContractForRec?.rwa || 'Local Client'}</strong> to <strong>{candidateWorker.name}</strong>.
+                    Currently has a lower workload (Fairness Score: <strong>{candidateWorker.fairnessScore}/100</strong>) compared to overloaded members.
                   </p>
                 </div>
                 <div className="coop-recommendation-actions">
                   <button
                     type="button"
                     className="coop-btn coop-btn-gold"
-                    onClick={() => handleAssignFairWork('Aman Sharma', 'Green Valley Painting Contract')}
+                    onClick={() => handleAssignFairWork(candidateWorker.name, `${activeContractForRec?.rwa} (${activeContractForRec?.service})`)}
                   >
                     Assign Work Now
                   </button>
@@ -873,7 +1110,10 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                             <button
                               type="button"
                               className="coop-btn coop-btn-outline coop-btn-sm"
-                              onClick={() => handleAssignFairWork(w.name, 'Community Task')}
+                              onClick={() => {
+                                setSelectedWorkerForTaskAssign(w);
+                                setAssignContractTitle(activeContractForRec?.rwa ? `${activeContractForRec.rwa} (${activeContractForRec.service})` : 'Green Valley Residency');
+                              }}
                             >
                               Assign Task
                             </button>
@@ -892,7 +1132,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
              ========================================================= */}
           {activeTab === 'view-contracts' && (
             <div>
-              <div className="justify-between" style={{ marginBottom: '1.5rem' }}>
+              <div className="justify-between" style={{ marginBottom: '1.25rem' }}>
                 <div>
                   <h3 style={{ margin: 0 }}>Community & Institutional Contracts</h3>
                   <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0.2rem 0 0 0' }}>
@@ -908,30 +1148,50 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 </button>
               </div>
 
-              <div className="coop-cards-grid">
-                {data.contracts.map((c) => (
-                  <div key={c.id} className="coop-obj-card">
-                    <div className="coop-obj-head">
-                      <h3>{c.rwa}</h3>
-                      <span className={`coop-badge ${c.badgeClass}`}>{c.status}</span>
-                    </div>
-                    <p className="text-muted" style={{ fontSize: '0.88rem', margin: 0 }}>{c.service}</p>
-                    <div className="coop-obj-stats">
-                      <span>👷 {c.workersNeeded} Workers</span>
-                      <span>📅 {c.durationDays} Days</span>
-                      <span>💰 {c.budget}</span>
-                    </div>
-                    <div className="coop-obj-actions">
-                      <button
-                        type="button"
-                        className="coop-btn coop-btn-outline w-100"
-                        onClick={() => setSelectedContractForDetails(c)}
-                      >
-                        View Details & Breakdown
-                      </button>
-                    </div>
-                  </div>
+              {/* Status Filter Bar */}
+              <div className="coop-filter-bar">
+                {(['All', 'Active', 'Pending', 'Completed'] as const).map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    className={`coop-filter-btn ${contractsFilter === st ? 'active' : ''}`}
+                    onClick={() => setContractsFilter(st)}
+                  >
+                    {st} ({st === 'All' ? data.contracts.length : data.contracts.filter((c) => c.status === st).length})
+                  </button>
                 ))}
+              </div>
+
+              <div className="coop-cards-grid">
+                {filteredContracts.length === 0 ? (
+                  <div className="text-center text-muted" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
+                    No community contracts in "{contractsFilter}" status.
+                  </div>
+                ) : (
+                  filteredContracts.map((c) => (
+                    <div key={c.id} className="coop-obj-card">
+                      <div className="coop-obj-head">
+                        <h3>{c.rwa}</h3>
+                        <span className={`coop-badge ${c.badgeClass}`}>{c.status}</span>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.88rem', margin: 0 }}>{c.service}</p>
+                      <div className="coop-obj-stats">
+                        <span>👷 {c.workersNeeded} Workers</span>
+                        <span>📅 {c.durationDays} Days</span>
+                        <span>💰 {c.budget}</span>
+                      </div>
+                      <div className="coop-obj-actions">
+                        <button
+                          type="button"
+                          className="coop-btn coop-btn-outline w-100"
+                          onClick={() => setSelectedContractForDetails(c)}
+                        >
+                          View Details & Breakdown
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -941,7 +1201,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
              ========================================================= */}
           {activeTab === 'view-squads' && (
             <div>
-              <div className="justify-between" style={{ marginBottom: '1.5rem' }}>
+              <div className="justify-between" style={{ marginBottom: '1.25rem' }}>
                 <div>
                   <h3 style={{ margin: 0 }}>Community Squads</h3>
                   <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0.2rem 0 0 0' }}>
@@ -957,30 +1217,62 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 </button>
               </div>
 
-              <div className="coop-cards-grid">
-                {data.squads.map((s) => (
-                  <div key={s.id} className="coop-obj-card">
-                    <div className="coop-obj-head">
-                      <h3>{s.name}</h3>
-                      <span className="coop-badge coop-badge-verified">{s.status}</span>
-                    </div>
-                    <p className="text-muted" style={{ fontSize: '0.88rem', margin: '0 0 0.5rem 0' }}>
-                      Assigned: <strong>{s.assignedContract}</strong>
-                    </p>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text)', background: 'var(--cream)', padding: '0.6rem 0.8rem', borderRadius: '8px' }}>
-                      👥 {s.membersSummary}
-                    </p>
-                    <div className="coop-obj-actions">
-                      <button
-                        type="button"
-                        className="coop-btn coop-btn-dark w-100"
-                        onClick={() => handleOpenManageSquad(s)}
-                      >
-                        Manage Crew Members
-                      </button>
-                    </div>
-                  </div>
+              {/* Status Filter Bar */}
+              <div className="coop-filter-bar">
+                {(['All', 'Active', 'Standby'] as const).map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    className={`coop-filter-btn ${squadsFilter === st ? 'active' : ''}`}
+                    onClick={() => setSquadsFilter(st)}
+                  >
+                    {st} ({st === 'All' ? data.squads.length : data.squads.filter((sq) => sq.status === st).length})
+                  </button>
                 ))}
+              </div>
+
+              <div className="coop-cards-grid">
+                {filteredSquads.length === 0 ? (
+                  <div className="text-center text-muted" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
+                    No squads matching "{squadsFilter}" status.
+                  </div>
+                ) : (
+                  filteredSquads.map((s) => (
+                    <div key={s.id} className="coop-obj-card">
+                      <div className="coop-obj-head">
+                        <h3>{s.name}</h3>
+                        <span className={`coop-badge ${s.status === 'Active' ? 'coop-badge-verified' : 'coop-badge-gold'}`}>
+                          {s.status}
+                        </span>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.88rem', margin: '0 0 0.5rem 0' }}>
+                        Assigned: <strong>{s.assignedContract}</strong>
+                      </p>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text)', background: 'var(--cream)', padding: '0.6rem 0.8rem', borderRadius: '8px' }}>
+                        👥 {s.membersSummary}
+                      </p>
+                      <div className="coop-obj-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          className="coop-btn coop-btn-dark"
+                          style={{ flex: 1.3 }}
+                          onClick={() => handleOpenManageSquad(s)}
+                        >
+                          Manage Members
+                        </button>
+                        <button
+                          type="button"
+                          className="coop-btn coop-btn-outline"
+                          style={{ flex: 1 }}
+                          onClick={() => handleToggleSquadStatus(s)}
+                          title="Toggle between deployed active state and standby"
+                        >
+                          {s.status === 'Active' ? '⏸ Standby' : '🚀 Deploy'}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -990,7 +1282,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
              ========================================================= */}
           {activeTab === 'view-tools' && (
             <div>
-              <div className="justify-between" style={{ marginBottom: '1.5rem' }}>
+              <div className="justify-between" style={{ marginBottom: '1.25rem' }}>
                 <div>
                   <h3 style={{ margin: 0 }}>Cooperative Tool Bank</h3>
                   <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0.2rem 0 0 0' }}>
@@ -1006,34 +1298,54 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 </button>
               </div>
 
-              <div className="coop-cards-grid">
-                {data.tools.map((t) => (
-                  <div key={t.id} className="coop-obj-card text-center" style={{ padding: '1.8rem 1.5rem' }}>
-                    <div style={{ fontSize: '2.8rem', marginBottom: '0.75rem' }}>🧰</div>
-                    <h3 style={{ fontSize: '1.15rem', marginBottom: '0.25rem' }}>{t.name}</h3>
-                    <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-                      ID: <code>{t.toolCode}</code>
-                    </p>
-                    <div>
-                      <span className={`coop-${t.statusClass}`}>
-                        ● {t.status}
-                      </span>
-                      {t.currentBorrower && (
-                        <span className="text-muted" style={{ fontSize: '0.75rem', display: 'block', marginTop: '0.2rem' }}>
-                          (Held by: {t.currentBorrower})
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className={`coop-btn ${t.status === 'Available' ? 'coop-btn-gold' : 'coop-btn-outline'} w-100`}
-                      style={{ marginTop: '1.25rem' }}
-                      onClick={() => handleToggleTool(t)}
-                    >
-                      {t.status === 'Available' ? 'Reserve Tool' : 'Mark as Returned'}
-                    </button>
-                  </div>
+              {/* Status Filter Bar */}
+              <div className="coop-filter-bar">
+                {(['All', 'Available', 'In Use', 'Maintenance'] as const).map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    className={`coop-filter-btn ${toolsFilter === st ? 'active' : ''}`}
+                    onClick={() => setToolsFilter(st)}
+                  >
+                    {st} ({st === 'All' ? data.tools.length : data.tools.filter((t) => (t.status as string) === st).length})
+                  </button>
                 ))}
+              </div>
+
+              <div className="coop-cards-grid">
+                {filteredTools.length === 0 ? (
+                  <div className="text-center text-muted" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
+                    No tools currently in "{toolsFilter}" category.
+                  </div>
+                ) : (
+                  filteredTools.map((t) => (
+                    <div key={t.id} className="coop-obj-card text-center" style={{ padding: '1.8rem 1.5rem' }}>
+                      <div style={{ fontSize: '2.8rem', marginBottom: '0.75rem' }}>🧰</div>
+                      <h3 style={{ fontSize: '1.15rem', marginBottom: '0.25rem' }}>{t.name}</h3>
+                      <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                        ID: <code>{t.toolCode}</code>
+                      </p>
+                      <div>
+                        <span className={`coop-${t.statusClass}`}>
+                          ● {t.status}
+                        </span>
+                        {t.currentBorrower && (
+                          <span className="text-muted" style={{ fontSize: '0.75rem', display: 'block', marginTop: '0.2rem' }}>
+                            (Held by: <strong>{t.currentBorrower}</strong>)
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className={`coop-btn ${t.status === 'Available' ? 'coop-btn-gold' : 'coop-btn-outline'} w-100`}
+                        style={{ marginTop: '1.25rem' }}
+                        onClick={() => handleToggleTool(t)}
+                      >
+                        {t.status === 'Available' ? 'Reserve Tool' : '✓ Mark Returned'}
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -1043,7 +1355,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
              ========================================================= */}
           {activeTab === 'view-payments' && (
             <div>
-              <div className="coop-card text-center" style={{ padding: '2.5rem 2rem' }}>
+              <div className="coop-card text-center" style={{ padding: '2.5rem 2rem', marginBottom: '2rem' }}>
                 <h2 style={{ fontSize: '1.8rem', margin: '0 0 0.5rem 0' }}>
                   Transparent Cooperative Revenue Split
                 </h2>
@@ -1051,15 +1363,29 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                   Statutory 85 / 10 / 5 Fair Distribution Model
                 </span>
 
-                <div style={{ maxWidth: '480px', margin: '1.5rem auto' }}>
+                <div style={{ maxWidth: '520px', margin: '1rem auto' }}>
+                  {/* Preset Simulation Amount Buttons */}
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                    {[15000, 50000, 85000, 140000].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        className={`coop-filter-btn ${calcAmount === amt ? 'active' : ''}`}
+                        onClick={() => setCalcAmount(amt)}
+                      >
+                        ₹{amt.toLocaleString('en-IN')} {amt === 15000 ? '(Minor Repair)' : amt === 50000 ? '(Residential)' : amt === 85000 ? '(RWA Monthly)' : '(Commercial)'}
+                      </button>
+                    ))}
+                  </div>
+
                   <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '0.5rem' }}>
-                    Simulate Service / Contract Value: ₹ {calcAmount.toLocaleString('en-IN')}
+                    Simulated Contract Value: ₹ {calcAmount.toLocaleString('en-IN')}
                   </label>
                   <input
                     type="range"
-                    min={1000}
-                    max={100000}
-                    step={1000}
+                    min={5000}
+                    max={250000}
+                    step={2500}
                     value={calcAmount}
                     onChange={(e) => setCalcAmount(Number(e.target.value))}
                     style={{ width: '100%', accentColor: 'var(--gold)' }}
@@ -1069,17 +1395,17 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 <div className="coop-distribution-visual">
                   <div className="coop-dist-block coop-worker-share">
                     <h2>85%</h2>
-                    <strong>Worker Members</strong>
+                    <strong>Direct Member Wages</strong>
                     <span>₹ {Math.round(calcAmount * 0.85).toLocaleString('en-IN')}</span>
                   </div>
                   <div className="coop-dist-block coop-coop-share">
                     <h2>10%</h2>
-                    <strong>Cooperative Society</strong>
+                    <strong>Society Operations & Tools</strong>
                     <span>₹ {Math.round(calcAmount * 0.10).toLocaleString('en-IN')}</span>
                   </div>
                   <div className="coop-dist-block coop-welfare-share">
                     <h2>5%</h2>
-                    <strong>Welfare Fund</strong>
+                    <strong>Welfare & Emergency Corpus</strong>
                     <span>₹ {Math.round(calcAmount * 0.05).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
@@ -1087,6 +1413,51 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 <p className="text-muted" style={{ fontSize: '0.85rem', maxWidth: '600px', margin: '1.5rem auto 0 auto' }}>
                   Unlike gig aggregators that take 25–35% corporate commission, ShramNexus returns 85% directly to worker wages, retains 10% for local cooperative society operations, and reserves 5% in the member welfare corpus.
                 </p>
+              </div>
+
+              {/* Settlement History Table */}
+              <div className="coop-card">
+                <div className="coop-card-header">
+                  <h3>Recent Cooperative Contract Distributions</h3>
+                  <span className="coop-badge coop-badge-verified">Audited via Smart Ledger</span>
+                </div>
+                <div className="coop-table-responsive">
+                  <table className="coop-data-table">
+                    <thead>
+                      <tr>
+                        <th>Contract / Project</th>
+                        <th>Gross Value</th>
+                        <th>Direct Wages (85%)</th>
+                        <th>Society Ops (10%)</th>
+                        <th>Welfare (5%)</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.contracts.map((c) => {
+                        const numericVal = parseFloat(c.budget.replace(/[^0-9.]/g, '')) || 75000;
+                        return (
+                          <tr key={c.id}>
+                            <td>
+                              <strong>{c.rwa}</strong>
+                              <br />
+                              <small className="text-muted">{c.service}</small>
+                            </td>
+                            <td><strong>₹ {numericVal.toLocaleString('en-IN')}</strong></td>
+                            <td className="text-green">₹ {Math.round(numericVal * 0.85).toLocaleString('en-IN')}</td>
+                            <td>₹ {Math.round(numericVal * 0.10).toLocaleString('en-IN')}</td>
+                            <td className="text-terracotta">₹ {Math.round(numericVal * 0.05).toLocaleString('en-IN')}</td>
+                            <td>
+                              <span className={`coop-badge ${c.status === 'Completed' ? 'coop-badge-verified' : 'coop-badge-gold'}`}>
+                                {c.status === 'Completed' ? 'Disbursed' : 'In Progress'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1170,7 +1541,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
           )}
 
           {/* =========================================================
-              9. MEMBER ASSEMBLY VIEW
+              9. MEMBER ASSEMBLY VIEW — DEMOCRATIC GOVERNANCE
              ========================================================= */}
           {activeTab === 'view-assembly' && (
             <div>
@@ -1189,54 +1560,161 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 </button>
               </div>
 
-              <div className="coop-cards-grid">
-                {data.proposals.map((prop) => (
-                  <div key={prop.id} className="coop-obj-card">
-                    <div className="coop-obj-head">
-                      <h3>{prop.title}</h3>
-                      <span className={`coop-badge ${prop.badgeClass}`}>{prop.status}</span>
-                    </div>
-                    <p className="text-muted" style={{ fontSize: '0.85rem' }}>
-                      Proposal #{prop.number} • Budget: ₹ {prop.cost.toLocaleString('en-IN')}
-                    </p>
-                    <p style={{ fontSize: '0.88rem', lineHeight: 1.45, color: 'var(--text)', margin: '0.5rem 0' }}>
-                      {prop.description}
-                    </p>
-
-                    <div style={{ background: 'var(--cream)', padding: '0.85rem 1rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-around', textAlign: 'center', margin: '1rem 0' }}>
-                      <div>
-                        <strong className="text-green" style={{ fontSize: '1.4rem' }}>{prop.yesVotes}</strong>
-                        <br />
-                        <small style={{ fontWeight: 700, color: 'var(--green)' }}>YES</small>
-                      </div>
-                      <div style={{ width: '1px', background: 'var(--border)' }}></div>
-                      <div>
-                        <strong className="text-red" style={{ fontSize: '1.4rem' }}>{prop.noVotes}</strong>
-                        <br />
-                        <small style={{ fontWeight: 700, color: 'var(--red)' }}>NO</small>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
-                      <button
-                        type="button"
-                        className="coop-btn coop-btn-outline"
-                        style={{ flex: 1, borderColor: 'var(--green)', color: 'var(--green)' }}
-                        onClick={() => handleVoteProposal(prop.id, 'yes')}
-                      >
-                        👍 Vote YES
-                      </button>
-                      <button
-                        type="button"
-                        className="coop-btn coop-btn-outline"
-                        style={{ flex: 1, borderColor: 'var(--red)', color: 'var(--red)' }}
-                        onClick={() => handleVoteProposal(prop.id, 'no')}
-                      >
-                        👎 Vote NO
-                      </button>
-                    </div>
-                  </div>
+              {/* Assembly Filter Tabs */}
+              <div className="coop-filter-bar" style={{ marginTop: '1.5rem' }}>
+                {(['All', 'Active', 'Approved'] as const).map((flt) => (
+                  <button
+                    key={flt}
+                    type="button"
+                    className={`coop-filter-btn ${assemblyFilter === flt ? 'active' : ''}`}
+                    onClick={() => setAssemblyFilter(flt)}
+                  >
+                    {flt} Proposals ({flt === 'All' ? data.proposals.length : data.proposals.filter((p) => p.status === flt).length})
+                  </button>
                 ))}
+              </div>
+
+              <div className="coop-cards-grid">
+                {filteredProposals.length === 0 ? (
+                  <div className="text-center text-muted" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
+                    No proposals found in "{assemblyFilter}" filter.
+                  </div>
+                ) : (
+                  filteredProposals.map((prop) => {
+                    const totalVotes = prop.yesVotes + prop.noVotes;
+                    const approvalPercent = totalVotes > 0 ? Math.round((prop.yesVotes / totalVotes) * 100) : 0;
+                    const userVote = userVotes[prop.id];
+                    const isApproved = prop.status === 'Approved';
+
+                    return (
+                      <div key={prop.id} className="coop-obj-card">
+                        <div className="coop-obj-head">
+                          <h3 style={{ fontSize: '1.05rem', lineHeight: 1.3 }}>{prop.title}</h3>
+                          <span className={`coop-badge ${prop.badgeClass}`}>{prop.status}</span>
+                        </div>
+                        <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>
+                          Proposal #{prop.number} • Budget: ₹ {prop.cost.toLocaleString('en-IN')}
+                        </p>
+                        <p style={{ fontSize: '0.86rem', lineHeight: 1.45, color: 'var(--text)', margin: '0.6rem 0' }}>
+                          {prop.description}
+                        </p>
+
+                        {/* Votes Numbers */}
+                        <div style={{ background: 'var(--cream)', padding: '0.75rem 1rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-around', textAlign: 'center', margin: '0.6rem 0' }}>
+                          <div>
+                            <strong className="text-green" style={{ fontSize: '1.35rem' }}>{prop.yesVotes}</strong>
+                            <br />
+                            <small style={{ fontWeight: 700, color: 'var(--green)', fontSize: '0.75rem' }}>YES</small>
+                          </div>
+                          <div style={{ width: '1px', background: 'var(--border)' }}></div>
+                          <div>
+                            <strong className="text-red" style={{ fontSize: '1.35rem' }}>{prop.noVotes}</strong>
+                            <br />
+                            <small style={{ fontWeight: 700, color: 'var(--red)', fontSize: '0.75rem' }}>NO</small>
+                          </div>
+                        </div>
+
+                        {/* Live Visual Voting Progress & Quorum Bar */}
+                        <div style={{ marginBottom: '1rem' }}>
+                          <div className="coop-vote-progress">
+                            <div className="coop-vote-bar-yes" style={{ width: `${approvalPercent}%` }} />
+                            <div className="coop-vote-bar-no" style={{ width: `${100 - approvalPercent}%` }} />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--muted)', fontWeight: 600 }}>
+                            <span>Approval: <strong className="text-green">{approvalPercent}%</strong></span>
+                            <span>Quorum: <strong>{totalVotes}</strong> / 50 Votes ({totalVotes >= 50 ? '✓ Met' : `${50 - totalVotes} more needed`})</span>
+                          </div>
+                        </div>
+
+                        {/* Interactive Actions Area */}
+                        <div style={{ marginTop: 'auto' }}>
+                          {isApproved ? (
+                            <div>
+                              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '0.5rem 0.75rem', fontSize: '0.78rem', color: '#065f46', fontWeight: 600, textAlign: 'center', marginBottom: '0.5rem' }}>
+                                ✓ Resolution Passed & Ratified by Member Assembly
+                              </div>
+                              <button
+                                type="button"
+                                className="coop-btn coop-btn-outline w-100 coop-btn-sm"
+                                onClick={() => setSelectedProposalForDetails(prop)}
+                              >
+                                📄 View Resolution Terms
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              {userVote ? (
+                                <div>
+                                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                                    <div
+                                      style={{
+                                        flex: 1,
+                                        background: userVote === 'yes' ? 'var(--green)' : 'var(--red)',
+                                        color: '#fff',
+                                        borderRadius: '8px',
+                                        padding: '0.45rem',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700,
+                                        textAlign: 'center',
+                                      }}
+                                    >
+                                      ✓ You Voted {userVote.toUpperCase()}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleVoteProposal(prop.id, userVote === 'yes' ? 'no' : 'yes')}
+                                      style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+                                    >
+                                      Change vote to {userVote === 'yes' ? 'NO' : 'YES'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedProposalForDetails(prop)}
+                                      style={{ background: 'none', border: 'none', color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                                    >
+                                      Details ↗
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                                    <button
+                                      type="button"
+                                      className="coop-btn coop-btn-outline"
+                                      style={{ flex: 1, borderColor: 'var(--green)', color: 'var(--green)' }}
+                                      onClick={() => handleVoteProposal(prop.id, 'yes')}
+                                    >
+                                      👍 Vote YES
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="coop-btn coop-btn-outline"
+                                      style={{ flex: 1, borderColor: 'var(--red)', color: 'var(--red)' }}
+                                      onClick={() => handleVoteProposal(prop.id, 'no')}
+                                    >
+                                      👎 Vote NO
+                                    </button>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="coop-btn coop-btn-outline w-100 coop-btn-sm"
+                                    style={{ fontSize: '0.75rem' }}
+                                    onClick={() => setSelectedProposalForDetails(prop)}
+                                  >
+                                    View Terms & Justification
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
@@ -1911,6 +2389,226 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 📥 Export Distribution Audit
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Assembly Proposal Terms & Justification Modal */}
+      {selectedProposalForDetails && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '580px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+              <div>
+                <span className={`coop-badge ${selectedProposalForDetails.badgeClass}`} style={{ marginBottom: '4px' }}>
+                  {selectedProposalForDetails.status}
+                </span>
+                <h2 style={{ fontSize: '1.35rem', margin: 0 }}>Proposal #{selectedProposalForDetails.number}</h2>
+                <small className="text-muted">{selectedProposalForDetails.title}</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedProposalForDetails(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ background: 'var(--cream)', padding: '14px', borderRadius: '12px', marginBottom: '1rem' }}>
+              <strong style={{ fontSize: '0.85rem', display: 'block', color: 'var(--ink)', marginBottom: '4px' }}>
+                PURPOSE & RESOLUTION TERMS
+              </strong>
+              <p style={{ fontSize: '0.88rem', lineHeight: 1.5, margin: 0, color: 'var(--text)' }}>
+                {selectedProposalForDetails.description}
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '1rem' }}>
+              <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 14px' }}>
+                <small className="text-muted" style={{ fontSize: '0.72rem', display: 'block' }}>REQUESTED BUDGET</small>
+                <strong className="text-gold" style={{ fontSize: '1.1rem' }}>₹ {selectedProposalForDetails.cost.toLocaleString('en-IN')}</strong>
+              </div>
+              <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 14px' }}>
+                <small className="text-muted" style={{ fontSize: '0.72rem', display: 'block' }}>FINANCIAL SOURCE</small>
+                <strong style={{ fontSize: '0.9rem', color: 'var(--ink)' }}>Welfare & Surplus Reserve</strong>
+              </div>
+            </div>
+
+            <h4 style={{ margin: '0 0 6px 0', fontSize: '0.88rem' }}>Voting & Quorum Breakdown</h4>
+            <div style={{ background: '#faf8f5', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span>Affirmative Votes (YES): <strong className="text-green">{selectedProposalForDetails.yesVotes}</strong></span>
+                <span>Negative Votes (NO): <strong className="text-red">{selectedProposalForDetails.noVotes}</strong></span>
+              </div>
+              <div className="coop-vote-progress">
+                <div
+                  className="coop-vote-bar-yes"
+                  style={{ width: `${Math.round((selectedProposalForDetails.yesVotes / ((selectedProposalForDetails.yesVotes + selectedProposalForDetails.noVotes) || 1)) * 100)}%` }}
+                />
+                <div
+                  className="coop-vote-bar-no"
+                  style={{ width: `${100 - Math.round((selectedProposalForDetails.yesVotes / ((selectedProposalForDetails.yesVotes + selectedProposalForDetails.noVotes) || 1)) * 100)}%` }}
+                />
+              </div>
+              <small className="text-muted" style={{ display: 'block', marginTop: '6px', fontSize: '0.75rem' }}>
+                Total: {selectedProposalForDetails.yesVotes + selectedProposalForDetails.noVotes} votes cast • Democratic threshold: 30 verified member votes with ≥65% majority.
+              </small>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                type="button"
+                className="coop-btn coop-btn-outline"
+                style={{ flex: 1 }}
+                onClick={() => setSelectedProposalForDetails(null)}
+              >
+                Close
+              </button>
+              {selectedProposalForDetails.status === 'Active' && (
+                <div style={{ display: 'flex', gap: '0.5rem', flex: 1.5 }}>
+                  <button
+                    type="button"
+                    className="coop-btn coop-btn-outline"
+                    style={{ flex: 1, borderColor: 'var(--green)', color: 'var(--green)' }}
+                    onClick={() => handleVoteProposal(selectedProposalForDetails.id, 'yes')}
+                  >
+                    👍 Vote YES
+                  </button>
+                  <button
+                    type="button"
+                    className="coop-btn coop-btn-outline"
+                    style={{ flex: 1, borderColor: 'var(--red)', color: 'var(--red)' }}
+                    onClick={() => handleVoteProposal(selectedProposalForDetails.id, 'no')}
+                  >
+                    👎 Vote NO
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Tool Bank Check-out / Reserve Modal */}
+      {selectedToolForReserve && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '480px' }}>
+            <h2 style={{ fontSize: '1.35rem', margin: '0 0 0.5rem 0' }}>🧰 Check Out Tool Asset</h2>
+            <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0 0 1.25rem 0' }}>
+              Reserve <strong>{selectedToolForReserve.name}</strong> ({selectedToolForReserve.toolCode}) for active member work.
+            </p>
+
+            <form onSubmit={handleConfirmReserveTool}>
+              <div className="coop-form-group">
+                <label>Borrower / Deployed Worker</label>
+                <select
+                  className="coop-form-control"
+                  value={reserveBorrowerName}
+                  onChange={(e) => setReserveBorrowerName(e.target.value)}
+                  required
+                >
+                  <option value="">-- Choose Member from Roster --</option>
+                  {data.workers.map((w) => (
+                    <option key={w.id} value={w.name}>
+                      {w.name} — {w.trade} ({w.availability})
+                    </option>
+                  ))}
+                  {data.squads.map((sq) => (
+                    <option key={sq.id} value={sq.name}>
+                      🛡️ Squad: {sq.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ background: 'var(--cream)', padding: '12px', borderRadius: '8px', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+                ℹ️ The equipment checkout is logged to the society inventory ledger and linked to the worker's digital cooperative pass.
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  className="coop-btn coop-btn-outline"
+                  style={{ flex: 1 }}
+                  onClick={() => setSelectedToolForReserve(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="coop-btn coop-btn-gold"
+                  style={{ flex: 1.5 }}
+                >
+                  Confirm Check Out
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 8. FairWork Engine Task Assignment Modal */}
+      {selectedWorkerForTaskAssign && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '500px' }}>
+            <h2 style={{ fontSize: '1.35rem', margin: '0 0 0.5rem 0' }}>⚖️ FairWork™ Task Allocation</h2>
+            <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0 0 1.25rem 0' }}>
+              Assign guaranteed cooperative work to <strong>{selectedWorkerForTaskAssign.name}</strong> ({selectedWorkerForTaskAssign.trade})
+            </p>
+
+            <div style={{ background: 'var(--cream)', padding: '12px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div>
+                <small className="text-muted" style={{ fontSize: '0.72rem', display: 'block' }}>CURRENT SCORE</small>
+                <strong>{selectedWorkerForTaskAssign.fairnessScore} / 100</strong>
+              </div>
+              <div>
+                <small className="text-muted" style={{ fontSize: '0.72rem', display: 'block' }}>CURRENT STATUS</small>
+                <strong className={`coop-${selectedWorkerForTaskAssign.statusClass}`}>{selectedWorkerForTaskAssign.status}</strong>
+              </div>
+              <div>
+                <small className="text-muted" style={{ fontSize: '0.72rem', display: 'block' }}>POST-ASSIGNMENT</small>
+                <strong className="text-green">Balanced (+22 pts)</strong>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmTaskAssignment}>
+              <div className="coop-form-group">
+                <label>Select Target Contract / Project</label>
+                <select
+                  className="coop-form-control"
+                  value={assignContractTitle}
+                  onChange={(e) => setAssignContractTitle(e.target.value)}
+                  required
+                >
+                  {data.contracts.map((c) => (
+                    <option key={c.id} value={`${c.rwa} (${c.service})`}>
+                      {c.rwa} — {c.service} ({c.budget})
+                    </option>
+                  ))}
+                  <option value="Municipal Sanitation Board (Emergency Maintenance)">
+                    Municipal Sanitation Board (Emergency Maintenance)
+                  </option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="coop-btn coop-btn-outline"
+                  style={{ flex: 1 }}
+                  onClick={() => setSelectedWorkerForTaskAssign(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="coop-btn coop-btn-gold"
+                  style={{ flex: 1.5 }}
+                >
+                  Confirm Allocation
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

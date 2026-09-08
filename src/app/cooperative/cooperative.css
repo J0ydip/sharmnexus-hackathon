@@ -760,3 +760,68 @@
     width: 100%;
   }
 }
+
+/* Filter Bar & Pills */
+.coop-filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.coop-filter-btn {
+  background: var(--white);
+  border: 1px solid var(--border);
+  padding: 0.45rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.coop-filter-btn:hover {
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.coop-filter-btn.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+/* Voting Ratio Bar */
+.coop-vote-progress {
+  display: flex;
+  height: 8px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: #f0e7d9;
+  margin: 0.6rem 0 0.35rem 0;
+}
+
+.coop-vote-bar-yes {
+  background: var(--green);
+  transition: width 0.3s ease;
+}
+
+.coop-vote-bar-no {
+  background: var(--red);
+  transition: width 0.3s ease;
+}
+
+/* Clickable Dashboard KPIs */
+.coop-kpi-clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.coop-kpi-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(36, 23, 47, 0.08);
+  border-color: var(--gold);
+}
