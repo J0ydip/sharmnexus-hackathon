@@ -101,8 +101,11 @@ export async function createWorkerRegistration(data: {
   yearsExperience?: number;
   certificationName?: string;
   hourlyRate?: number;
+  societyId?: string;
 }) {
   const supabase = await createClient();
+
+  const isWithCoop = !!data.societyId;
 
   // 1. Insert or update workers row
   const { error: workerError } = await supabase
@@ -114,9 +117,10 @@ export async function createWorkerRegistration(data: {
       email: data.email,
       aadhaar_number: data.aadhaarNumber || null,
       address: data.address || null,
-      is_verified: true,
+      society_id: data.societyId || null,
+      is_verified: !isWithCoop,
       is_available: true,
-      verification_status: 'verified',
+      verification_status: isWithCoop ? 'pending' : 'verified',
       avg_rating: 4.8,
       total_jobs_completed: 0,
       profile_photo_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.fullName)}&background=24172f&color=fff`

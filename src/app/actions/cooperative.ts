@@ -497,42 +497,54 @@ export async function getCooperativePortalData(societyId?: string): Promise<Coop
         // 2. Live Workers & Pending Requests for this Society
         const { data: dbWorkers } = await supabase
           .from('workers')
-          .select('id, full_name, is_verified, verification_status, society_id, trade')
+          .select(`
+            id, full_name, is_verified, verification_status, society_id,
+            worker_skills (
+              category:service_category_id (name)
+            )
+          `)
           .eq('society_id', found.id);
 
         if (dbWorkers && dbWorkers.length > 0) {
           const pendingDb = dbWorkers.filter((w: any) => !w.is_verified || w.verification_status === 'pending');
           if (pendingDb.length > 0) {
-            pendingRequests = pendingDb.map((w: any) => ({
-              id: w.id,
-              name: w.full_name || 'New Applicant',
-              trade: w.trade || 'General Technician',
-              availability: 'Offline',
-              jobs: 0,
-              hours: 0,
-              earnings: '₹0',
-              fairnessScore: 85,
-              status: 'Under-utilized',
-              statusClass: 'status-gold',
-              isPending: true,
-              documentsStatus: 'Aadhaar & Skill Certified',
-            }));
+            pendingRequests = pendingDb.map((w: any) => {
+              const tradeName = w.worker_skills?.[0]?.category?.name || 'General Technician';
+              return {
+                id: w.id,
+                name: w.full_name || 'New Applicant',
+                trade: tradeName,
+                availability: 'Offline',
+                jobs: 0,
+                hours: 0,
+                earnings: '₹0',
+                fairnessScore: 85,
+                status: 'Under-utilized',
+                statusClass: 'status-gold',
+                isPending: true,
+                documentsStatus: 'Aadhaar & Skill Certified',
+              };
+            });
           }
 
           const verifiedDb = dbWorkers.filter((w: any) => w.is_verified && w.verification_status !== 'pending');
           if (verifiedDb.length > 0) {
-            workers = verifiedDb.map((w: any) => ({
-              id: w.id.substring(0, 8),
-              name: w.full_name || 'Verified Member',
-              trade: w.trade || 'Technician',
-              availability: 'Available',
-              jobs: 0,
-              hours: 0,
-              earnings: '₹0',
-              fairnessScore: 85,
-              status: 'Balanced',
-              statusClass: 'status-green',
-            }));
+            workers = verifiedDb.map((w: any) => {
+              const tradeName = w.worker_skills?.[0]?.category?.name || 'General Technician';
+              const digits = w.id.replace(/[^0-9]/g, '').slice(0, 4) || '1020';
+              return {
+                id: `WRK-${digits}`,
+                name: w.full_name || 'Verified Member',
+                trade: tradeName,
+                availability: 'Available',
+                jobs: 0,
+                hours: 0,
+                earnings: '₹0',
+                fairnessScore: 85,
+                status: 'Balanced',
+                statusClass: 'status-green',
+              };
+            });
             targetSociety.memberCount = verifiedDb.length;
             targetSociety.activeMembers = verifiedDb.length;
           }
@@ -650,6 +662,99 @@ export async function getCooperativePortalData(societyId?: string): Promise<Coop
   };
 }
 
+export async function onboardMemberAction(payload: {
+  societyId: string;
+  name: string;
+  phone: string;
+  trade: string;
+  aadhaarNumber?: string;
+  experienceYears?: number;
+}) {
+  const supabase = await createClient();
+  try {
+    const rawDigits = (Date.now().toString() + Math.random().toString().slice(2, 6)).slice(-10);
+    const uniquePhone = payload.phone.trim() || `+91${rawDigits}`;
+
+    // 1. Insert worker into workers table
+    const { data: newWorker, error: workerError } = await supabase
+      .from('workers')
+      .insert({
+        full_name: payload.name.trim(),
+        phone: uniquePhone,
+        aadhaar_number: payload.aadhaarNumber?.trim() || null,
+        society_id: payload.societyId,
+        is_verified: true,
+        verification_status: 'verified',
+        is_available: true,
+        avg_rating: 5.0,
+        total_jobs_completed: 0,
+        profile_photo_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(payload.name.trim())}&background=24172f&color=fff`,
+      })
+      .select()
+      .single();
+
+    if (workerError) {
+      return { success: false, error: workerError.message };
+    }
+
+    // 2. Attach trade skill
+    if (newWorker && payload.trade) {
+      const { data: cat } = await supabase
+        .from('service_categories')
+        .select('id')
+        .ilike('name', `%${payload.trade}%`)
+        .maybeSingle();
+
+      if (cat) {
+        await supabase
+          .from('worker_skills')
+          .insert({
+            worker_id: newWorker.id,
+            service_category_id: cat.id,
+            years_experience: payload.experienceYears || 3,
+            certification_name: 'Cooperative Certified Trade Member',
+            is_verified: true,
+          });
+      }
+    }
+
+    // 3. Increment member_count on cooperative_societies
+    const { data: soc } = await supabase
+      .from('cooperative_societies')
+      .select('member_count')
+      .eq('id', payload.societyId)
+      .maybeSingle();
+
+    if (soc) {
+      await supabase
+        .from('cooperative_societies')
+        .update({ member_count: (soc.member_count || 0) + 1 })
+        .eq('id', payload.societyId);
+    }
+
+    revalidatePath('/cooperative');
+    const memberCode = `WRK-${newWorker.id.replace(/[^0-9]/g, '').slice(0, 4) || Math.floor(1000 + Math.random() * 9000)}`;
+
+    return {
+      success: true,
+      worker: {
+        id: memberCode,
+        name: newWorker.full_name,
+        trade: payload.trade,
+        availability: 'Available' as const,
+        jobs: 0,
+        hours: 0,
+        earnings: '₹0',
+        fairnessScore: 85,
+        status: 'Balanced' as const,
+        statusClass: 'status-green' as const,
+      },
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to onboard worker' };
+  }
+}
+
 export async function approveWorkerMembership(workerId: string, societyId?: string) {
   const supabase = await createClient();
   try {
@@ -661,6 +766,21 @@ export async function approveWorkerMembership(workerId: string, societyId?: stri
         society_id: societyId || undefined,
       })
       .eq('id', workerId);
+
+    if (societyId) {
+      const { data: soc } = await supabase
+        .from('cooperative_societies')
+        .select('member_count')
+        .eq('id', societyId)
+        .maybeSingle();
+
+      if (soc) {
+        await supabase
+          .from('cooperative_societies')
+          .update({ member_count: (soc.member_count || 0) + 1 })
+          .eq('id', societyId);
+      }
+    }
   } catch (e) {}
 
   revalidatePath('/cooperative');

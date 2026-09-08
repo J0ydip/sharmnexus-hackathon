@@ -45,7 +45,7 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
   // Marketing page at root (when not logged in) renders dedicated landing navbar
   const isMarketingRoot = pathname === '/' && !hasSession;
 
-  if (isMarketingRoot) {
+  if (isMarketingRoot || isAuth) {
     return <>{children}</>;
   }
 

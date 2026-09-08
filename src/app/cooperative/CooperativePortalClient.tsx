@@ -22,6 +22,7 @@ import {
   updateContractStatusAction,
   updateSquadMembersAction,
   createWelfareClaimAction,
+  onboardMemberAction,
 } from '@/app/actions/cooperative';
 import './cooperative.css';
 
@@ -82,6 +83,15 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
   const [showSquadModal, setShowSquadModal] = useState(false);
   const [showToolModal, setShowToolModal] = useState(false);
   const [showProposalModal, setShowProposalModal] = useState(false);
+  const [showOnboardModal, setShowOnboardModal] = useState(false);
+  const [onboardForm, setOnboardForm] = useState({
+    name: '',
+    phone: '',
+    trade: 'Electrician',
+    experienceYears: 3,
+    aadhaarNumber: '',
+  });
+  const [onboardLoading, setOnboardLoading] = useState(false);
 
   // Interactive Management Modals state
   const [selectedContractForDetails, setSelectedContractForDetails] = useState<CommunityContractItem | null>(null);
@@ -233,6 +243,56 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
   // Switch Society
   const handleSocietyChange = (societyId: string) => {
     window.location.href = `/cooperative?societyId=${societyId}`;
+  };
+
+  // Onboard Member Directly
+  const handleOnboardMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onboardForm.name) {
+      showToast('Please provide member full name.');
+      return;
+    }
+    setOnboardLoading(true);
+    try {
+      const res = await onboardMemberAction({
+        societyId: data.society.id,
+        name: onboardForm.name,
+        phone: onboardForm.phone,
+        trade: onboardForm.trade,
+        experienceYears: Number(onboardForm.experienceYears) || 3,
+        aadhaarNumber: onboardForm.aadhaarNumber,
+      });
+
+      if (res.success && res.worker) {
+        setData((prev) => ({
+          ...prev,
+          workers: [res.worker!, ...prev.workers],
+          society: {
+            ...prev.society,
+            memberCount: prev.society.memberCount + 1,
+            activeMembers: prev.society.activeMembers + 1,
+          },
+          activities: [
+            {
+              id: `act-${Date.now()}`,
+              icon: '👷',
+              title: `${res.worker!.name} (${res.worker!.trade}) onboarded to ${data.society.name} roster.`,
+              time: 'Just now',
+            },
+            ...prev.activities,
+          ],
+        }));
+        setShowOnboardModal(false);
+        setOnboardForm({ name: '', phone: '', trade: 'Electrician', experienceYears: 3, aadhaarNumber: '' });
+        showToast(`✓ Onboarded ${res.worker.name}! Member ID: ${res.worker.id}`);
+      } else {
+        showToast(res.error || 'Failed to onboard member.');
+      }
+    } catch (err: any) {
+      showToast('Error onboarding member.');
+    } finally {
+      setOnboardLoading(false);
+    }
   };
 
   // Worker Approvals
@@ -922,13 +982,22 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                       Verified members registered under {data.society.name}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="coop-btn coop-btn-dark coop-btn-sm"
-                    onClick={handleExportRosterCSV}
-                  >
-                    📥 Export Registry (CSV)
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="coop-btn coop-btn-gold coop-btn-sm"
+                      onClick={() => setShowOnboardModal(true)}
+                    >
+                      + Onboard Member
+                    </button>
+                    <button
+                      type="button"
+                      className="coop-btn coop-btn-dark coop-btn-sm"
+                      onClick={handleExportRosterCSV}
+                    >
+                      📥 Export Registry (CSV)
+                    </button>
+                  </div>
                 </div>
 
                 {/* Search and Trade Filter Bar */}
@@ -973,8 +1042,19 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                     <tbody>
                       {filteredWorkers.length === 0 ? (
                         <tr>
-                          <td colSpan={8} className="text-center text-muted" style={{ padding: '2rem' }}>
-                            No workers matching the search or trade filter.
+                          <td colSpan={8} className="text-center text-muted" style={{ padding: '3rem 1.5rem' }}>
+                            <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>👥</div>
+                            <strong style={{ fontSize: '1.05rem', color: 'var(--ink)', display: 'block' }}>No Members Onboarded Yet</strong>
+                            <p style={{ margin: '0.4rem auto 1.25rem auto', maxWidth: '420px', fontSize: '0.84rem' }}>
+                              Register trade professionals (electricians, painters, plumbers, drivers) from your district to build your cooperative work capacity.
+                            </p>
+                            <button
+                              type="button"
+                              className="coop-btn coop-btn-gold coop-btn-sm"
+                              onClick={() => setShowOnboardModal(true)}
+                            >
+                              + Onboard First Member
+                            </button>
                           </td>
                         </tr>
                       ) : (
@@ -2728,6 +2808,114 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                   style={{ flex: 1.5 }}
                 >
                   Confirm Allocation
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 9. Onboard Member Modal */}
+      {showOnboardModal && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '520px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.35rem', margin: 0 }}>Onboard Society Member</h2>
+                <small className="text-muted">Register skilled trade worker into {data.society.name}</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOnboardModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleOnboardMember}>
+              <div className="coop-form-group">
+                <label className="coop-label">Worker Full Name *</label>
+                <input
+                  type="text"
+                  className="coop-form-control"
+                  placeholder="e.g. Ramesh Kumar"
+                  value={onboardForm.name}
+                  onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="coop-form-group">
+                <label className="coop-label">Mobile Number *</label>
+                <input
+                  type="tel"
+                  className="coop-form-control"
+                  placeholder="e.g. +91 9876543210"
+                  value={onboardForm.phone}
+                  onChange={(e) => setOnboardForm({ ...onboardForm, phone: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="coop-form-group">
+                  <label className="coop-label">Primary Trade *</label>
+                  <select
+                    className="coop-form-control"
+                    value={onboardForm.trade}
+                    onChange={(e) => setOnboardForm({ ...onboardForm, trade: e.target.value })}
+                    required
+                  >
+                    {['Electrician', 'Plumber', 'Painter', 'Carpenter', 'Cleaner', 'Driver', 'Gardener', 'Technician', 'Caregiver', 'Domestic Helper'].map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="coop-form-group">
+                  <label className="coop-label">Experience (Years)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={40}
+                    className="coop-form-control"
+                    value={onboardForm.experienceYears}
+                    onChange={(e) => setOnboardForm({ ...onboardForm, experienceYears: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <div className="coop-form-group">
+                <label className="coop-label">Aadhaar / National ID (Optional)</label>
+                <input
+                  type="text"
+                  className="coop-form-control"
+                  placeholder="e.g. 9876 5432 1098"
+                  value={onboardForm.aadhaarNumber}
+                  onChange={(e) => setOnboardForm({ ...onboardForm, aadhaarNumber: e.target.value })}
+                />
+              </div>
+
+              <div style={{ background: 'rgba(5, 150, 105, 0.08)', border: '1px solid rgba(5, 150, 105, 0.25)', padding: '10px 14px', borderRadius: '10px', fontSize: '0.78rem', color: '#065f46', marginBottom: '1.25rem' }}>
+                ✓ <strong>Digital Pass & ID Issued:</strong> Onboarding will instantly generate a verified ShramNexus Member Pass, assign a unique member ID, and enroll the worker into the FairWork Engine™.
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  className="coop-btn coop-btn-outline"
+                  style={{ flex: 1 }}
+                  onClick={() => setShowOnboardModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="coop-btn coop-btn-gold"
+                  style={{ flex: 1.5 }}
+                  disabled={onboardLoading}
+                >
+                  {onboardLoading ? 'Registering Member...' : '✓ Add Member to Roster'}
                 </button>
               </div>
             </form>

@@ -166,6 +166,61 @@ export default function AuthPage() {
         return;
       }
     }
+    // 🛠️ WORKER DEMO CREDENTIALS BYPASS 🛠️
+    const isWorkerEmail =
+      trimmedEmail === 'worker@shramnexus' ||
+      trimmedEmail === 'worker@shramnexus.com' ||
+      trimmedEmail === 'worker@sharmnexus.com';
+
+    if ((isWorkerEmail || selectedRole === 'worker') && loginPassword === 'worker123') {
+      setIsLoading(true);
+      try {
+        const workerData = JSON.stringify({
+          isLoggedIn: true,
+          role: 'worker',
+          name: 'Rajesh Sharma (Electrician)',
+          email: trimmedEmail || 'worker@shramnexus.com',
+        });
+        localStorage.setItem('shramnexus-auth', workerData);
+        localStorage.setItem('sharmnexus-auth', workerData);
+        toast.success('Welcome back, Rajesh! Loading Worker Dashboard...');
+        setTimeout(() => {
+          window.location.href = getRedirectTarget('/worker-dashboard');
+        }, 400);
+        return;
+      } catch (err) {
+        window.location.href = '/worker-dashboard';
+        return;
+      }
+    }
+
+    // 👤 CUSTOMER DEMO CREDENTIALS BYPASS 👤
+    const isCustomerEmail =
+      trimmedEmail === 'customer@shramnexus' ||
+      trimmedEmail === 'customer@shramnexus.com' ||
+      trimmedEmail === 'user@shramnexus.com';
+
+    if ((isCustomerEmail || selectedRole === 'customer') && loginPassword === 'customer123') {
+      setIsLoading(true);
+      try {
+        const customerData = JSON.stringify({
+          isLoggedIn: true,
+          role: 'customer',
+          name: 'Pooja Verma',
+          email: trimmedEmail || 'customer@shramnexus.com',
+        });
+        localStorage.setItem('shramnexus-auth', customerData);
+        localStorage.setItem('sharmnexus-auth', customerData);
+        toast.success('Welcome back, Pooja! Ready to book trusted services.');
+        setTimeout(() => {
+          window.location.href = getRedirectTarget('/');
+        }, 400);
+        return;
+      } catch (err) {
+        window.location.href = '/';
+        return;
+      }
+    }
 
     setIsLoading(true);
     try {
@@ -522,6 +577,84 @@ export default function AuthPage() {
                 </button>
               </div>
 
+              {/* Customer Quick Demo Access Banner */}
+              {selectedRole === 'customer' && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  fontSize: '0.78rem',
+                  color: '#1e40af',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <span>👤 <strong>Demo Customer</strong> (<code>customer@shramnexus.com</code> / <code>customer123</code>)</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginEmail('customer@shramnexus.com');
+                      setLoginPassword('customer123');
+                    }}
+                    style={{
+                      background: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Auto-Fill
+                  </button>
+                </div>
+              )}
+
+              {/* Worker Quick Demo Access Banner */}
+              {selectedRole === 'worker' && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(217, 111, 77, 0.08)',
+                  border: '1px solid rgba(217, 111, 77, 0.25)',
+                  fontSize: '0.78rem',
+                  color: 'var(--terracotta)',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <span>🛠️ <strong>Demo Worker</strong> (<code>worker@shramnexus.com</code> / <code>worker123</code>)</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginEmail('worker@shramnexus.com');
+                      setLoginPassword('worker123');
+                    }}
+                    style={{
+                      background: 'var(--terracotta)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Auto-Fill
+                  </button>
+                </div>
+              )}
+
               {/* Cooperative Quick Demo Access Banner */}
               {selectedRole === 'cooperative' && (
                 <div style={{
@@ -537,7 +670,7 @@ export default function AuthPage() {
                   justifyContent: 'space-between',
                   gap: '8px'
                 }}>
-                  <span>🏢 <strong>Cooperative Society Admin</strong> (Demo: <code>coop@shramnexus.com</code> / <code>coop123</code>)</span>
+                  <span>🏢 <strong>Cooperative Society Admin</strong> (<code>coop@shramnexus.com</code> / <code>coop123</code>)</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -687,13 +820,6 @@ export default function AuthPage() {
                   Sign Up
                 </a>
               </div>
-
-              <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.8rem', color: 'var(--muted)' }}>
-                Managing a Cooperative Society?{' '}
-                <a href="/cooperative" className="link" style={{ fontWeight: 600, color: 'var(--terracotta)' }}>
-                  Open Cooperative Portal →
-                </a>
-              </div>
             </div>
 
             {/* Signup Form Container */}
@@ -737,40 +863,105 @@ export default function AuthPage() {
                 </button>
               </div>
 
-              {/* Worker Onboarding Wizard Banner */}
-              {signupUserType === 'worker' && (
+              {/* Worker 3-Step Registration Card */}
+              {signupUserType === 'worker' ? (
                 <div style={{
-                  marginBottom: '14px',
-                  padding: '10px 14px',
-                  background: 'rgba(217, 111, 77, 0.08)',
-                  border: '1px solid rgba(217, 111, 77, 0.25)',
-                  borderRadius: '12px',
-                  fontSize: '0.78rem',
-                  color: 'var(--ink)'
+                  background: 'var(--white)',
+                  border: '1.5px solid var(--border)',
+                  borderRadius: '16px',
+                  padding: '24px 20px',
+                  textAlign: 'center',
+                  boxShadow: 'var(--shadow-sm)',
+                  margin: '8px 0 16px 0'
                 }}>
-                  ✦ Prefer our comprehensive onboarding flow?{' '}
-                  <a href="/auth/worker-register" style={{ color: 'var(--terracotta)', fontWeight: 700, textDecoration: 'underline' }}>
-                    Open 3-Step Worker Registration →
+                  <div style={{
+                    width: '54px',
+                    height: '54px',
+                    borderRadius: '16px',
+                    background: 'rgba(217, 111, 77, 0.12)',
+                    color: 'var(--terracotta)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.75rem',
+                    margin: '0 auto 12px auto'
+                  }}>
+                    🛠️
+                  </div>
+
+                  <h3 style={{ fontSize: '1.18rem', fontWeight: 800, color: 'var(--ink)', marginBottom: '6px' }}>
+                    Skilled Trade Professional
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--muted)', lineHeight: '1.45', marginBottom: '16px' }}>
+                    To issue your verified Digital ID, enable customer bookings, and link cooperative welfare benefits, onboarding takes <strong>3 quick steps</strong>.
+                  </p>
+
+                  <div style={{
+                    background: 'var(--cream)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    textAlign: 'left',
+                    marginBottom: '20px',
+                    fontSize: '0.8rem',
+                    color: 'var(--ink)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--terracotta)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>1</span>
+                      <span><strong>Personal & Credentials:</strong> Name, phone & secure login</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--terracotta)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>2</span>
+                      <span><strong>Skills & Trade:</strong> Category, experience & hourly rate</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--terracotta)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>3</span>
+                      <span><strong>Verification:</strong> Aadhaar, location & cooperative</span>
+                    </div>
+                  </div>
+
+                  <a
+                    href="/auth/worker-register"
+                    className="btn btn-primary"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      width: '100%',
+                      textDecoration: 'none',
+                      fontWeight: 700,
+                      padding: '14px',
+                      fontSize: '0.94rem'
+                    }}
+                  >
+                    Start 3-Step Worker Registration →
                   </a>
-                </div>
-              )}
 
-              {/* Cooperative Society Registration Banner */}
-              {signupUserType === 'cooperative' && (
-                <div style={{
-                  marginBottom: '14px',
-                  padding: '10px 14px',
-                  background: 'rgba(230, 170, 59, 0.12)',
-                  border: '1px solid rgba(230, 170, 59, 0.35)',
-                  borderRadius: '12px',
-                  fontSize: '0.78rem',
-                  color: 'var(--ink)'
-                }}>
-                  🏛️ <strong>Register New Labour Cooperative Society</strong>. Get digital infrastructure, FairWork Engine™, Tool Bank & Democratic Assembly.
+                  <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'center', gap: '14px', fontSize: '0.74rem', color: 'var(--muted)' }}>
+                    <span>🛡️ Verified Digital Pass</span>
+                    <span>•</span>
+                    <span>⚖️ FairWork Engine™</span>
+                  </div>
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Cooperative Society Registration Banner */}
+                  {signupUserType === 'cooperative' && (
+                    <div style={{
+                      marginBottom: '14px',
+                      padding: '10px 14px',
+                      background: 'rgba(230, 170, 59, 0.12)',
+                      border: '1px solid rgba(230, 170, 59, 0.35)',
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      color: 'var(--ink)'
+                    }}>
+                      🏛️ <strong>Register New Labour Cooperative Society</strong>. Get digital infrastructure, FairWork Engine™, Tool Bank & Democratic Assembly.
+                    </div>
+                  )}
 
-              <form className="auth-form" id="signupForm" onSubmit={handleSignupSubmit} noValidate>
+                  <form className="auth-form" id="signupForm" onSubmit={handleSignupSubmit} noValidate>
                 {signupUserType === 'cooperative' && (
                   <>
                     <div className="form-group">
@@ -983,23 +1174,18 @@ export default function AuthPage() {
                   disabled={isLoading}
                 >
                   <span className="btn-text">
-                    Register as {signupUserType === 'worker' ? 'Worker' : signupUserType === 'cooperative' ? 'Cooperative Society' : 'Customer'}
+                    Register as {signupUserType === 'cooperative' ? 'Cooperative Society' : 'Customer'}
                   </span>
                   <span className="btn-loader"></span>
                 </button>
               </form>
+            </>
+          )}
 
               <div className="form-footer">
                 Already have an account?{' '}
                 <a href="#" className="link" id="switchToLogin" onClick={(e) => { e.preventDefault(); setIsLogin(true); }}>
                   Login
-                </a>
-              </div>
-
-              <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.8rem', color: 'var(--muted)' }}>
-                Managing a Cooperative Society?{' '}
-                <a href="/cooperative" className="link" style={{ fontWeight: 600, color: 'var(--terracotta)' }}>
-                  Open Cooperative Portal →
                 </a>
               </div>
             </div>
