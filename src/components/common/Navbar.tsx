@@ -129,7 +129,7 @@ export function Navbar() {
       icon: CalendarClock,
       badge: activeBookings.length > 0 ? activeBookings.length : undefined,
     },
-    { href: '/cooperative', label: 'Cooperative', icon: Building2 },
+    { href: '/#cooperatives', label: 'Cooperative', icon: Building2 },
     {
       href: '/emergency',
       label: 'Emergency SOS',
@@ -212,7 +212,7 @@ export function Navbar() {
                   Worker Portal (PWA)
                 </Link>
                 <Link
-                  href="/cooperative"
+                  href="/#cooperatives"
                   className="flex items-center gap-2 text-xs font-semibold text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
                 >
                   <Building2 className="w-3.5 h-3.5 text-emerald-600" />

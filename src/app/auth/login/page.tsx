@@ -24,6 +24,9 @@ export default function AuthPage() {
           setRedirectNotice('Please sign in or register to dispatch your emergency SOS request.');
         } else if (redirect.includes('/history')) {
           setRedirectNotice('Please sign in or register to view your booking history and track services.');
+        } else if (redirect.includes('/cooperative')) {
+          setRedirectNotice('Please sign in to access the Cooperative Society Portal.');
+          setSelectedRole('cooperative');
         } else {
           setRedirectNotice('Please sign in or register to proceed.');
         }
