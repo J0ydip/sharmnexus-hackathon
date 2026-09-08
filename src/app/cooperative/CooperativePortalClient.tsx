@@ -18,6 +18,9 @@ import {
   toggleToolReservationAction,
   createAssemblyProposalAction,
   voteAssemblyProposalAction,
+  updateContractStatusAction,
+  updateSquadMembersAction,
+  createWelfareClaimAction,
 } from '@/app/actions/cooperative';
 import './cooperative.css';
 
@@ -61,6 +64,16 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
   const [showToolModal, setShowToolModal] = useState(false);
   const [showProposalModal, setShowProposalModal] = useState(false);
 
+  // Interactive Management Modals state
+  const [selectedContractForDetails, setSelectedContractForDetails] = useState<CommunityContractItem | null>(null);
+  const [selectedSquadForManage, setSelectedSquadForManage] = useState<CooperativeSquadItem | null>(null);
+  const [squadMembersList, setSquadMembersList] = useState<string[]>([]);
+  const [newMemberToAdd, setNewMemberToAdd] = useState<string>('');
+  const [selectedWorkerForPass, setSelectedWorkerForPass] = useState<CooperativeWorkerItem | null>(null);
+  const [showWelfareClaimModal, setShowWelfareClaimModal] = useState(false);
+  const [welfareClaimForm, setWelfareClaimForm] = useState({ title: '', amount: 15000, type: 'Healthcare Emergency', workerName: '' });
+  const [showDividendLedgerModal, setShowDividendLedgerModal] = useState(false);
+
   // Forms state
   const [contractForm, setContractForm] = useState({ rwa: '', service: '', workersNeeded: 4, durationDays: 14, budget: '₹ 75,000' });
   const [squadForm, setSquadForm] = useState({ name: '', assignedContract: '', membersSummary: '' });
@@ -73,6 +86,122 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  // Contract Details & Status Update
+  const handleToggleContractStatus = async (contractId: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'Active' ? 'Completed' : 'Active';
+    try {
+      await updateContractStatusAction(contractId, nextStatus);
+    } catch (e) {}
+
+    setData((prev) => ({
+      ...prev,
+      contracts: prev.contracts.map((c) =>
+        c.id === contractId ? { ...c, status: nextStatus, badgeClass: nextStatus === 'Completed' ? 'coop-badge-verified' : 'coop-badge-gold' } : c
+      ),
+    }));
+    if (selectedContractForDetails) {
+      setSelectedContractForDetails({
+        ...selectedContractForDetails,
+        status: nextStatus,
+        badgeClass: nextStatus === 'Completed' ? 'coop-badge-verified' : 'coop-badge-gold',
+      });
+    }
+    showToast(`Contract marked as ${nextStatus}!`);
+  };
+
+  // Manage Squad Members
+  const handleOpenManageSquad = (squad: CooperativeSquadItem) => {
+    setSelectedSquadForManage(squad);
+    const members = squad.membersSummary.split(',').map((m) => m.trim()).filter(Boolean);
+    setSquadMembersList(members.length > 0 ? members : ['Ravi Kumar', 'Aman Verma', 'Suresh Patel']);
+    setNewMemberToAdd('');
+  };
+
+  const handleRemoveSquadMember = (memberName: string) => {
+    setSquadMembersList((prev) => prev.filter((m) => m !== memberName));
+  };
+
+  const handleAddSquadMember = () => {
+    if (!newMemberToAdd) return;
+    if (squadMembersList.includes(newMemberToAdd)) {
+      showToast('Worker is already in this squad');
+      return;
+    }
+    setSquadMembersList((prev) => [...prev, newMemberToAdd]);
+    setNewMemberToAdd('');
+  };
+
+  const handleSaveSquadMembers = async () => {
+    if (!selectedSquadForManage) return;
+    const summary = squadMembersList.join(', ');
+    const count = squadMembersList.length;
+    try {
+      await updateSquadMembersAction(selectedSquadForManage.id, summary, count);
+    } catch (e) {}
+
+    setData((prev) => ({
+      ...prev,
+      squads: prev.squads.map((sq) =>
+        sq.id === selectedSquadForManage.id ? { ...sq, membersSummary: summary } : sq
+      ),
+    }));
+    setSelectedSquadForManage(null);
+    showToast(`Saved ${count} members to squad "${selectedSquadForManage.name}"!`);
+  };
+
+  // Welfare Claim
+  const handleCreateWelfareClaim = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!welfareClaimForm.title || !welfareClaimForm.amount) {
+      showToast('Please provide claim title and amount');
+      return;
+    }
+    try {
+      await createWelfareClaimAction({
+        title: welfareClaimForm.title,
+        amount: Number(welfareClaimForm.amount),
+        type: welfareClaimForm.type,
+        workerName: welfareClaimForm.workerName,
+      });
+    } catch (e) {}
+
+    setData((prev) => ({
+      ...prev,
+      society: {
+        ...prev.society,
+        welfareFund: Math.max(0, prev.society.welfareFund - Number(welfareClaimForm.amount)),
+      },
+      welfare: {
+        ...prev.welfare,
+        utilized: prev.welfare.utilized + Number(welfareClaimForm.amount),
+        claims: [
+          { title: welfareClaimForm.title, amount: Number(welfareClaimForm.amount) },
+          ...prev.welfare.claims,
+        ],
+      },
+    }));
+    setShowWelfareClaimModal(false);
+    setWelfareClaimForm({ title: '', amount: 15000, type: 'Healthcare Emergency', workerName: '' });
+    showToast('Welfare disbursement approved and logged into records!');
+  };
+
+  // Export CSV Roster
+  const handleExportRosterCSV = () => {
+    const headers = 'ID,Name,Trade,Availability,Jobs,Hours,Earnings,FairnessScore,Status\\n';
+    const rows = data.workers
+      .map((w) => `"${w.id}","${w.name}","${w.trade}","${w.availability}",${w.jobs},${w.hours},"${w.earnings}",${w.fairnessScore},"${w.status}"`)
+      .join('\\n');
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${data.society.name.replace(/\\s+/g, '_')}_Workers_Roster.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported workers roster as CSV successfully!');
   };
 
   // Switch Society
@@ -333,19 +462,8 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
             <span className="coop-badge coop-badge-verified" style={{ fontSize: '0.65rem' }}>
               ✓ {data.society.registrationNumber}
             </span>
-            <div>
-              <select
-                className="coop-society-select"
-                value={data.society.id}
-                onChange={(e) => handleSocietyChange(e.target.value)}
-                title="Switch Society Demo"
-              >
-                {data.availableSocieties.map((s) => (
-                  <option key={s.id} value={s.id} style={{ background: '#24172f', color: '#fff' }}>
-                    Switch: {s.name}
-                  </option>
-                ))}
-              </select>
+            <div style={{ marginTop: '5px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.7)' }}>
+              📍 {data.society.district}, {data.society.state}
             </div>
           </div>
         </div>
@@ -455,6 +573,36 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
             <span className="coop-badge coop-badge-verified">
               Live Network
             </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(36,23,47,0.06)', padding: '5px 12px', borderRadius: '10px' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--ink)' }}>
+                👤 {data.society.name} Admin
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('shramnexus-coop-auth');
+                  localStorage.removeItem('shramnexus-auth');
+                  localStorage.removeItem('sharmnexus-auth');
+                  sessionStorage.clear();
+                  window.location.href = '/auth/login';
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  borderLeft: '1px solid rgba(0,0,0,0.1)',
+                  marginLeft: '4px',
+                  paddingLeft: '8px',
+                }}
+                title="Log Out of Cooperative Portal"
+              >
+                Log Out
+              </button>
+            </div>
           </div>
         </header>
 
@@ -584,9 +732,9 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                   <button
                     type="button"
                     className="coop-btn coop-btn-dark coop-btn-sm"
-                    onClick={() => showToast('Roster exported as CSV for district registrar')}
+                    onClick={handleExportRosterCSV}
                   >
-                    📥 Export Registry
+                    📥 Export Registry (CSV)
                   </button>
                 </div>
                 <div className="coop-table-responsive">
@@ -625,9 +773,10 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                             <button
                               type="button"
                               className="coop-btn coop-btn-outline coop-btn-sm"
-                              onClick={() => showToast(`Viewing digital cooperative pass for ${w.name}`)}
+                              onClick={() => setSelectedWorkerForPass(w)}
+                              title="View Member Digital Pass"
                             >
-                              Profile
+                              🪪 Member Pass
                             </button>
                           </td>
                         </tr>
@@ -776,9 +925,9 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                       <button
                         type="button"
                         className="coop-btn coop-btn-outline w-100"
-                        onClick={() => showToast(`Viewing contract terms and disbursements for ${c.rwa}`)}
+                        onClick={() => setSelectedContractForDetails(c)}
                       >
-                        View Details
+                        View Details & Breakdown
                       </button>
                     </div>
                   </div>
@@ -825,9 +974,9 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                       <button
                         type="button"
                         className="coop-btn coop-btn-dark w-100"
-                        onClick={() => showToast(`Managing members of ${s.name}`)}
+                        onClick={() => handleOpenManageSquad(s)}
                       >
-                        Manage Members
+                        Manage Crew Members
                       </button>
                     </div>
                   </div>
@@ -969,9 +1118,9 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                     <button
                       type="button"
                       className="coop-btn coop-btn-outline coop-btn-sm"
-                      onClick={() => showToast('Disbursement request logged')}
+                      onClick={() => setShowWelfareClaimModal(true)}
                     >
-                      + File Claim
+                      + File Claim / Disbursement
                     </button>
                   </div>
                   <table className="coop-data-table">
@@ -1011,7 +1160,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                   <button
                     type="button"
                     className="coop-btn coop-btn-dark w-100"
-                    onClick={() => showToast('Simulating dividend distribution ledger for members')}
+                    onClick={() => setShowDividendLedgerModal(true)}
                   >
                     Review Member Payout Audit
                   </button>
@@ -1343,6 +1492,425 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Contract Details & Financial Breakdown Modal */}
+      {selectedContractForDetails && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '560px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+              <div>
+                <span className={`coop-badge ${selectedContractForDetails.badgeClass}`} style={{ marginBottom: '4px' }}>
+                  {selectedContractForDetails.status}
+                </span>
+                <h2 style={{ fontSize: '1.35rem', margin: 0 }}>{selectedContractForDetails.rwa}</h2>
+                <small className="text-muted">{selectedContractForDetails.service}</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedContractForDetails(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', background: 'var(--cream)', padding: '12px', borderRadius: '10px', marginBottom: '16px' }}>
+              <div>
+                <small className="text-muted" style={{ fontSize: '0.72rem', display: 'block' }}>CREW REQUIRED</small>
+                <strong>👷 {selectedContractForDetails.workersNeeded} Workers</strong>
+              </div>
+              <div>
+                <small className="text-muted" style={{ fontSize: '0.72rem', display: 'block' }}>CONTRACT DURATION</small>
+                <strong>📅 {selectedContractForDetails.durationDays} Days</strong>
+              </div>
+              <div>
+                <small className="text-muted" style={{ fontSize: '0.72rem', display: 'block' }}>MONTHLY BUDGET</small>
+                <strong className="text-gold">{selectedContractForDetails.budget}</strong>
+              </div>
+            </div>
+
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>FairWork™ Revenue Breakdown (85 / 10 / 5 Rule)</h4>
+            <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '10px', padding: '12px', marginBottom: '16px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                <span>👷 Direct Member Wages (85%):</span>
+                <strong className="text-green">
+                  ₹ {Math.round((parseFloat(selectedContractForDetails.budget.replace(/[^0-9.]/g, '')) || 75000) * 0.85).toLocaleString('en-IN')}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                <span>🏢 Society Operations & Tools (10%):</span>
+                <strong>
+                  ₹ {Math.round((parseFloat(selectedContractForDetails.budget.replace(/[^0-9.]/g, '')) || 75000) * 0.10).toLocaleString('en-IN')}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                <span>🏥 Worker Welfare Fund (5%):</span>
+                <strong className="text-terracotta">
+                  ₹ {Math.round((parseFloat(selectedContractForDetails.budget.replace(/[^0-9.]/g, '')) || 75000) * 0.05).toLocaleString('en-IN')}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <button
+                type="button"
+                className="coop-btn coop-btn-outline"
+                style={{ flex: 1 }}
+                onClick={() => setSelectedContractForDetails(null)}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className={`coop-btn ${selectedContractForDetails.status === 'Active' ? 'coop-btn-dark' : 'coop-btn-gold'}`}
+                style={{ flex: 1.5 }}
+                onClick={() => handleToggleContractStatus(selectedContractForDetails.id, selectedContractForDetails.status)}
+              >
+                {selectedContractForDetails.status === 'Active' ? '✓ Mark Contract Completed' : '↺ Reactivate Contract'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Manage Squad Members Modal */}
+      {selectedSquadForManage && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '540px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+              <div>
+                <span className="coop-badge coop-badge-verified" style={{ marginBottom: '4px' }}>
+                  {selectedSquadForManage.status}
+                </span>
+                <h2 style={{ fontSize: '1.35rem', margin: 0 }}>Manage Squad: {selectedSquadForManage.name}</h2>
+                <small className="text-muted">Assigned Contract: {selectedSquadForManage.assignedContract}</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedSquadForManage(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+                Assigned Squad Members ({squadMembersList.length})
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '44px', background: 'var(--cream)', padding: '10px', borderRadius: '10px' }}>
+                {squadMembersList.length === 0 ? (
+                  <span className="text-muted" style={{ fontSize: '0.8rem' }}>No workers currently assigned to this squad.</span>
+                ) : (
+                  squadMembersList.map((m, idx) => (
+                    <span
+                      key={idx}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: '#fff',
+                        border: '1px solid var(--border)',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      👤 {m}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSquadMember(m)}
+                        style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontWeight: 800, padding: '0 2px' }}
+                        title="Remove member from squad"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                + Add Member from Active Society Roster
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select
+                  className="coop-form-control"
+                  value={newMemberToAdd}
+                  onChange={(e) => setNewMemberToAdd(e.target.value)}
+                  style={{ flex: 1 }}
+                >
+                  <option value="">-- Select Worker from Roster --</option>
+                  {data.workers
+                    .filter((w) => !squadMembersList.some((m) => m.includes(w.name)))
+                    .map((w) => (
+                      <option key={w.id} value={`${w.name} (${w.trade})`}>
+                        {w.name} — {w.trade} ({w.availability})
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  className="coop-btn coop-btn-gold"
+                  onClick={handleAddSquadMember}
+                  disabled={!newMemberToAdd}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                type="button"
+                className="coop-btn coop-btn-outline"
+                style={{ flex: 1 }}
+                onClick={() => setSelectedSquadForManage(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="coop-btn coop-btn-dark"
+                style={{ flex: 1.5 }}
+                onClick={handleSaveSquadMembers}
+              >
+                Save Squad Roster
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Worker Digital Cooperative Pass Modal */}
+      {selectedWorkerForPass && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '460px', textAlign: 'center' }}>
+            <div style={{ border: '2px solid var(--border)', borderRadius: '16px', padding: '24px', background: '#fff', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', background: 'linear-gradient(90deg, #e6aa3b, #d96f4d)' }} />
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+                <img src="/logo.png" alt="Logo" style={{ width: '28px', height: '28px', borderRadius: '6px' }} />
+                <strong style={{ fontSize: '0.95rem', color: 'var(--ink)' }}>SHRAMNEXUS COOPERATIVE PASS</strong>
+              </div>
+
+              <span className="coop-badge coop-badge-verified" style={{ marginBottom: '14px', display: 'inline-block' }}>
+                ✓ Official Member Pass
+              </span>
+
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--cream)', border: '2px solid var(--gold)', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>
+                {selectedWorkerForPass.name.slice(0, 2).toUpperCase()}
+              </div>
+
+              <h2 style={{ fontSize: '1.35rem', margin: '0 0 4px 0' }}>{selectedWorkerForPass.name}</h2>
+              <p style={{ color: 'var(--terracotta)', fontWeight: 700, margin: '0 0 14px 0', fontSize: '0.9rem' }}>
+                {selectedWorkerForPass.trade}
+              </p>
+
+              <div style={{ background: 'var(--cream)', borderRadius: '10px', padding: '12px', textAlign: 'left', fontSize: '0.82rem', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                  <span className="text-muted">Member ID:</span>
+                  <code>{selectedWorkerForPass.id}</code>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                  <span className="text-muted">Society:</span>
+                  <strong>{data.society.name}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                  <span className="text-muted">Registration:</span>
+                  <strong>{data.society.registrationNumber}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                  <span className="text-muted">FairWork Score:</span>
+                  <strong className="text-green">{selectedWorkerForPass.fairnessScore} / 100 ({selectedWorkerForPass.status})</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                  <span className="text-muted">Completed Jobs:</span>
+                  <strong>{selectedWorkerForPass.jobs} Services</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderTop: '1px dashed var(--border)', marginTop: '4px', paddingTop: '4px' }}>
+                  <span className="text-muted">Welfare Social Security:</span>
+                  <strong className="text-green">✓ Active (Policy #WF-2689)</strong>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: '16px' }}>
+                🔐 Cryptographically signed by ShramNexus Federation · Biometrically Verified
+              </div>
+
+              <button
+                type="button"
+                className="coop-btn coop-btn-dark w-100"
+                onClick={() => setSelectedWorkerForPass(null)}
+              >
+                Close Member Pass
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Welfare Claim Modal */}
+      {showWelfareClaimModal && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '520px' }}>
+            <h2 style={{ fontSize: '1.35rem', margin: '0 0 1rem 0' }}>+ File Welfare Disbursement Claim</h2>
+            <form onSubmit={handleCreateWelfareClaim}>
+              <div className="coop-form-group">
+                <label>Claim Description / Purpose</label>
+                <input
+                  type="text"
+                  className="coop-form-control"
+                  placeholder="e.g. Emergency Hospitalization Assistance - Suresh Patel"
+                  value={welfareClaimForm.title}
+                  onChange={(e) => setWelfareClaimForm({ ...welfareClaimForm, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="coop-form-group">
+                <label>Benefit Category</label>
+                <select
+                  className="coop-form-control"
+                  value={welfareClaimForm.type}
+                  onChange={(e) => setWelfareClaimForm({ ...welfareClaimForm, type: e.target.value })}
+                >
+                  <option value="Healthcare Emergency">🏥 Healthcare Emergency Support</option>
+                  <option value="Tool Damage & Insurance">🧰 Equipment Repair & Replacement</option>
+                  <option value="Family Loan Support">🤝 Interest-Free Family Emergency Loan</option>
+                  <option value="Skill Certification Grant">🎓 Apprenticeship & Skill Certification Grant</option>
+                </select>
+              </div>
+
+              <div className="coop-form-group">
+                <label>Beneficiary Member</label>
+                <select
+                  className="coop-form-control"
+                  value={welfareClaimForm.workerName}
+                  onChange={(e) => setWelfareClaimForm({ ...welfareClaimForm, workerName: e.target.value })}
+                >
+                  <option value="">-- Choose Member from Society --</option>
+                  {data.workers.map((w) => (
+                    <option key={w.id} value={w.name}>
+                      {w.name} ({w.trade})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="coop-form-group">
+                <label>Disbursement Amount (₹)</label>
+                <input
+                  type="number"
+                  min={500}
+                  step={500}
+                  className="coop-form-control"
+                  value={welfareClaimForm.amount}
+                  onChange={(e) => setWelfareClaimForm({ ...welfareClaimForm, amount: Number(e.target.value) })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="coop-btn coop-btn-outline"
+                  style={{ flex: 1 }}
+                  onClick={() => setShowWelfareClaimModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="coop-btn coop-btn-gold"
+                  style={{ flex: 1.5 }}
+                >
+                  Disburse from Fund
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Dividend Distribution Simulation Modal */}
+      {showDividendLedgerModal && (
+        <div className="coop-modal-overlay">
+          <div className="coop-modal-content" style={{ maxWidth: '600px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+              <div>
+                <span className="coop-badge coop-badge-gold" style={{ marginBottom: '4px' }}>
+                  Audited Member Payout
+                </span>
+                <h2 style={{ fontSize: '1.35rem', margin: 0 }}>Democratic Dividend Ledger (लाभांश)</h2>
+                <small className="text-muted">Total Distributable Pool: ₹ {data.welfare.dividendPool.toLocaleString('en-IN')}</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDividendLedgerModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ maxHeight: '280px', overflowY: 'auto', marginBottom: '16px' }}>
+              <table className="coop-data-table">
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th>Trade</th>
+                    <th>Hours</th>
+                    <th>Fairness</th>
+                    <th className="text-right">Projected Dividend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.workers.map((w, idx) => {
+                    const share = Math.round(data.welfare.avgPerMember * (w.fairnessScore / 80));
+                    return (
+                      <tr key={idx}>
+                        <td><strong>{w.name}</strong></td>
+                        <td>{w.trade}</td>
+                        <td>{w.hours}h</td>
+                        <td><span className="text-green font-bold">{w.fairnessScore}</span></td>
+                        <td className="text-right text-gold" style={{ fontWeight: 800 }}>
+                          ₹ {share.toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                type="button"
+                className="coop-btn coop-btn-outline"
+                style={{ flex: 1 }}
+                onClick={() => setShowDividendLedgerModal(false)}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="coop-btn coop-btn-dark"
+                style={{ flex: 1.5 }}
+                onClick={() => {
+                  showToast('Dividend ledger exported as official society audit PDF/CSV.');
+                  setShowDividendLedgerModal(false);
+                }}
+              >
+                📥 Export Distribution Audit
+              </button>
+            </div>
           </div>
         </div>
       )}

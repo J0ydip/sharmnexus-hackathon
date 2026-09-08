@@ -39,6 +39,9 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
   // Admin pages have their own layout
   const isAdminRoute = pathname?.startsWith('/admin');
 
+  // Cooperative portal has its own dedicated portal layout & topbar
+  const isCooperativeRoute = pathname?.startsWith('/cooperative');
+
   // Marketing page at root (when not logged in) renders dedicated landing navbar
   const isMarketingRoot = pathname === '/' && !hasSession;
 
@@ -46,7 +49,7 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const hideNav = isAuth || isWorkerRoute || isAdminRoute;
+  const hideNav = isAuth || isWorkerRoute || isAdminRoute || isCooperativeRoute;
 
   return (
     <>

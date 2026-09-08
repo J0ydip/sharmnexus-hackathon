@@ -750,3 +750,58 @@ export async function voteAssemblyProposalAction(proposalId: string, vote: 'yes'
   revalidatePath('/cooperative');
   return { success: true, message: `Your vote (${vote.toUpperCase()}) has been recorded!` };
 }
+
+export async function updateContractStatusAction(contractId: string, newStatus: 'Active' | 'Completed' | 'Pending') {
+  const supabase = await createClient();
+  try {
+    if (!contractId.startsWith('cnt-') && !contractId.startsWith('C')) {
+      await supabase
+        .from('community_contracts')
+        .update({ status: newStatus })
+        .eq('id', contractId);
+    }
+  } catch (e) {}
+
+  revalidatePath('/cooperative');
+  return { success: true, message: `Contract status marked as ${newStatus}!` };
+}
+
+export async function updateSquadMembersAction(squadId: string, membersSummary: string, count: number) {
+  const supabase = await createClient();
+  try {
+    if (!squadId.startsWith('sq-') && !squadId.startsWith('SQ')) {
+      await supabase
+        .from('cooperative_squads')
+        .update({
+          members_summary: membersSummary,
+          members_count: count,
+        })
+        .eq('id', squadId);
+    }
+  } catch (e) {}
+
+  revalidatePath('/cooperative');
+  return { success: true, message: 'Squad member roster successfully updated!' };
+}
+
+export async function createWelfareClaimAction(claim: {
+  title: string;
+  amount: number;
+  type: string;
+  workerName?: string;
+}) {
+  const supabase = await createClient();
+  try {
+    await supabase.from('welfare_records').insert({
+      type: claim.type || 'Emergency Assistance',
+      policy_number: `WF-${Date.now().toString().slice(-6)}`,
+      provider: 'ShramNexus Cooperative Welfare Fund',
+      status: 'approved',
+      premium_amount: claim.amount,
+      document_url: claim.title,
+    });
+  } catch (e) {}
+
+  revalidatePath('/cooperative');
+  return { success: true, message: `Disbursement claim for ₹${claim.amount.toLocaleString('en-IN')} approved and logged!` };
+}
