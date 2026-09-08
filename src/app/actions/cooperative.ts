@@ -422,12 +422,22 @@ export async function getCooperativePortalData(societyId?: string): Promise<Coop
 
   let targetSociety = SEED_SOCIETIES[0];
   let availableSocieties = SEED_SOCIETIES.map((s) => ({ id: s.id, name: s.name, reg: s.registrationNumber }));
-  let pendingRequests = [...SEED_PENDING_REQUESTS];
-  let workers = [...SEED_WORKERS];
-  let contracts = [...SEED_CONTRACTS];
-  let squads = [...SEED_SQUADS];
-  let tools = [...SEED_TOOLS];
-  let proposals = [...SEED_PROPOSALS];
+  let pendingRequests: CooperativeWorkerItem[] = [];
+  let workers: CooperativeWorkerItem[] = [];
+  let contracts: CommunityContractItem[] = [];
+  let squads: CooperativeSquadItem[] = [];
+  let tools: CooperativeToolItem[] = [];
+  let proposals: AssemblyProposalItem[] = [];
+  let welfare: WelfareFundData = {
+    totalFund: 0,
+    monthlyContribution: 0,
+    utilized: 0,
+    claims: [],
+    projectedSurplus: 0,
+    dividendPool: 0,
+    avgPerMember: 0,
+  };
+  let activities: CooperativeActivityItem[] = [];
 
   try {
     // 1. Live Cooperative Societies
@@ -445,123 +455,185 @@ export async function getCooperativePortalData(societyId?: string): Promise<Coop
       const found = societyId 
         ? dbSocieties.find((s: any) => s.id === societyId) 
         : (dbSocieties.find((s: any) => s.name?.includes('Shakti')) || dbSocieties[0]);
+
       if (found) {
+        const isDemoShakti = !societyId || found.id === 'f646a2c5-21b8-4538-ab2e-87aac9488506' || found.name?.includes('Shakti');
+
         targetSociety = {
           id: found.id,
           name: found.name,
           registrationNumber: found.registration_number,
           district: found.district || 'Jaipur',
           state: found.state || 'Rajasthan',
-          memberCount: found.member_count || 248,
-          activeMembers: Math.round((found.member_count || 248) * 0.78),
-          jobsThisMonth: 436,
-          contractsCount: 18,
-          revenue: Number(found.monthly_revenue) || 420000,
-          welfareFund: Number(found.welfare_fund_balance) || 180000,
+          memberCount: found.member_count ?? (isDemoShakti ? 248 : 0),
+          activeMembers: Math.round((found.member_count ?? (isDemoShakti ? 248 : 0)) * 0.78),
+          jobsThisMonth: isDemoShakti ? 436 : 0,
+          contractsCount: isDemoShakti ? 18 : 0,
+          revenue: Number(found.monthly_revenue) || (isDemoShakti ? 420000 : 0),
+          welfareFund: Number(found.welfare_fund_balance) || (isDemoShakti ? 180000 : 0),
           isVerified: found.is_active ?? true,
         };
+
+        if (isDemoShakti) {
+          pendingRequests = [...SEED_PENDING_REQUESTS];
+          workers = [...SEED_WORKERS];
+          contracts = [...SEED_CONTRACTS];
+          squads = [...SEED_SQUADS];
+          tools = [...SEED_TOOLS];
+          proposals = [...SEED_PROPOSALS];
+          welfare = SEED_WELFARE;
+          activities = SEED_ACTIVITIES;
+        } else {
+          activities = [
+            {
+              id: `act-${Date.now()}`,
+              icon: '🏛️',
+              title: `${found.name} cooperative society digital node initialized.`,
+              time: 'Recently',
+            },
+          ];
+        }
+
+        // 2. Live Workers & Pending Requests for this Society
+        const { data: dbWorkers } = await supabase
+          .from('workers')
+          .select('id, full_name, is_verified, verification_status, society_id, trade')
+          .eq('society_id', found.id);
+
+        if (dbWorkers && dbWorkers.length > 0) {
+          const pendingDb = dbWorkers.filter((w: any) => !w.is_verified || w.verification_status === 'pending');
+          if (pendingDb.length > 0) {
+            pendingRequests = pendingDb.map((w: any) => ({
+              id: w.id,
+              name: w.full_name || 'New Applicant',
+              trade: w.trade || 'General Technician',
+              availability: 'Offline',
+              jobs: 0,
+              hours: 0,
+              earnings: '₹0',
+              fairnessScore: 85,
+              status: 'Under-utilized',
+              statusClass: 'status-gold',
+              isPending: true,
+              documentsStatus: 'Aadhaar & Skill Certified',
+            }));
+          }
+
+          const verifiedDb = dbWorkers.filter((w: any) => w.is_verified && w.verification_status !== 'pending');
+          if (verifiedDb.length > 0) {
+            workers = verifiedDb.map((w: any) => ({
+              id: w.id.substring(0, 8),
+              name: w.full_name || 'Verified Member',
+              trade: w.trade || 'Technician',
+              availability: 'Available',
+              jobs: 0,
+              hours: 0,
+              earnings: '₹0',
+              fairnessScore: 85,
+              status: 'Balanced',
+              statusClass: 'status-green',
+            }));
+            targetSociety.memberCount = verifiedDb.length;
+            targetSociety.activeMembers = verifiedDb.length;
+          }
+        }
+
+        // 3. Live Community Contracts for this Society
+        let contractQuery = supabase
+          .from('community_contracts')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!isDemoShakti) {
+          contractQuery = contractQuery.eq('society_id', found.id);
+        }
+
+        const { data: dbContracts } = await contractQuery;
+        if (dbContracts && dbContracts.length > 0) {
+          contracts = dbContracts.map((c: any) => ({
+            id: c.id,
+            rwa: c.client_name,
+            service: c.service_title,
+            workersNeeded: c.workers_needed || 4,
+            durationDays: c.duration_days || 30,
+            budget: `₹ ${Number(c.budget).toLocaleString('en-IN')}`,
+            status: (c.status as any) || 'Active',
+            badgeClass: c.status === 'Completed' ? 'coop-badge-verified' : c.status === 'Pending' ? 'coop-badge-gold' : 'coop-badge-verified',
+          }));
+          targetSociety.contractsCount = contracts.length;
+        }
+
+        // 4. Live Cooperative Squads for this Society
+        let squadQuery = supabase
+          .from('cooperative_squads')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!isDemoShakti) {
+          squadQuery = squadQuery.eq('society_id', found.id);
+        }
+
+        const { data: dbSquads } = await squadQuery;
+        if (dbSquads && dbSquads.length > 0) {
+          squads = dbSquads.map((sq: any) => ({
+            id: sq.id,
+            name: sq.name,
+            assignedContract: 'Community Contract',
+            membersSummary: sq.members_summary || 'Multi-Trade Squad',
+            status: (sq.status as any) || 'Active',
+          }));
+        }
+
+        // 5. Live Cooperative Tools for this Society
+        let toolQuery = supabase
+          .from('cooperative_tools')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!isDemoShakti) {
+          toolQuery = toolQuery.eq('society_id', found.id);
+        }
+
+        const { data: dbTools } = await toolQuery;
+        if (dbTools && dbTools.length > 0) {
+          tools = dbTools.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            toolCode: t.tool_code,
+            status: (t.status as any) || 'Available',
+            statusClass: t.status === 'In Use' ? 'status-gold' : t.status === 'Maintenance' ? 'status-red' : 'status-green',
+            currentBorrower: t.current_borrower_name || undefined,
+          }));
+        }
+
+        // 6. Live Democratic Proposals for this Society
+        let proposalQuery = supabase
+          .from('cooperative_proposals')
+          .select('*')
+          .order('proposal_number', { ascending: true });
+
+        if (!isDemoShakti) {
+          proposalQuery = proposalQuery.eq('society_id', found.id);
+        }
+
+        const { data: dbProposals } = await proposalQuery;
+        if (dbProposals && dbProposals.length > 0) {
+          proposals = dbProposals.map((p: any, idx: number) => ({
+            id: p.id,
+            number: p.proposal_number || (idx + 1),
+            title: p.title,
+            description: p.description || '',
+            cost: Number(p.cost) || 0,
+            yesVotes: p.yes_votes || 0,
+            noVotes: p.no_votes || 0,
+            status: (p.status as any) || 'Active',
+            badgeClass: p.status === 'Approved' ? 'coop-badge-verified' : p.status === 'Rejected' ? 'coop-badge-red' : 'coop-badge-gold',
+          }));
+        }
       }
-    }
-
-    // 2. Live Workers & Pending Requests
-    const { data: dbWorkers } = await supabase
-      .from('workers')
-      .select('id, full_name, is_verified, verification_status')
-      .limit(30);
-
-    if (dbWorkers && dbWorkers.length > 0) {
-      const pendingDb = dbWorkers.filter((w: any) => !w.is_verified || w.verification_status === 'pending');
-      if (pendingDb.length > 0) {
-        pendingRequests = pendingDb.map((w: any) => ({
-          id: w.id,
-          name: w.full_name || 'New Applicant',
-          trade: 'General Technician',
-          availability: 'Offline',
-          jobs: 0,
-          hours: 0,
-          earnings: '₹0',
-          fairnessScore: 85,
-          status: 'Under-utilized',
-          statusClass: 'status-gold',
-          isPending: true,
-          documentsStatus: 'Aadhaar & Skill Certified',
-        }));
-      }
-    }
-
-    // 3. Live Community Contracts
-    const { data: dbContracts } = await supabase
-      .from('community_contracts')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (dbContracts && dbContracts.length > 0) {
-      contracts = dbContracts.map((c: any) => ({
-        id: c.id,
-        rwa: c.client_name,
-        service: c.service_title,
-        workersNeeded: c.workers_needed || 4,
-        durationDays: c.duration_days || 30,
-        budget: `₹ ${Number(c.budget).toLocaleString('en-IN')}`,
-        status: (c.status as any) || 'Active',
-        badgeClass: c.status === 'Completed' ? 'coop-badge-verified' : c.status === 'Pending' ? 'coop-badge-gold' : 'coop-badge-verified',
-      }));
-    }
-
-    // 4. Live Cooperative Squads
-    const { data: dbSquads } = await supabase
-      .from('cooperative_squads')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (dbSquads && dbSquads.length > 0) {
-      squads = dbSquads.map((sq: any) => ({
-        id: sq.id,
-        name: sq.name,
-        assignedContract: 'Green Valley Residency',
-        membersSummary: sq.members_summary || '4 Members Deployed',
-        status: (sq.status as any) || 'Active',
-      }));
-    }
-
-    // 5. Live Cooperative Tools
-    const { data: dbTools } = await supabase
-      .from('cooperative_tools')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (dbTools && dbTools.length > 0) {
-      tools = dbTools.map((t: any) => ({
-        id: t.id,
-        name: t.name,
-        toolCode: t.tool_code,
-        status: (t.status as any) || 'Available',
-        statusClass: t.status === 'In Use' ? 'status-gold' : t.status === 'Maintenance' ? 'status-red' : 'status-green',
-        currentBorrower: t.current_borrower_name || undefined,
-      }));
-    }
-
-    // 6. Live Democratic Proposals
-    const { data: dbProposals } = await supabase
-      .from('cooperative_proposals')
-      .select('*')
-      .order('proposal_number', { ascending: true });
-
-    if (dbProposals && dbProposals.length > 0) {
-      proposals = dbProposals.map((p: any, idx: number) => ({
-        id: p.id,
-        number: p.proposal_number || (idx + 24),
-        title: p.title,
-        description: p.description || '',
-        cost: Number(p.cost) || 0,
-        yesVotes: p.yes_votes || 0,
-        noVotes: p.no_votes || 0,
-        status: (p.status as any) || 'Active',
-        badgeClass: p.status === 'Approved' ? 'coop-badge-verified' : p.status === 'Rejected' ? 'coop-badge-red' : 'coop-badge-gold',
-      }));
     }
   } catch (e) {
-    // Graceful fallback to seeded values
+    // Graceful fallback
   }
 
   return {
@@ -572,9 +644,9 @@ export async function getCooperativePortalData(societyId?: string): Promise<Coop
     contracts,
     squads,
     tools,
-    welfare: SEED_WELFARE,
+    welfare,
     proposals,
-    activities: SEED_ACTIVITIES,
+    activities,
   };
 }
 
@@ -615,16 +687,51 @@ export async function assignFairWorkContract(workerId: string, contractTitle: st
   return { success: true, message: `Work assigned to worker for "${contractTitle}" via FairWork Engine™.` };
 }
 
+export async function registerCooperativeSocietyAction(payload: {
+  name: string;
+  registrationNumber: string;
+  district: string;
+  state: string;
+}) {
+  const supabase = await createClient();
+  try {
+    const { data: newSociety, error } = await supabase
+      .from('cooperative_societies')
+      .insert({
+        name: payload.name,
+        registration_number: payload.registrationNumber,
+        district: payload.district,
+        state: payload.state,
+        member_count: 0,
+        monthly_revenue: 0,
+        welfare_fund_balance: 0,
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/cooperative');
+    return { success: true, society: newSociety };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to register society' };
+  }
+}
+
 export async function createCommunityContractAction(contract: {
   rwa: string;
   service: string;
   workersNeeded: number;
   durationDays: number;
   budget: string;
-}) {
+}, societyId?: string) {
   const supabase = await createClient();
   try {
     await supabase.from('community_contracts').insert({
+      society_id: societyId || null,
       client_name: contract.rwa,
       service_title: contract.service,
       workers_needed: contract.workersNeeded,
@@ -642,10 +749,11 @@ export async function createSquadAction(squad: {
   name: string;
   assignedContract: string;
   membersSummary: string;
-}) {
+}, societyId?: string) {
   const supabase = await createClient();
   try {
     await supabase.from('cooperative_squads').insert({
+      society_id: societyId || null,
       name: squad.name,
       leader_name: squad.membersSummary.split(',')[0] || 'Squad Lead',
       members_summary: squad.membersSummary,
@@ -657,10 +765,11 @@ export async function createSquadAction(squad: {
   return { success: true, message: `Squad "${squad.name}" deployed successfully!` };
 }
 
-export async function addToolAssetAction(tool: { name: string; toolCode: string }) {
+export async function addToolAssetAction(tool: { name: string; toolCode: string }, societyId?: string) {
   const supabase = await createClient();
   try {
     await supabase.from('cooperative_tools').insert({
+      society_id: societyId || null,
       name: tool.name,
       tool_code: tool.toolCode,
       status: 'Available',
@@ -704,10 +813,11 @@ export async function createAssemblyProposalAction(proposal: {
   title: string;
   description: string;
   cost: number;
-}) {
+}, societyId?: string) {
   const supabase = await createClient();
   try {
     await supabase.from('cooperative_proposals').insert({
+      society_id: societyId || null,
       title: proposal.title,
       description: proposal.description,
       cost: proposal.cost,

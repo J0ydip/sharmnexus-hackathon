@@ -232,19 +232,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
 
   // Switch Society
   const handleSocietyChange = (societyId: string) => {
-    const matched = data.availableSocieties.find((s) => s.id === societyId);
-    if (matched) {
-      setData((prev) => ({
-        ...prev,
-        society: {
-          ...prev.society,
-          id: matched.id,
-          name: matched.name,
-          registrationNumber: matched.reg,
-        },
-      }));
-      showToast(`Switched active cooperative society to ${matched.name}`);
-    }
+    window.location.href = `/cooperative?societyId=${societyId}`;
   };
 
   // Worker Approvals
@@ -329,7 +317,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       badgeClass: 'badge-verified',
     };
     try {
-      await createCommunityContractAction(newContract);
+      await createCommunityContractAction(newContract, data.society.id);
     } catch (err) {}
     setData((prev) => ({
       ...prev,
@@ -356,7 +344,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       status: 'Active',
     };
     try {
-      await createSquadAction(newSquad);
+      await createSquadAction(newSquad, data.society.id);
     } catch (err) {}
     setData((prev) => ({
       ...prev,
@@ -382,7 +370,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       statusClass: 'status-green',
     };
     try {
-      await addToolAssetAction(newTool);
+      await addToolAssetAction(newTool, data.society.id);
     } catch (err) {}
     setData((prev) => ({
       ...prev,
@@ -501,7 +489,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       badgeClass: 'coop-badge-gold',
     };
     try {
-      await createAssemblyProposalAction(newProp);
+      await createAssemblyProposalAction(newProp, data.society.id);
     } catch (err) {}
     setData((prev) => ({
       ...prev,
@@ -610,8 +598,10 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
     : 84;
 
   // Dynamic candidate worker and target contract for recommendation
-  const candidateWorker = [...data.workers].sort((a, b) => a.fairnessScore - b.fairnessScore)[0] || data.workers[0];
-  const activeContractForRec = data.contracts.find((c) => c.status === 'Active') || data.contracts[0];
+  const candidateWorker = data.workers.length > 0
+    ? ([...data.workers].sort((a, b) => a.fairnessScore - b.fairnessScore)[0] || data.workers[0])
+    : null;
+  const activeContractForRec = data.contracts.find((c) => c.status === 'Active') || data.contracts[0] || null;
 
   // Filtered lists
   const filteredWorkers = data.workers.filter((w) => {
@@ -1059,22 +1049,44 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
               {/* Dynamic Recommendation Panel */}
               <div className="coop-recommendation-panel">
                 <div className="coop-recommendation-icon">💡</div>
-                <div className="coop-recommendation-text">
-                  <h3>Fair Allocation Recommendation</h3>
-                  <p>
-                    Assign upcoming <strong>"{activeContractForRec?.service || 'Community Task'}"</strong> at <strong>{activeContractForRec?.rwa || 'Local Client'}</strong> to <strong>{candidateWorker.name}</strong>.
-                    Currently has a lower workload (Fairness Score: <strong>{candidateWorker.fairnessScore}/100</strong>) compared to overloaded members.
-                  </p>
-                </div>
-                <div className="coop-recommendation-actions">
-                  <button
-                    type="button"
-                    className="coop-btn coop-btn-gold"
-                    onClick={() => handleAssignFairWork(candidateWorker.name, `${activeContractForRec?.rwa} (${activeContractForRec?.service})`)}
-                  >
-                    Assign Work Now
-                  </button>
-                </div>
+                {candidateWorker ? (
+                  <>
+                    <div className="coop-recommendation-text">
+                      <h3>Fair Allocation Recommendation</h3>
+                      <p>
+                        Assign upcoming <strong>"{activeContractForRec?.service || 'Community Task'}"</strong> at <strong>{activeContractForRec?.rwa || 'Local Client'}</strong> to <strong>{candidateWorker.name}</strong>.
+                        Currently has a lower workload (Fairness Score: <strong>{candidateWorker.fairnessScore}/100</strong>) compared to overloaded members.
+                      </p>
+                    </div>
+                    <div className="coop-recommendation-actions">
+                      <button
+                        type="button"
+                        className="coop-btn coop-btn-gold"
+                        onClick={() => handleAssignFairWork(candidateWorker.name, `${activeContractForRec?.rwa || 'Client'} (${activeContractForRec?.service || 'Task'})`)}
+                      >
+                        Assign Work Now
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="coop-recommendation-text">
+                      <h3>FairWork Engine™ on Standby</h3>
+                      <p>
+                        No workers registered on the active roster yet. Once gig workers in your district join {data.society.name} and contracts are created, the FairWork algorithmic rebalancing engine will automatically monitor hours and recommend equitable assignments.
+                      </p>
+                    </div>
+                    <div className="coop-recommendation-actions">
+                      <button
+                        type="button"
+                        className="coop-btn coop-btn-gold"
+                        onClick={() => setActiveTab('view-workers')}
+                      >
+                        + Onboard Members
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Workload Roster */}
@@ -1097,29 +1109,37 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                       </tr>
                     </thead>
                     <tbody>
-                      {data.workers.map((w) => (
-                        <tr key={w.id}>
-                          <td><strong>{w.name}</strong></td>
-                          <td>{w.trade}</td>
-                          <td>{w.jobs}</td>
-                          <td>{w.hours}h</td>
-                          <td>{w.earnings}</td>
-                          <td><strong>{w.fairnessScore}</strong> / 100</td>
-                          <td><span className={`coop-${w.statusClass}`}>{w.status}</span></td>
-                          <td>
-                            <button
-                              type="button"
-                              className="coop-btn coop-btn-outline coop-btn-sm"
-                              onClick={() => {
-                                setSelectedWorkerForTaskAssign(w);
-                                setAssignContractTitle(activeContractForRec?.rwa ? `${activeContractForRec.rwa} (${activeContractForRec.service})` : 'Green Valley Residency');
-                              }}
-                            >
-                              Assign Task
-                            </button>
+                      {data.workers.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="text-center text-muted" style={{ padding: '2.5rem' }}>
+                            No workers registered on the active roster yet. Members will appear here with live fairness scores.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        data.workers.map((w) => (
+                          <tr key={w.id}>
+                            <td><strong>{w.name}</strong></td>
+                            <td>{w.trade}</td>
+                            <td>{w.jobs}</td>
+                            <td>{w.hours}h</td>
+                            <td>{w.earnings}</td>
+                            <td><strong>{w.fairnessScore}</strong> / 100</td>
+                            <td><span className={`coop-${w.statusClass}`}>{w.status}</span></td>
+                            <td>
+                              <button
+                                type="button"
+                                className="coop-btn coop-btn-outline coop-btn-sm"
+                                onClick={() => {
+                                  setSelectedWorkerForTaskAssign(w);
+                                  setAssignContractTitle(activeContractForRec?.rwa ? `${activeContractForRec.rwa} (${activeContractForRec.service})` : 'Green Valley Residency');
+                                }}
+                              >
+                                Assign Task
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1164,8 +1184,19 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
 
               <div className="coop-cards-grid">
                 {filteredContracts.length === 0 ? (
-                  <div className="text-center text-muted" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
-                    No community contracts in "{contractsFilter}" status.
+                  <div className="coop-card text-center" style={{ gridColumn: '1 / -1', padding: '3rem 2rem' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>📋</div>
+                    <h3 style={{ margin: '0 0 0.5rem 0' }}>No Community Contracts Yet</h3>
+                    <p className="text-muted" style={{ maxWidth: '480px', margin: '0 auto 1.5rem auto', fontSize: '0.88rem' }}>
+                      Partner with Resident Welfare Associations, Municipal Sanitation boards, and Tech Parks for multi-week recurring community tenders.
+                    </p>
+                    <button
+                      type="button"
+                      className="coop-btn coop-btn-dark"
+                      onClick={() => setShowContractModal(true)}
+                    >
+                      + Create First Community Contract
+                    </button>
                   </div>
                 ) : (
                   filteredContracts.map((c) => (
@@ -1233,8 +1264,19 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
 
               <div className="coop-cards-grid">
                 {filteredSquads.length === 0 ? (
-                  <div className="text-center text-muted" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
-                    No squads matching "{squadsFilter}" status.
+                  <div className="coop-card text-center" style={{ gridColumn: '1 / -1', padding: '3rem 2rem' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🛡️</div>
+                    <h3 style={{ margin: '0 0 0.5rem 0' }}>No Squads Assembled Yet</h3>
+                    <p className="text-muted" style={{ maxWidth: '480px', margin: '0 auto 1.5rem auto', fontSize: '0.88rem' }}>
+                      Group your verified trade workers (electricians, painters, plumbers) into rapid-deployment squads for bulk institutional contracts.
+                    </p>
+                    <button
+                      type="button"
+                      className="coop-btn coop-btn-dark"
+                      onClick={() => setShowSquadModal(true)}
+                    >
+                      + Form First Squad
+                    </button>
                   </div>
                 ) : (
                   filteredSquads.map((s) => (
@@ -1314,8 +1356,19 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
 
               <div className="coop-cards-grid">
                 {filteredTools.length === 0 ? (
-                  <div className="text-center text-muted" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
-                    No tools currently in "{toolsFilter}" category.
+                  <div className="coop-card text-center" style={{ gridColumn: '1 / -1', padding: '3rem 2rem' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🧰</div>
+                    <h3 style={{ margin: '0 0 0.5rem 0' }}>Cooperative Tool Bank is Empty</h3>
+                    <p className="text-muted" style={{ maxWidth: '480px', margin: '0 auto 1.5rem auto', fontSize: '0.88rem' }}>
+                      Equip your cooperative with shared high-value machinery (airless paint sprayers, scaffolding, hammer drills) for member check-out.
+                    </p>
+                    <button
+                      type="button"
+                      className="coop-btn coop-btn-gold"
+                      onClick={() => setShowToolModal(true)}
+                    >
+                      + Add First Tool Asset
+                    </button>
                   </div>
                 ) : (
                   filteredTools.map((t) => (
@@ -1477,7 +1530,14 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                       </tr>
                     </thead>
                     <tbody>
-                      {data.contracts.map((c) => {
+                      {data.contracts.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center text-muted" style={{ padding: '2.5rem' }}>
+                            No contracts settled yet. Completed community projects will log transparent 85/10/5 disbursements here.
+                          </td>
+                        </tr>
+                      ) : (
+                        data.contracts.map((c) => {
                         const numericVal = parseFloat(c.budget.replace(/[^0-9.]/g, '')) || 75000;
                         return (
                           <tr key={c.id}>
@@ -1497,7 +1557,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                             </td>
                           </tr>
                         );
-                      })}
+                      }))}
                     </tbody>
                   </table>
                 </div>
@@ -1539,14 +1599,22 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                   </div>
                   <table className="coop-data-table">
                     <tbody>
-                      {data.welfare.claims.map((cl, i) => (
-                        <tr key={i}>
-                          <td><strong>{cl.title}</strong></td>
-                          <td className="text-right text-red" style={{ fontWeight: 700 }}>
-                            -₹ {cl.amount.toLocaleString('en-IN')}
+                      {data.welfare.claims.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="text-center text-muted" style={{ padding: '2rem' }}>
+                            No welfare claims filed yet. Medical emergencies, safety gear grants, and assistance claims will be recorded here.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        data.welfare.claims.map((cl, i) => (
+                          <tr key={i}>
+                            <td><strong>{cl.title}</strong></td>
+                            <td className="text-right text-red" style={{ fontWeight: 700 }}>
+                              -₹ {cl.amount.toLocaleString('en-IN')}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1619,8 +1687,19 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
 
               <div className="coop-cards-grid">
                 {filteredProposals.length === 0 ? (
-                  <div className="text-center text-muted" style={{ gridColumn: '1 / -1', padding: '3rem' }}>
-                    No proposals found in "{assemblyFilter}" filter.
+                  <div className="coop-card text-center" style={{ gridColumn: '1 / -1', padding: '3rem 2rem' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🗳️</div>
+                    <h3 style={{ margin: '0 0 0.5rem 0' }}>No Active Proposals in Member Assembly</h3>
+                    <p className="text-muted" style={{ maxWidth: '480px', margin: '0 auto 1.5rem auto', fontSize: '0.88rem' }}>
+                      Democratic member governance allows verified workers to introduce and vote on capital purchases, welfare policies, and minimum wage adjustments.
+                    </p>
+                    <button
+                      type="button"
+                      className="coop-btn coop-btn-gold"
+                      onClick={() => setShowProposalModal(true)}
+                    >
+                      + Create First Proposal
+                    </button>
                   </div>
                 ) : (
                   filteredProposals.map((prop) => {

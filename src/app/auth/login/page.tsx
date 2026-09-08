@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { setAdminSession } from '@/app/actions/admin';
+import { registerCooperativeSocietyAction } from '@/app/actions/cooperative';
 import { toast } from 'sonner';
 import './auth.css';
 
@@ -58,7 +59,11 @@ export default function AuthPage() {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [signupUserType, setSignupUserType] = useState<'customer' | 'worker'>('customer');
+  const [signupUserType, setSignupUserType] = useState<'customer' | 'worker' | 'cooperative'>('customer');
+  const [coopSocietyName, setCoopSocietyName] = useState('');
+  const [coopRegistrationNumber, setCoopRegistrationNumber] = useState('');
+  const [coopDistrict, setCoopDistrict] = useState('');
+  const [coopState, setCoopState] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   // Forgot password modal
@@ -270,6 +275,45 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
+      if (signupUserType === 'cooperative') {
+        const targetSocName = coopSocietyName.trim() || `${signupName.trim()}'s Labour Cooperative`;
+        const targetReg = coopRegistrationNumber.trim() || `REG-${Date.now().toString().slice(-4)}`;
+        const targetDistrict = coopDistrict.trim() || 'Jaipur';
+        const targetState = coopState.trim() || 'Rajasthan';
+
+        const societyRes = await registerCooperativeSocietyAction({
+          name: targetSocName,
+          registrationNumber: targetReg,
+          district: targetDistrict,
+          state: targetState,
+        });
+
+        if (!societyRes.success) {
+          toast.error(societyRes.error || 'Failed to register cooperative society');
+          setIsLoading(false);
+          return;
+        }
+
+        const newSocId = societyRes.society?.id;
+
+        localStorage.setItem('shramnexus-coop-auth', 'true');
+        const coopData = JSON.stringify({
+          isLoggedIn: true,
+          role: 'cooperative',
+          name: targetSocName,
+          email: signupEmail,
+          societyId: newSocId,
+        });
+        localStorage.setItem('shramnexus-auth', coopData);
+        localStorage.setItem('sharmnexus-auth', coopData);
+
+        toast.success(`Cooperative Society "${targetSocName}" registered successfully!`);
+        setTimeout(() => {
+          window.location.href = newSocId ? `/cooperative?societyId=${newSocId}` : '/cooperative';
+        }, 500);
+        return;
+      }
+
       const { data: signUpData, error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
@@ -660,7 +704,16 @@ export default function AuthPage() {
               </div>
 
               {/* Animated Pill Role Selector */}
-              <div className={`role-selector ${signupUserType === 'worker' ? 'worker-selected' : ''}`} data-form="signup">
+              <div 
+                className={`role-selector three-roles ${
+                  signupUserType === 'customer' 
+                    ? 'customer-selected' 
+                    : signupUserType === 'worker' 
+                      ? 'worker-selected' 
+                      : 'coop-selected'
+                }`} 
+                data-form="signup"
+              >
                 <button 
                   type="button" 
                   className={`role-btn ${signupUserType === 'customer' ? 'active' : ''}`}
@@ -674,6 +727,13 @@ export default function AuthPage() {
                   onClick={() => setSignupUserType('worker')}
                 >
                   Worker
+                </button>
+                <button 
+                  type="button" 
+                  className={`role-btn ${signupUserType === 'cooperative' ? 'active' : ''}`}
+                  onClick={() => setSignupUserType('cooperative')}
+                >
+                  Cooperative
                 </button>
               </div>
 
@@ -695,10 +755,85 @@ export default function AuthPage() {
                 </div>
               )}
 
+              {/* Cooperative Society Registration Banner */}
+              {signupUserType === 'cooperative' && (
+                <div style={{
+                  marginBottom: '14px',
+                  padding: '10px 14px',
+                  background: 'rgba(230, 170, 59, 0.12)',
+                  border: '1px solid rgba(230, 170, 59, 0.35)',
+                  borderRadius: '12px',
+                  fontSize: '0.78rem',
+                  color: 'var(--ink)'
+                }}>
+                  🏛️ <strong>Register New Labour Cooperative Society</strong>. Get digital infrastructure, FairWork Engine™, Tool Bank & Democratic Assembly.
+                </div>
+              )}
+
               <form className="auth-form" id="signupForm" onSubmit={handleSignupSubmit} noValidate>
+                {signupUserType === 'cooperative' && (
+                  <>
+                    <div className="form-group">
+                      <div className="input-wrapper">
+                        <label htmlFor="coopSocietyName">Cooperative Society Name</label>
+                        <input 
+                          type="text" 
+                          id="coopSocietyName" 
+                          placeholder="e.g. Navjivan Labour Cooperative" 
+                          value={coopSocietyName}
+                          onChange={(e) => setCoopSocietyName(e.target.value)}
+                          required 
+                        />
+                        <div className="input-icon">🏛️</div>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <div className="input-wrapper">
+                        <label htmlFor="coopRegistrationNumber">Society Registration Number</label>
+                        <input 
+                          type="text" 
+                          id="coopRegistrationNumber" 
+                          placeholder="e.g. REG-DL-2026-089" 
+                          value={coopRegistrationNumber}
+                          onChange={(e) => setCoopRegistrationNumber(e.target.value)}
+                          required 
+                        />
+                        <div className="input-icon">📋</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-group">
+                        <div className="input-wrapper">
+                          <label htmlFor="coopDistrict">District</label>
+                          <input 
+                            type="text" 
+                            id="coopDistrict" 
+                            placeholder="e.g. New Delhi" 
+                            value={coopDistrict}
+                            onChange={(e) => setCoopDistrict(e.target.value)}
+                            required 
+                          />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <div className="input-wrapper">
+                          <label htmlFor="coopState">State</label>
+                          <input 
+                            type="text" 
+                            id="coopState" 
+                            placeholder="e.g. Delhi" 
+                            value={coopState}
+                            onChange={(e) => setCoopState(e.target.value)}
+                            required 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div className="form-group">
                   <div className="input-wrapper">
-                    <label htmlFor="fullName">Full Name</label>
+                    <label htmlFor="fullName">{signupUserType === 'cooperative' ? 'Representative / Admin Name' : 'Full Name'}</label>
                     <input 
                       type="text" 
                       id="fullName" 
@@ -847,7 +982,9 @@ export default function AuthPage() {
                   id="signupBtn"
                   disabled={isLoading}
                 >
-                  <span className="btn-text">Register as {signupUserType === 'worker' ? 'Worker' : 'Customer'}</span>
+                  <span className="btn-text">
+                    Register as {signupUserType === 'worker' ? 'Worker' : signupUserType === 'cooperative' ? 'Cooperative Society' : 'Customer'}
+                  </span>
                   <span className="btn-loader"></span>
                 </button>
               </form>
