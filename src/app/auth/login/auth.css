@@ -502,6 +502,33 @@ html, body {
     color: var(--white);
 }
 
+/* 3-Role Support (Customer, Worker, Cooperative) */
+.role-selector.three-roles::before {
+    width: calc(33.333% - 4px);
+}
+
+.role-selector.three-roles.customer-selected::before {
+    transform: translateX(0%);
+    background: var(--gold);
+    box-shadow: 0 4px 12px rgba(230, 170, 59, 0.3);
+}
+
+.role-selector.three-roles.worker-selected::before {
+    transform: translateX(100%);
+    background: var(--terracotta);
+    box-shadow: 0 4px 12px rgba(217, 111, 77, 0.3);
+}
+
+.role-selector.three-roles.coop-selected::before {
+    transform: translateX(200%);
+    background: #059669;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.role-selector.three-roles.coop-selected .role-btn.active {
+    color: var(--white);
+}
+
 /* ============================================================================
    Auth Form & Inputs (Fixed Padding for Icon & Eye Button)
    ============================================================================ */

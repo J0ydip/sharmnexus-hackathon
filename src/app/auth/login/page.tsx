@@ -10,7 +10,7 @@ import './auth.css';
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'customer' | 'worker'>('customer');
+  const [selectedRole, setSelectedRole] = useState<'customer' | 'worker' | 'cooperative'>('customer');
   const [redirectNotice, setRedirectNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -128,6 +128,37 @@ export default function AuthPage() {
       }
     }
 
+    // 🏢 COOPERATIVE ADMIN CREDENTIALS BYPASS 🏢
+    const isCoopEmail =
+      trimmedEmail === 'coop@shramnexus' ||
+      trimmedEmail === 'coop@shramnexus.com' ||
+      trimmedEmail === 'coop@sharmnexus' ||
+      trimmedEmail === 'coop@sharmnexus.com' ||
+      trimmedEmail === 'society@shramnexus.com';
+
+    if ((isCoopEmail || selectedRole === 'cooperative') && loginPassword === 'coop123') {
+      setIsLoading(true);
+      try {
+        localStorage.setItem('shramnexus-coop-auth', 'true');
+        const coopData = JSON.stringify({
+          isLoggedIn: true,
+          role: 'cooperative',
+          name: 'Shakti Labour Coop Admin',
+          email: trimmedEmail || 'coop@shramnexus.com',
+        });
+        localStorage.setItem('shramnexus-auth', coopData);
+        localStorage.setItem('sharmnexus-auth', coopData);
+        toast.success('Welcome, Cooperative Society Administrator! Loading Portal...');
+        setTimeout(() => {
+          window.location.href = '/cooperative';
+        }, 500);
+        return;
+      } catch (err) {
+        window.location.href = '/cooperative';
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({ 
@@ -146,20 +177,30 @@ export default function AuthPage() {
       }
 
       // 1. Determine authentic registered role
-      let actualRole: 'customer' | 'worker' = user.user_metadata?.user_type;
+      let actualRole: 'customer' | 'worker' | 'cooperative' = user.user_metadata?.user_type;
 
       // 2. Fallback check against database tables if metadata is missing
       if (!actualRole) {
-        const { data: workerRec } = await supabase
-          .from('workers')
-          .select('id')
+        const { data: adminUser } = await supabase
+          .from('admin_users')
+          .select('role')
           .eq('id', user.id)
           .maybeSingle();
 
-        if (workerRec) {
-          actualRole = 'worker';
+        if (adminUser) {
+          actualRole = 'cooperative';
         } else {
-          actualRole = 'customer';
+          const { data: workerRec } = await supabase
+            .from('workers')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (workerRec) {
+            actualRole = 'worker';
+          } else {
+            actualRole = 'customer';
+          }
         }
       }
 
@@ -196,7 +237,7 @@ export default function AuthPage() {
         localStorage.setItem('sharmnexus-auth', authPayload);
       } catch (e) {}
 
-      const defaultTarget = actualRole === 'worker' ? '/worker-dashboard' : '/';
+      const defaultTarget = actualRole === 'worker' ? '/worker-dashboard' : actualRole === 'cooperative' ? '/cooperative' : '/';
       window.location.href = getRedirectTarget(defaultTarget);
     } catch (err) {
       toast.error('An unexpected error occurred during login.');
@@ -400,8 +441,17 @@ export default function AuthPage() {
                 <p className="form-subtitle">Choose your portal and sign in</p>
               </div>
 
-              {/* Animated Pill Role Selector */}
-              <div className={`role-selector ${selectedRole === 'worker' ? 'worker-selected' : ''}`} data-form="login">
+              {/* Animated Pill Role Selector (Customer | Worker | Cooperative) */}
+              <div 
+                className={`role-selector three-roles ${
+                  selectedRole === 'customer' 
+                    ? 'customer-selected' 
+                    : selectedRole === 'worker' 
+                    ? 'worker-selected' 
+                    : 'coop-selected'
+                }`} 
+                data-form="login"
+              >
                 <button 
                   type="button" 
                   className={`role-btn ${selectedRole === 'customer' ? 'active' : ''}`}
@@ -416,7 +466,53 @@ export default function AuthPage() {
                 >
                   Worker
                 </button>
+                <button 
+                  type="button" 
+                  className={`role-btn ${selectedRole === 'cooperative' ? 'active' : ''}`}
+                  onClick={() => setSelectedRole('cooperative')}
+                >
+                  Cooperative
+                </button>
               </div>
+
+              {/* Cooperative Quick Demo Access Banner */}
+              {selectedRole === 'cooperative' && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(5, 150, 105, 0.08)',
+                  border: '1px solid rgba(5, 150, 105, 0.25)',
+                  fontSize: '0.78rem',
+                  color: '#065f46',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}>
+                  <span>🏢 <strong>Cooperative Society Admin</strong> (Demo: <code>coop@shramnexus.com</code> / <code>coop123</code>)</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginEmail('coop@shramnexus.com');
+                      setLoginPassword('coop123');
+                    }}
+                    style={{
+                      background: '#059669',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Auto-Fill
+                  </button>
+                </div>
+              )}
 
               <form className="auth-form" id="loginForm" onSubmit={handleLoginSubmit} noValidate>
                 <div className="form-group">
@@ -511,7 +607,9 @@ export default function AuthPage() {
                   id="loginBtn"
                   disabled={isLoading}
                 >
-                  <span className="btn-text">Sign in as {selectedRole === 'worker' ? 'Worker' : 'Customer'}</span>
+                  <span className="btn-text">
+                    Sign in as {selectedRole === 'worker' ? 'Worker' : selectedRole === 'cooperative' ? 'Cooperative' : 'Customer'}
+                  </span>
                   <span className="btn-loader"></span>
                 </button>
               </form>
