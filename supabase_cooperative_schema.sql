@@ -19,6 +19,15 @@ CREATE TABLE IF NOT EXISTS cooperative_societies (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Safely alter cooperative_societies to add newly required columns in case the table already existed from previous migrations
+ALTER TABLE cooperative_societies ADD COLUMN IF NOT EXISTS member_count INT DEFAULT 0;
+ALTER TABLE cooperative_societies ADD COLUMN IF NOT EXISTS welfare_fund_balance DECIMAL DEFAULT 180000;
+ALTER TABLE cooperative_societies ADD COLUMN IF NOT EXISTS monthly_revenue DECIMAL DEFAULT 420000;
+ALTER TABLE cooperative_societies ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE cooperative_societies ADD COLUMN IF NOT EXISTS district TEXT;
+ALTER TABLE cooperative_societies ADD COLUMN IF NOT EXISTS state TEXT;
+ALTER TABLE cooperative_societies ADD COLUMN IF NOT EXISTS address TEXT;
+
 -- 2. Community Contracts (Institutions & RWAs)
 CREATE TABLE IF NOT EXISTS community_contracts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -90,5 +99,8 @@ INSERT INTO cooperative_societies (name, registration_number, district, state, m
 VALUES 
   ('Shakti Labour Coop', 'REG-9921', 'Jaipur', 'Rajasthan', 248, 180000, 420000, true),
   ('Rajasthan Navnirman Society', 'REG-8834', 'Jodhpur', 'Rajasthan', 112, 95000, 210000, true),
-  ('Jaipur Cleaning Cooperative', 'REG-7721', 'Jaipur', 'Rajasthan', 45, 32000, 98000, true)
-ON CONFLICT (registration_number) DO NOTHING;
+ON CONFLICT (registration_number) DO UPDATE SET
+  member_count = EXCLUDED.member_count,
+  welfare_fund_balance = EXCLUDED.welfare_fund_balance,
+  monthly_revenue = EXCLUDED.monthly_revenue,
+  is_active = EXCLUDED.is_active;
