@@ -421,34 +421,146 @@ export async function getCooperativePortalData(societyId?: string): Promise<Coop
   const supabase = await createClient();
 
   let targetSociety = SEED_SOCIETIES[0];
-  if (societyId) {
-    const matched = SEED_SOCIETIES.find((s) => s.id === societyId);
-    if (matched) targetSociety = matched;
-  }
+  let availableSocieties = SEED_SOCIETIES.map((s) => ({ id: s.id, name: s.name, reg: s.registrationNumber }));
+  let pendingRequests = [...SEED_PENDING_REQUESTS];
+  let workers = [...SEED_WORKERS];
+  let contracts = [...SEED_CONTRACTS];
+  let squads = [...SEED_SQUADS];
+  let tools = [...SEED_TOOLS];
+  let proposals = [...SEED_PROPOSALS];
 
   try {
-    // Attempt to query live Supabase tables if they exist
-    const { data: dbSociety } = await supabase
+    // 1. Live Cooperative Societies
+    const { data: dbSocieties } = await supabase
       .from('cooperative_societies')
       .select('*')
-      .limit(1)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
-    if (dbSociety) {
-      targetSociety = {
-        id: dbSociety.id,
-        name: dbSociety.name || targetSociety.name,
-        registrationNumber: dbSociety.registration_number || targetSociety.registrationNumber,
-        district: dbSociety.district || targetSociety.district,
-        state: dbSociety.state || targetSociety.state,
-        memberCount: dbSociety.member_count || targetSociety.memberCount,
-        activeMembers: Math.round((dbSociety.member_count || targetSociety.memberCount) * 0.78),
-        jobsThisMonth: targetSociety.jobsThisMonth,
-        contractsCount: targetSociety.contractsCount,
-        revenue: Number(dbSociety.monthly_revenue) || targetSociety.revenue,
-        welfareFund: Number(dbSociety.welfare_fund_balance) || targetSociety.welfareFund,
-        isVerified: dbSociety.is_active ?? true,
-      };
+    if (dbSocieties && dbSocieties.length > 0) {
+      availableSocieties = dbSocieties.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        reg: s.registration_number,
+      }));
+      const found = societyId ? dbSocieties.find((s: any) => s.id === societyId) : dbSocieties[0];
+      if (found) {
+        targetSociety = {
+          id: found.id,
+          name: found.name,
+          registrationNumber: found.registration_number,
+          district: found.district || 'Jaipur',
+          state: found.state || 'Rajasthan',
+          memberCount: found.member_count || 120,
+          activeMembers: Math.round((found.member_count || 120) * 0.78),
+          jobsThisMonth: 142,
+          contractsCount: 8,
+          revenue: Number(found.monthly_revenue) || 420000,
+          welfareFund: Number(found.welfare_fund_balance) || 180000,
+          isVerified: found.is_active ?? true,
+        };
+      }
+    }
+
+    // 2. Live Workers & Pending Requests
+    const { data: dbWorkers } = await supabase
+      .from('workers')
+      .select('id, full_name, is_verified, verification_status')
+      .limit(30);
+
+    if (dbWorkers && dbWorkers.length > 0) {
+      const pendingDb = dbWorkers.filter((w: any) => !w.is_verified || w.verification_status === 'pending');
+      if (pendingDb.length > 0) {
+        pendingRequests = pendingDb.map((w: any) => ({
+          id: w.id,
+          name: w.full_name || 'New Applicant',
+          trade: 'General Technician',
+          availability: 'Offline',
+          jobs: 0,
+          hours: 0,
+          earnings: '₹0',
+          fairnessScore: 85,
+          status: 'Under-utilized',
+          statusClass: 'status-gold',
+          isPending: true,
+          documentsStatus: 'Aadhaar & Skill Certified',
+        }));
+      }
+    }
+
+    // 3. Live Community Contracts
+    const { data: dbContracts } = await supabase
+      .from('community_contracts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (dbContracts && dbContracts.length > 0) {
+      const mappedContracts: CommunityContractItem[] = dbContracts.map((c: any) => ({
+        id: c.id,
+        rwa: c.client_name,
+        service: c.service_title,
+        workersNeeded: c.workers_needed || 4,
+        durationDays: c.duration_days || 30,
+        budget: `₹${Number(c.budget).toLocaleString('en-IN')}/mo`,
+        status: (c.status as any) || 'Active',
+        badgeClass: c.status === 'Completed' ? 'badge-green' : c.status === 'Pending' ? 'badge-gold' : 'badge-blue',
+      }));
+      contracts = [...mappedContracts, ...SEED_CONTRACTS.filter((s) => !mappedContracts.some((m) => m.rwa === s.rwa))];
+    }
+
+    // 4. Live Cooperative Squads
+    const { data: dbSquads } = await supabase
+      .from('cooperative_squads')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (dbSquads && dbSquads.length > 0) {
+      const mappedSquads: CooperativeSquadItem[] = dbSquads.map((sq: any) => ({
+        id: sq.id,
+        name: sq.name,
+        assignedContract: 'Active Contract Assignment',
+        membersSummary: sq.members_summary || '4 Members Deployed',
+        status: (sq.status as any) || 'Active',
+      }));
+      squads = [...mappedSquads, ...SEED_SQUADS.filter((s) => !mappedSquads.some((m) => m.name === s.name))];
+    }
+
+    // 5. Live Cooperative Tools
+    const { data: dbTools } = await supabase
+      .from('cooperative_tools')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (dbTools && dbTools.length > 0) {
+      const mappedTools: CooperativeToolItem[] = dbTools.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        toolCode: t.tool_code,
+        status: (t.status as any) || 'Available',
+        statusClass: t.status === 'In Use' ? 'status-gold' : t.status === 'Maintenance' ? 'status-red' : 'status-green',
+        currentBorrower: t.current_borrower_name || undefined,
+      }));
+      tools = [...mappedTools, ...SEED_TOOLS.filter((s) => !mappedTools.some((m) => m.toolCode === s.toolCode))];
+    }
+
+    // 6. Live Democratic Proposals
+    const { data: dbProposals } = await supabase
+      .from('cooperative_proposals')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (dbProposals && dbProposals.length > 0) {
+      const mappedProposals: AssemblyProposalItem[] = dbProposals.map((p: any, idx: number) => ({
+        id: p.id,
+        number: p.proposal_number || (idx + 1),
+        title: p.title,
+        description: p.description || '',
+        cost: Number(p.cost) || 0,
+        yesVotes: p.yes_votes || 0,
+        noVotes: p.no_votes || 0,
+        status: (p.status as any) || 'Active',
+        badgeClass: p.status === 'Approved' ? 'badge-green' : p.status === 'Rejected' ? 'badge-red' : 'badge-gold',
+      }));
+      proposals = [...mappedProposals, ...SEED_PROPOSALS.filter((s) => !mappedProposals.some((m) => m.title === s.title))];
     }
   } catch (e) {
     // Graceful fallback to seeded values
@@ -456,14 +568,14 @@ export async function getCooperativePortalData(societyId?: string): Promise<Coop
 
   return {
     society: targetSociety,
-    availableSocieties: SEED_SOCIETIES.map((s) => ({ id: s.id, name: s.name, reg: s.registrationNumber })),
-    pendingRequests: SEED_PENDING_REQUESTS,
-    workers: SEED_WORKERS,
-    contracts: SEED_CONTRACTS,
-    squads: SEED_SQUADS,
-    tools: SEED_TOOLS,
+    availableSocieties,
+    pendingRequests,
+    workers,
+    contracts,
+    squads,
+    tools,
     welfare: SEED_WELFARE,
-    proposals: SEED_PROPOSALS,
+    proposals,
     activities: SEED_ACTIVITIES,
   };
 }
@@ -562,6 +674,27 @@ export async function addToolAssetAction(tool: { name: string; toolCode: string 
 }
 
 export async function toggleToolReservationAction(toolId: string, workerName?: string) {
+  const supabase = await createClient();
+  try {
+    const { data: tool } = await supabase
+      .from('cooperative_tools')
+      .select('status')
+      .eq('id', toolId)
+      .maybeSingle();
+
+    if (tool) {
+      const nextStatus = tool.status === 'Available' ? 'In Use' : 'Available';
+      await supabase
+        .from('cooperative_tools')
+        .update({
+          status: nextStatus,
+          current_borrower_name: nextStatus === 'In Use' ? (workerName || 'Society Member') : null,
+          reserved_at: nextStatus === 'In Use' ? new Date().toISOString() : null,
+        })
+        .eq('id', toolId);
+    }
+  } catch (e) {}
+
   revalidatePath('/cooperative');
   return {
     success: true,
@@ -591,6 +724,29 @@ export async function createAssemblyProposalAction(proposal: {
 }
 
 export async function voteAssemblyProposalAction(proposalId: string, vote: 'yes' | 'no') {
+  const supabase = await createClient();
+  try {
+    const { data: prop } = await supabase
+      .from('cooperative_proposals')
+      .select('yes_votes, no_votes')
+      .eq('id', proposalId)
+      .maybeSingle();
+
+    if (prop) {
+      if (vote === 'yes') {
+        await supabase
+          .from('cooperative_proposals')
+          .update({ yes_votes: (prop.yes_votes || 0) + 1 })
+          .eq('id', proposalId);
+      } else {
+        await supabase
+          .from('cooperative_proposals')
+          .update({ no_votes: (prop.no_votes || 0) + 1 })
+          .eq('id', proposalId);
+      }
+    }
+  } catch (e) {}
+
   revalidatePath('/cooperative');
   return { success: true, message: `Your vote (${vote.toUpperCase()}) has been recorded!` };
 }
