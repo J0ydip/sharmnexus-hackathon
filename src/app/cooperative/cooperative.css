@@ -558,48 +558,91 @@
   padding-top: 0.5rem;
 }
 
-/* Payment Distribution Visual */
-.coop-distribution-visual {
+/* Payment Distribution Visual & Breakdown Cards */
+.coop-distribution-bar {
   display: flex;
-  height: 110px;
-  border-radius: 12px;
+  height: 26px;
+  border-radius: 9999px;
   overflow: hidden;
-  margin: 1.5rem 0;
-  color: white;
-  box-shadow: var(--shadow-sm);
+  margin: 1.5rem 0 1.25rem 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+  background: var(--cream-dark);
 }
 
-.coop-dist-block {
+.coop-dist-seg-worker {
+  width: 85%;
+  background: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.coop-dist-seg-coop {
+  width: 10%;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.coop-dist-seg-welfare {
+  width: 5%;
+  background: var(--terracotta);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.coop-distribution-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin: 1.25rem 0 1.5rem 0;
+  text-align: left;
+}
+
+.coop-dist-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 1rem;
-  transition: opacity 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.coop-worker-share { width: 85%; background: var(--green); }
-.coop-coop-share { width: 10%; background: var(--ink); }
-.coop-welfare-share { width: 5%; background: var(--terracotta); }
-
-.coop-dist-block h2 {
-  color: white;
-  font-size: 1.85rem;
-  line-height: 1;
-  margin-bottom: 0.2rem;
+.coop-dist-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.coop-dist-block strong {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.coop-dist-card-worker {
+  border-top: 4px solid var(--green);
 }
 
-.coop-dist-block span {
-  font-family: monospace;
-  font-size: 0.95rem;
-  opacity: 0.9;
-  margin-top: 0.35rem;
+.coop-dist-card-coop {
+  border-top: 4px solid var(--ink);
+}
+
+.coop-dist-card-welfare {
+  border-top: 4px solid var(--terracotta);
+}
+
+@media (max-width: 768px) {
+  .coop-distribution-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Welfare Fund split */

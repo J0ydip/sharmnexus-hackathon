@@ -1392,21 +1392,64 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                   />
                 </div>
 
-                <div className="coop-distribution-visual">
-                  <div className="coop-dist-block coop-worker-share">
-                    <h2>85%</h2>
-                    <strong>Direct Member Wages</strong>
-                    <span>₹ {Math.round(calcAmount * 0.85).toLocaleString('en-IN')}</span>
+                {/* Proportional Visual Bar */}
+                <div className="coop-distribution-bar">
+                  <div className="coop-dist-seg-worker">85% Direct Worker Wages</div>
+                  <div className="coop-dist-seg-coop">10% Ops</div>
+                  <div className="coop-dist-seg-welfare">5%</div>
+                </div>
+
+                {/* 3 Structured Breakdown Cards */}
+                <div className="coop-distribution-cards">
+                  {/* 1. Worker Share */}
+                  <div className="coop-dist-card coop-dist-card-worker">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="coop-badge coop-badge-verified" style={{ fontSize: '0.72rem' }}>
+                        85% Member Share
+                      </span>
+                      <span style={{ fontSize: '1.2rem' }}>👷</span>
+                    </div>
+                    <h3 style={{ fontSize: '1.75rem', color: 'var(--green)', margin: '0.6rem 0 0.2rem 0', fontWeight: 800 }}>
+                      ₹ {Math.round(calcAmount * 0.85).toLocaleString('en-IN')}
+                    </h3>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--ink)' }}>Direct Member Wages</strong>
+                    <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0.35rem 0 0 0', lineHeight: 1.4 }}>
+                      Deposited directly to member accounts. Zero corporate platform commissions taken.
+                    </p>
                   </div>
-                  <div className="coop-dist-block coop-coop-share">
-                    <h2>10%</h2>
-                    <strong>Society Operations & Tools</strong>
-                    <span>₹ {Math.round(calcAmount * 0.10).toLocaleString('en-IN')}</span>
+
+                  {/* 2. Society Ops */}
+                  <div className="coop-dist-card coop-dist-card-coop">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="coop-badge coop-badge-gold" style={{ fontSize: '0.72rem' }}>
+                        10% Society Ops
+                      </span>
+                      <span style={{ fontSize: '1.2rem' }}>🏢</span>
+                    </div>
+                    <h3 style={{ fontSize: '1.75rem', color: 'var(--ink)', margin: '0.6rem 0 0.2rem 0', fontWeight: 800 }}>
+                      ₹ {Math.round(calcAmount * 0.10).toLocaleString('en-IN')}
+                    </h3>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--ink)' }}>Operations & Tool Bank</strong>
+                    <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0.35rem 0 0 0', lineHeight: 1.4 }}>
+                      Maintains cooperative depots, power tools, logistics, and digital coordination.
+                    </p>
                   </div>
-                  <div className="coop-dist-block coop-welfare-share">
-                    <h2>5%</h2>
-                    <strong>Welfare & Emergency Corpus</strong>
-                    <span>₹ {Math.round(calcAmount * 0.05).toLocaleString('en-IN')}</span>
+
+                  {/* 3. Welfare Fund */}
+                  <div className="coop-dist-card coop-dist-card-welfare">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="coop-badge" style={{ background: 'rgba(217,111,77,0.15)', color: 'var(--terracotta)', borderColor: 'var(--terracotta)', fontSize: '0.72rem' }}>
+                        5% Social Security
+                      </span>
+                      <span style={{ fontSize: '1.2rem' }}>🏥</span>
+                    </div>
+                    <h3 style={{ fontSize: '1.75rem', color: 'var(--terracotta)', margin: '0.6rem 0 0.2rem 0', fontWeight: 800 }}>
+                      ₹ {Math.round(calcAmount * 0.05).toLocaleString('en-IN')}
+                    </h3>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--ink)' }}>Welfare & Emergency Corpus</strong>
+                    <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0.35rem 0 0 0', lineHeight: 1.4 }}>
+                      Provides accidental insurance, medical emergency grants, and annual dividends.
+                    </p>
                   </div>
                 </div>
 
