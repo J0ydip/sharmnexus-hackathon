@@ -91,12 +91,16 @@ export function Navbar() {
 
   const isAdmin = pathname.startsWith('/admin');
   const isWorker = pathname.startsWith('/worker');
+  const isCoop = pathname.startsWith('/cooperative');
 
   let portalName = 'Customer Portal';
   let homeLink = '/';
   if (isAdmin) {
     portalName = 'Admin Dashboard';
     homeLink = '/admin';
+  } else if (isCoop) {
+    portalName = 'Cooperative Portal';
+    homeLink = '/cooperative';
   } else if (isWorker) {
     portalName = 'Worker App';
     homeLink = '/worker-dashboard';
@@ -125,6 +129,7 @@ export function Navbar() {
       icon: CalendarClock,
       badge: activeBookings.length > 0 ? activeBookings.length : undefined,
     },
+    { href: '/cooperative', label: 'Cooperative', icon: Building2 },
     {
       href: '/emergency',
       label: 'Emergency SOS',
@@ -205,6 +210,13 @@ export function Navbar() {
                 >
                   <Building2 className="w-3.5 h-3.5 text-blue-600" />
                   Worker Portal (PWA)
+                </Link>
+                <Link
+                  href="/cooperative"
+                  className="flex items-center gap-2 text-xs font-semibold text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Cooperative Society Portal
                 </Link>
                 <Link
                   href="/admin"

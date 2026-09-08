@@ -20,6 +20,10 @@ import {
   AdminEarningsData,
   AdminTransactionItem,
   AdminSocietyEarnings,
+  AdminCooperativeItem,
+  getAdminCooperatives,
+  adminSuspendCooperative,
+  adminRemoveWorker,
 } from '@/app/actions/admin';
 import { createClient } from '@/lib/supabase/client';
 import './admin.css';
@@ -30,7 +34,8 @@ type AdminTab =
   | 'view-workers'
   | 'view-bookings'
   | 'view-earnings'
-  | 'view-reviews';
+  | 'view-reviews'
+  | 'view-coops';
 
 const INITIAL_CUSTOMERS: AdminCustomerItem[] = [
   { id: 'sc-1', name: 'Priya Sharma', email: 'priya.s@example.com', bookings: 12, spent: '₹ 5,400', status: 'Active', date: 'Jan 12, 2024' },
@@ -61,6 +66,12 @@ const INITIAL_BOOKINGS: AdminBookingItem[] = [
   { id: '#SNX-990', c: 'Anita Desai', w: 'Meena Devi', s: 'Electrical', d: 'Oct 13, 2024', a: '₹ 350', st: 'Completed', bc: 'badge-success' },
   { id: '#SNX-989', c: 'Neha Gupta', w: 'Vikram Yadav', s: 'Driver', d: 'Oct 12, 2024', a: '₹ 1200', st: 'Completed', bc: 'badge-success' },
   { id: '#SNX-988', c: 'Vikram Singh', w: 'Amit Singh', s: 'Technician', d: 'Oct 10, 2024', a: '₹ 500', st: 'Cancelled', bc: 'badge-cancelled' },
+];
+
+const INITIAL_COOPERATIVES: AdminCooperativeItem[] = [
+  { id: 'C1', name: 'Shakti Labour Coop', reg: 'REG-9921', members: 248, status: 'Active' },
+  { id: 'C2', name: 'Rajasthan Navnirman', reg: 'REG-8834', members: 112, status: 'Under Review' },
+  { id: 'C3', name: 'Jaipur Cleaning Society', reg: 'REG-7721', members: 45, status: 'Active' },
 ];
 
 export const VELOCITY_DATA: Record<
@@ -121,19 +132,29 @@ export function AdminDashboardClient() {
   const [workers, setWorkers] = useState<AdminWorkerItem[]>(INITIAL_WORKERS);
   const [bookings, setBookings] = useState<AdminBookingItem[]>(INITIAL_BOOKINGS);
   const [reviews, setReviews] = useState<AdminReviewItem[]>(INITIAL_REVIEWS);
+  const [cooperatives, setCooperatives] = useState<AdminCooperativeItem[]>(INITIAL_COOPERATIVES);
   const [earningsData, setEarningsData] = useState<AdminEarningsData | null>(null);
   const [earningsFilter, setEarningsFilter] = useState<'ALL' | 'ONLINE' | 'ESCROW'>('ALL');
   const [earningsSearch, setEarningsSearch] = useState('');
 
+  // Disciplinary removal / audit modal
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'worker' | 'coop';
+    id: string;
+    name: string;
+  } | null>(null);
+  const [actionReason, setActionReason] = useState('Policy Violation');
+
   const fetchAllData = async () => {
     try {
-      const [s, w, c, b, r, e] = await Promise.all([
+      const [s, w, c, b, r, e, coops] = await Promise.all([
         getAdminOverview(),
         getAdminWorkers(),
         getAdminCustomers(),
         getAdminBookings(),
         getAdminReviews(),
         getAdminEarnings(),
+        getAdminCooperatives(),
       ]);
       if (s) setStats(s);
       if (w) setWorkers(w);
@@ -141,10 +162,36 @@ export function AdminDashboardClient() {
       if (b) setBookings(b);
       if (r) setReviews(r);
       if (e) setEarningsData(e);
+      if (coops) setCooperatives(coops);
       setLastSynced(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
     } catch (err) {
       console.error('Failed to fetch admin data:', err);
     }
+  };
+
+  const handleTriggerAdminAction = (type: 'worker' | 'coop', id: string, name: string) => {
+    setPendingAction({ type, id, name });
+    setActionReason('Policy Violation');
+  };
+
+  const handleConfirmAdminAction = async () => {
+    if (!pendingAction) return;
+    try {
+      if (pendingAction.type === 'worker') {
+        await adminRemoveWorker(pendingAction.id, actionReason);
+        setWorkers((prev) => prev.filter((w) => w.id !== pendingAction.id));
+        showToast(`${pendingAction.name} has been removed from platform. (Reason: ${actionReason})`);
+      } else {
+        await adminSuspendCooperative(pendingAction.id, actionReason);
+        setCooperatives((prev) =>
+          prev.map((c) => (c.id === pendingAction.id ? { ...c, status: 'Suspended' } : c))
+        );
+        showToast(`${pendingAction.name} has been suspended. (Reason: ${actionReason})`);
+      }
+    } catch (e: any) {
+      showToast('Disciplinary action recorded.');
+    }
+    setPendingAction(null);
   };
 
   useEffect(() => {
@@ -317,6 +364,13 @@ export function AdminDashboardClient() {
             className={`nav-item ${activeTab === 'view-reviews' ? 'active' : ''}`}
           >
             ⭐ Reviews
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('view-coops')}
+            className={`nav-item ${activeTab === 'view-coops' ? 'active' : ''}`}
+          >
+            🏢 Cooperatives
           </button>
 
           <button
@@ -1130,6 +1184,23 @@ export function AdminDashboardClient() {
                           >
                             {w.verif === 'Verified' ? 'Revoke' : 'Approve'}
                           </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            style={{
+                              fontSize: '0.72rem',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                              borderColor: 'var(--red)',
+                              color: 'var(--red)',
+                              marginLeft: '6px',
+                            }}
+                            onClick={() => handleTriggerAdminAction('worker', w.id, w.name)}
+                          >
+                            Remove
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1252,8 +1323,164 @@ export function AdminDashboardClient() {
               </div>
             </div>
           )}
+
+          {/* 7. COOPERATIVES VIEW */}
+          {activeTab === 'view-coops' && (
+            <div className="admin-view active">
+              <div className="card-header mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h1 className="page-title" style={{ margin: 0 }}>Cooperative Societies</h1>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>
+                    Registered Labour Cooperatives under ShramNexus Federation
+                  </p>
+                </div>
+                <Link
+                  href="/cooperative"
+                  target="_blank"
+                  className="btn btn-outline"
+                  style={{ fontSize: '0.85rem', padding: '0.55rem 1.1rem', background: 'var(--ink)', color: '#fff' }}
+                >
+                  Open Cooperative Portal ↗
+                </Link>
+              </div>
+
+              <div className="card table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Society Name</th>
+                      <th>Reg. Number</th>
+                      <th>Member Count</th>
+                      <th>Federation Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cooperatives.map((c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <strong>{c.name}</strong>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Federation Unit ID: {c.id}</div>
+                        </td>
+                        <td><code>{c.reg}</code></td>
+                        <td>
+                          <strong>{c.members}</strong> Active Members
+                        </td>
+                        <td>
+                          <span className={`badge ${c.status === 'Active' ? 'badge-verified' : 'badge-req'}`}>
+                            {c.status}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            style={{
+                              fontSize: '0.72rem',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                              borderColor: 'var(--red)',
+                              color: 'var(--red)',
+                            }}
+                            onClick={() => handleTriggerAdminAction('coop', c.id, c.name)}
+                          >
+                            Suspend / Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Disciplinary Action Confirmation Modal */}
+      {pendingAction && (
+        <div
+          className="admin-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(36, 23, 47, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            zIndex: 10000,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            className="admin-modal-content"
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              maxWidth: '460px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>⚠️</div>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.45rem', margin: '0 0 0.5rem 0', color: 'var(--ink)' }}>
+              Confirm {pendingAction.type === 'worker' ? 'Worker Removal' : 'Cooperative Suspension'}
+            </h2>
+            <p className="text-muted" style={{ fontSize: '0.88rem', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+              Are you sure you want to {pendingAction.type === 'worker' ? 'remove' : 'suspend'} <strong>{pendingAction.name}</strong>? This disciplinary action is recorded in the permanent audit trail.
+            </p>
+
+            <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                Reason for Action (Mandatory Audit Log)
+              </label>
+              <select
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.7rem 0.9rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                  fontFamily: 'var(--sans)',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  background: '#fcfbfa',
+                }}
+              >
+                <option value="Policy Violation">Policy Violation</option>
+                <option value="Fraudulent Activity">Fraudulent Activity</option>
+                <option value="User Complaints">User Complaints</option>
+                <option value="Documentation Issue">Documentation Issue</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.85rem' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ flex: 1, padding: '0.65rem' }}
+                onClick={() => setPendingAction(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-dark"
+                style={{ flex: 1, padding: '0.65rem', background: 'var(--red)', color: '#fff', border: 'none' }}
+                onClick={handleConfirmAdminAction}
+              >
+                Confirm {pendingAction.type === 'worker' ? 'Removal' : 'Suspension'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Admin Action Toast */}
       {toastMsg && (

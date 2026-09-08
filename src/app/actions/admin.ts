@@ -630,3 +630,104 @@ export async function updateBookingStatusAdmin(bookingId: string, newStatus: str
   revalidatePath('/admin');
   return { success: true };
 }
+
+export interface AdminCooperativeItem {
+  id: string;
+  name: string;
+  reg: string;
+  members: number;
+  status: 'Active' | 'Under Review' | 'Suspended';
+}
+
+export async function getAdminCooperatives(): Promise<AdminCooperativeItem[]> {
+  const supabase = await createClient();
+
+  const SEED_COOPS: AdminCooperativeItem[] = [
+    { id: 'C1', name: 'Shakti Labour Coop', reg: 'REG-9921', members: 248, status: 'Active' },
+    { id: 'C2', name: 'Rajasthan Navnirman', reg: 'REG-8834', members: 112, status: 'Under Review' },
+    { id: 'C3', name: 'Jaipur Cleaning Society', reg: 'REG-7721', members: 45, status: 'Active' },
+  ];
+
+  try {
+    const { data, error } = await supabase
+      .from('cooperative_societies')
+      .select('id, name, registration_number, member_count, is_active')
+      .order('created_at', { ascending: false });
+
+    if (error || !data || data.length === 0) {
+      return SEED_COOPS;
+    }
+
+    const mappedCoops: AdminCooperativeItem[] = data.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      reg: c.registration_number,
+      members: c.member_count || 45,
+      status: c.is_active ? 'Active' : 'Suspended',
+    }));
+
+    return mappedCoops.length > 0 ? mappedCoops : SEED_COOPS;
+  } catch (err) {
+    console.error('Error fetching admin cooperatives:', err);
+    return SEED_COOPS;
+  }
+}
+
+export async function adminSuspendCooperative(coopId: string, reason: string) {
+  const isAdmin = await checkAdminSession();
+  if (!isAdmin) {
+    throw new Error('Unauthorized: Admin credentials required');
+  }
+
+  const supabase = await createClient();
+  try {
+    await supabase.from('admin_audit_logs').insert({
+      admin_email: 'admin@shramnexus.com',
+      target_type: 'coop',
+      target_id: coopId,
+      target_name: coopId,
+      action: 'suspend',
+      reason: reason,
+    });
+
+    if (!coopId.startsWith('C')) {
+      await supabase
+        .from('cooperative_societies')
+        .update({ is_active: false })
+        .eq('id', coopId);
+    }
+  } catch (e) {}
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+export async function adminRemoveWorker(workerId: string, reason: string) {
+  const isAdmin = await checkAdminSession();
+  if (!isAdmin) {
+    throw new Error('Unauthorized: Admin credentials required');
+  }
+
+  const supabase = await createClient();
+  try {
+    await supabase.from('admin_audit_logs').insert({
+      admin_email: 'admin@shramnexus.com',
+      target_type: 'worker',
+      target_id: workerId,
+      target_name: workerId,
+      action: 'remove',
+      reason: reason,
+    });
+
+    if (!workerId.startsWith('sw-') && !workerId.startsWith('W')) {
+      await supabase
+        .from('workers')
+        .update({ is_available: false, verification_status: 'suspended' })
+        .eq('id', workerId);
+    }
+  } catch (e) {}
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+

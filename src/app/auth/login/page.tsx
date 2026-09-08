@@ -542,6 +542,13 @@ export default function AuthPage() {
                   Sign Up
                 </a>
               </div>
+
+              <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.8rem', color: 'var(--muted)' }}>
+                Managing a Cooperative Society?{' '}
+                <a href="/cooperative" className="link" style={{ fontWeight: 600, color: 'var(--terracotta)' }}>
+                  Open Cooperative Portal →
+                </a>
+              </div>
             </div>
 
             {/* Signup Form Container */}
@@ -748,6 +755,13 @@ export default function AuthPage() {
                 Already have an account?{' '}
                 <a href="#" className="link" id="switchToLogin" onClick={(e) => { e.preventDefault(); setIsLogin(true); }}>
                   Login
+                </a>
+              </div>
+
+              <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.8rem', color: 'var(--muted)' }}>
+                Managing a Cooperative Society?{' '}
+                <a href="/cooperative" className="link" style={{ fontWeight: 600, color: 'var(--terracotta)' }}>
+                  Open Cooperative Portal →
                 </a>
               </div>
             </div>
