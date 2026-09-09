@@ -16,6 +16,7 @@ import { getBookingById as getBookingByIdAction, submitRating } from '@/app/acti
 import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
 import { recordCashPayment as recordCashPaymentAction } from '@/app/actions/payments';
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
+import { CancelBookingModal } from '@/components/customer/CancelBookingModal';
 import { getBookingOtp } from '@/lib/utils';
 import {
   ArrowLeft,
@@ -54,6 +55,8 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingReviewText, setRatingReviewText] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -262,8 +265,9 @@ export default function BookingTrackingPage({ params }: PageProps) {
     }
   };
 
-  const handleCancelBooking = async () => {
+  const handleConfirmCancel = async () => {
     if (!booking) return;
+    setIsCancelling(true);
     try {
       if (dbBooking) {
         setDbBooking({ ...dbBooking, status: 'cancelled' });
@@ -274,6 +278,9 @@ export default function BookingTrackingPage({ params }: PageProps) {
     } catch (err: any) {
       console.warn('Error cancelling booking:', err);
       toast.error(err?.message || 'Could not cancel booking');
+    } finally {
+      setIsCancelling(false);
+      setIsCancelModalOpen(false);
     }
   };
 
@@ -374,7 +381,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={handleCancelBooking}
+                onClick={() => setIsCancelModalOpen(true)}
                 className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold text-xs h-8 px-3 rounded-xl shadow-xs cursor-pointer"
               >
                 Cancel Booking
@@ -783,6 +790,17 @@ export default function BookingTrackingPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+
+      {/* Cancel Booking Disclaimer Modal */}
+      <CancelBookingModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirm={handleConfirmCancel}
+        bookingId={booking?.id}
+        serviceName={booking?.service_name}
+        workerName={worker?.full_name}
+        isCancelling={isCancelling}
+      />
 
       {/* Official Cooperative Receipt & Invoice Modal */}
       <CooperativeReceiptModal

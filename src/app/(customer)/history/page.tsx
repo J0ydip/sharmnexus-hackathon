@@ -21,6 +21,7 @@ import { submitRating, getCustomerBookings } from '@/app/actions/bookings';
 import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
 import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
+import { CancelBookingModal } from '@/components/customer/CancelBookingModal';
 import {
   CalendarClock,
   ArrowRight,
@@ -156,6 +157,10 @@ export default function HistoryPage() {
   const [userStars, setUserStars] = useState(5);
   const [userReviewText, setUserReviewText] = useState('');
 
+  // Cancel Disclaimer Modal state
+  const [cancellingBooking, setCancellingBooking] = useState<Booking | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
   // Combine DB bookings with local store bookings (avoid duplicate IDs)
   const allBookings = [
     ...dbBookings,
@@ -205,19 +210,25 @@ export default function HistoryPage() {
     }
   };
 
-  const handleCancelBooking = async (bookingId: string) => {
-    updateBookingStatus(bookingId, 'cancelled');
+  const handleConfirmCancel = async () => {
+    if (!cancellingBooking) return;
+    setIsCancelling(true);
+    const bId = cancellingBooking.id;
+    updateBookingStatus(bId, 'cancelled');
     setDbBookings((prev) =>
       prev.map((item) =>
-        item.id === bookingId
+        item.id === bId
           ? { ...item, status: 'cancelled' }
           : item
       )
     );
     try {
-      await updateBookingStatusAction(bookingId, 'cancelled');
+      await updateBookingStatusAction(bId, 'cancelled');
     } catch (err) {
       console.warn('Cancel action error:', err);
+    } finally {
+      setIsCancelling(false);
+      setCancellingBooking(null);
     }
     toast.info('Booking has been cancelled.');
     setActiveTab('cancelled');
@@ -485,8 +496,8 @@ export default function HistoryPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleCancelBooking(booking.id)}
-                        className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-1 transition-colors"
+                        onClick={() => setCancellingBooking(booking)}
+                        className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-1 transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -695,6 +706,17 @@ export default function HistoryPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Cancel Booking Disclaimer Modal */}
+      <CancelBookingModal
+        isOpen={Boolean(cancellingBooking)}
+        onClose={() => setCancellingBooking(null)}
+        onConfirm={handleConfirmCancel}
+        bookingId={cancellingBooking?.id}
+        serviceName={cancellingBooking?.service_name}
+        workerName={cancellingBooking?.worker?.full_name}
+        isCancelling={isCancelling}
+      />
 
       {/* Official Cooperative Receipt & Invoice Modal */}
       <CooperativeReceiptModal
