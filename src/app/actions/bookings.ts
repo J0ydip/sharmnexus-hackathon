@@ -85,8 +85,35 @@ export async function createBooking(data: {
   if (data.worker_id && isUuid(data.worker_id)) {
     realWorkerId = data.worker_id;
   } else {
-    // Try to find a worker for this category or fallback to any verified worker
-    if (realCategoryId) {
+    // 1. Try to match by explicit worker_name if provided (e.g. "Manoj Verma")
+    if (data.worker_name) {
+      const { data: matchedByName } = await supabase
+        .from('workers')
+        .select('id')
+        .ilike('full_name', `%${data.worker_name.trim()}%`)
+        .limit(1)
+        .maybeSingle();
+      if (matchedByName?.id) {
+        realWorkerId = matchedByName.id;
+      }
+    }
+
+    // 2. Try to match by specific mock ID pattern if provided
+    if (!realWorkerId && data.worker_id) {
+      const cleanTargetName = data.worker_id.replace(/^worker-/, '').replace(/-/g, ' ');
+      const { data: matchedByIdSlug } = await supabase
+        .from('workers')
+        .select('id')
+        .ilike('full_name', `%${cleanTargetName}%`)
+        .limit(1)
+        .maybeSingle();
+      if (matchedByIdSlug?.id) {
+        realWorkerId = matchedByIdSlug.id;
+      }
+    }
+
+    // 3. Try to find a worker for this category or fallback to any verified worker
+    if (!realWorkerId && realCategoryId) {
       const { data: skillRows } = await supabase
         .from('worker_skills')
         .select('worker_id')

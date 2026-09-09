@@ -276,6 +276,7 @@ function BookingFlowContent({ params }: PageProps) {
     try {
       await createBooking({
         worker_id: draft.selectedWorkerId || 'worker-rajesh-kumar',
+        worker_name: draft.selectedWorker?.full_name || selectedWorker?.full_name,
         service_category_id: draft.serviceCategoryId,
         service_category_name: draft.serviceCategoryName,
         description: draft.description,
@@ -1107,6 +1108,16 @@ function BookingFlowContent({ params }: PageProps) {
                 className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs sm:text-sm h-11 rounded-xl flex items-center justify-center transition-colors"
               >
                 View in My Bookings
+              </Link>
+            </div>
+
+            <div className="pt-1">
+              <Link
+                href={`/worker-dashboard?workerId=${createdBooking.worker?.id || ''}&workerName=${encodeURIComponent(createdBooking.worker?.full_name || '')}`}
+                className="w-full bg-[#fbf7ef] hover:bg-[#f0e7d9] text-[#24172f] font-bold text-xs sm:text-sm h-10 rounded-xl border border-[#e6dcd0] flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <span>🛠️ Switch to Worker View (as {createdBooking.worker?.full_name || 'Assigned Worker'})</span>
+                <span>↗</span>
               </Link>
             </div>
           </div>

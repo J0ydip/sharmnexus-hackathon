@@ -1,13 +1,116 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { updateWorkerAvailability } from '@/app/actions/workers';
 import { updateBookingStatus, getWorkerDashboardData } from '@/app/actions/worker-jobs';
 import { getBookingOtp } from '@/lib/utils';
 import { useBookingStore } from '@/lib/store/bookingStore';
 import { createClient } from '@/lib/supabase/client';
 import './worker.css';
+
+export interface WorkerPersona {
+  id: string;
+  name: string;
+  skill: string;
+  phone: string;
+  exp: string;
+  price: string;
+  loc: string;
+  bio: string;
+  society: string;
+}
+
+export const WORKER_PERSONAS: WorkerPersona[] = [
+  {
+    id: 'worker-manoj-verma',
+    name: 'Manoj Verma',
+    skill: 'Certified AC & Smart Appliance Technician',
+    phone: '+91 98765 43217',
+    exp: '8',
+    price: '450',
+    loc: 'Saket, New Delhi',
+    bio: 'Certified AC, inverter & appliance specialist with 8 years of residential technical troubleshooting. Member of Delhi Labour Welfare Federation.',
+    society: 'Delhi Labour Welfare Federation (DLWF-DL-05)',
+  },
+  {
+    id: 'worker-rajesh-kumar',
+    name: 'Rajesh Kumar',
+    skill: 'Master Plumber & Pipe Specialist',
+    phone: '+91 98765 43210',
+    exp: '8',
+    price: '300',
+    loc: 'Kankarbagh, Patna, Bihar',
+    bio: 'Certified master plumber with 8 years of residential leak repairs and society plumbing. Affiliated with Patna District Labour Society.',
+    society: 'Patna District Labour Society (PDLS-BR-01)',
+  },
+  {
+    id: 'worker-sunita-sharma',
+    name: 'Sunita Sharma',
+    skill: 'Professional Deep Cleaner',
+    phone: '+91 98765 43211',
+    exp: '6',
+    price: '250',
+    loc: 'Shivaji Nagar, Pune, Maharashtra',
+    bio: 'Expert deep cleaning and sanitization professional specialized in kitchen, bathroom, and post-renovation cleaning.',
+    society: 'Pune Gig Workers Cooperative (PGWC-MH-12)',
+  },
+  {
+    id: 'worker-meena-devi',
+    name: 'Meena Devi',
+    skill: 'Master Electrician & Wireman',
+    phone: '+91 98765 43215',
+    exp: '10',
+    price: '350',
+    loc: 'Hadapsar, Pune, Maharashtra',
+    bio: 'Licensed electrician with 10 years experience in three-phase wiring, circuit repairs, and smart home switchboards.',
+    society: 'Pune Gig Workers Cooperative (PGWC-MH-12)',
+  },
+  {
+    id: 'worker-amit-singh',
+    name: 'Amit Singh',
+    skill: 'Residential Electrician & Appliance Tech',
+    phone: '+91 98765 43212',
+    exp: '5',
+    price: '350',
+    loc: 'Frazer Road, Patna, Bihar',
+    bio: 'Certified home electrician with fast response times for fuse repair, MCB replacement, and wiring inspections.',
+    society: 'Patna District Labour Society (PDLS-BR-01)',
+  },
+  {
+    id: 'worker-vikram-yadav',
+    name: 'Vikram Yadav',
+    skill: 'Commercial & Personal Driver',
+    phone: '+91 98765 43214',
+    exp: '9',
+    price: '400',
+    loc: 'Bailey Road, Patna, Bihar',
+    bio: 'Professional commercial driver with zero-incident record for city transit and highway driving.',
+    society: 'Patna District Labour Society (PDLS-BR-01)',
+  },
+  {
+    id: 'worker-suresh-kumar',
+    name: 'Suresh Kumar',
+    skill: 'Master Carpenter & Woodworker',
+    phone: '+91 98765 43216',
+    exp: '12',
+    price: '400',
+    loc: 'Boring Road, Patna, Bihar',
+    bio: 'Master craftsman in wooden cabinetry, door alignment, lock repair, and custom furniture repairs.',
+    society: 'Patna District Labour Society (PDLS-BR-01)',
+  },
+  {
+    id: 'worker-deepak-verma',
+    name: 'Deepak Verma',
+    skill: 'Interior & Exterior Painter',
+    phone: '+91 98765 43221',
+    exp: '7',
+    price: '500',
+    loc: 'Wakad, Pune, Maharashtra',
+    bio: 'Professional painter with experience in waterproof priming, wall textures, and chemical-safe interior coating.',
+    society: 'Pune Gig Workers Cooperative (PGWC-MH-12)',
+  },
+];
 
 type WorkerView =
   | 'view-dashboard'
@@ -134,6 +237,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
 export function WorkerDashboardClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [activeView, setActiveView] = useState<WorkerView>('view-dashboard');
   const [lang, setLang] = useState<Lang>('en');
@@ -142,14 +246,63 @@ export function WorkerDashboardClient() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Worker state
-  const [workerName, setWorkerName] = useState('Raj Kumar');
-  const [workerPhone, setWorkerPhone] = useState('+91 98765 43210');
-  const [workerSkill, setWorkerSkill] = useState('Master Plumber & Pipe Specialist');
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string>('worker-manoj-verma');
+  const [workerName, setWorkerName] = useState('Manoj Verma');
+  const [workerPhone, setWorkerPhone] = useState('+91 98765 43217');
+  const [workerSkill, setWorkerSkill] = useState('Certified AC & Smart Appliance Technician');
   const [workerExp, setWorkerExp] = useState('8');
   const [workerPrice, setWorkerPrice] = useState('450');
-  const [workerLoc, setWorkerLoc] = useState('Patna Central, Bihar');
-  const [workerBio, setWorkerBio] = useState('Certified master plumber with 8 years of residential leak repairs and society plumbing. Affiliated with Patna District Labour Society.');
+  const [workerLoc, setWorkerLoc] = useState('Saket, New Delhi');
+  const [workerBio, setWorkerBio] = useState('Certified AC, inverter & appliance specialist with 8 years of residential technical troubleshooting. Member of Delhi Labour Welfare Federation.');
+  const [workerSociety, setWorkerSociety] = useState('Delhi Labour Welfare Federation (DLWF-DL-05)');
   const [workerLanguages, setWorkerLanguages] = useState('Hindi, Bhojpuri, English');
+
+  const switchWorkerPersona = (personaIdOrName: string) => {
+    if (!personaIdOrName) return;
+    const clean = personaIdOrName.toLowerCase().trim();
+    const matched =
+      WORKER_PERSONAS.find((p) => p.id.toLowerCase() === clean) ||
+      WORKER_PERSONAS.find((p) => p.name.toLowerCase().includes(clean) || clean.includes(p.name.toLowerCase())) ||
+      WORKER_PERSONAS.find((p) => p.skill.toLowerCase().includes(clean) || clean.includes(p.skill.toLowerCase()));
+
+    if (matched) {
+      setSelectedPersonaId(matched.id);
+      setWorkerName(matched.name);
+      setWorkerPhone(matched.phone);
+      setWorkerSkill(matched.skill);
+      setWorkerExp(matched.exp);
+      setWorkerPrice(matched.price);
+      setWorkerLoc(matched.loc);
+      setWorkerBio(matched.bio);
+      setWorkerSociety(matched.society);
+
+      try {
+        const authPayload = JSON.stringify({
+          isLoggedIn: true,
+          role: 'worker',
+          name: matched.name,
+          phone: matched.phone,
+          skills: [matched.skill],
+          location: matched.loc,
+          personaId: matched.id,
+        });
+        localStorage.setItem('shramnexus-auth', authPayload);
+        localStorage.setItem('sharmnexus-auth', authPayload);
+      } catch (e) {}
+
+      showToast(`Switched active worker to ${matched.name} (${matched.skill.split('&')[0].trim()})`);
+    }
+  };
+
+  useEffect(() => {
+    const paramId = searchParams?.get('workerId');
+    const paramName = searchParams?.get('workerName') || searchParams?.get('worker');
+    if (paramId) {
+      switchWorkerPersona(paramId);
+    } else if (paramName) {
+      switchWorkerPersona(paramName);
+    }
+  }, [searchParams]);
 
   // Job data
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([
@@ -667,6 +820,35 @@ export function WorkerDashboardClient() {
           </button>
 
           <div className="worker-topbar-right">
+            {/* Active Worker Persona Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                👤 Worker:
+              </span>
+              <select
+                value={selectedPersonaId}
+                onChange={(e) => switchWorkerPersona(e.target.value)}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #d1d5db',
+                  fontSize: '0.76rem',
+                  fontWeight: 700,
+                  backgroundColor: '#ffffff',
+                  color: '#1f2937',
+                  cursor: 'pointer',
+                  maxWidth: '190px'
+                }}
+                aria-label="Switch Worker Member"
+              >
+                {WORKER_PERSONAS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.skill.split('&')[0].trim()})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Language Selector */}
             <select
               value={lang}
@@ -713,7 +895,7 @@ export function WorkerDashboardClient() {
                 <h1>Welcome back, {workerName.split(' ')[0]}!</h1>
                 <p className="text-muted">Here is your live cooperative dispatch and earnings status for today.</p>
                 <span className="text-xs font-bold text-gray-500 mt-1 inline-block">
-                  🏛️ Member of: <strong>Patna District Labour Cooperative Society</strong> (Reg #PDLS-BR-01)
+                  🏛️ Member of: <strong>{workerSociety}</strong>
                 </span>
               </div>
               <div className="worker-verification-badge verified">

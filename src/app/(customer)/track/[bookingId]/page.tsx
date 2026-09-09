@@ -512,6 +512,14 @@ export default function BookingTrackingPage({ params }: PageProps) {
                   Message
                 </Button>
               </div>
+
+              <Link
+                href={`/worker-dashboard?workerId=${worker.id || ''}&workerName=${encodeURIComponent(worker.full_name)}`}
+                className="w-full bg-[#fbf7ef] hover:bg-[#f0e7d9] text-[#24172f] text-xs font-bold py-2.5 px-3 rounded-xl border border-[#e6dcd0] flex items-center justify-center gap-1.5 transition-colors shadow-2xs text-center"
+              >
+                <span>🛠️ Open Worker Dashboard (as {worker.full_name})</span>
+                <span>↗</span>
+              </Link>
             </div>
 
             {/* Digital Invoice / Transparent Price Card */}

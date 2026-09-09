@@ -708,14 +708,15 @@ export default function AuthPage() {
                         const workerData = JSON.stringify({
                           isLoggedIn: true,
                           role: 'worker',
-                          name: 'Rajesh Sharma (Electrician)',
+                          name: 'Rajesh Kumar (Plumber)',
                           email: 'worker@shramnexus.com',
+                          personaId: 'worker-rajesh-kumar',
                         });
                         localStorage.setItem('shramnexus-auth', workerData);
                         localStorage.setItem('sharmnexus-auth', workerData);
                         toast.success('Welcome back, Rajesh! Loading Worker Dashboard...');
                         setTimeout(() => {
-                          window.location.href = getRedirectTarget('/worker-dashboard');
+                          window.location.href = getRedirectTarget('/worker-dashboard?workerId=worker-rajesh-kumar');
                         }, 300);
                       }}
                       style={{
@@ -730,7 +731,42 @@ export default function AuthPage() {
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      1-Click Sign In ↗
+                      Rajesh (Plumber) ↗
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('manoj.verma@shramnexus.coop');
+                        setLoginPassword('worker123');
+                        const workerData = JSON.stringify({
+                          isLoggedIn: true,
+                          role: 'worker',
+                          name: 'Manoj Verma',
+                          email: 'manoj.verma@shramnexus.coop',
+                          skills: ['Certified AC & Smart Appliance Technician'],
+                          location: 'Saket, New Delhi',
+                          personaId: 'worker-manoj-verma',
+                        });
+                        localStorage.setItem('shramnexus-auth', workerData);
+                        localStorage.setItem('sharmnexus-auth', workerData);
+                        toast.success('Welcome back, Manoj! Loading Technician Dashboard...');
+                        setTimeout(() => {
+                          window.location.href = getRedirectTarget('/worker-dashboard?workerId=worker-manoj-verma');
+                        }, 300);
+                      }}
+                      style={{
+                        background: '#0d9488',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      Manoj (Tech) ↗
                     </button>
                   </div>
                 </div>
