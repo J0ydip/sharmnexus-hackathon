@@ -150,7 +150,12 @@ export async function getWorkerDashboardData() {
         .order('scheduled_at', { ascending: true }),
       supabase
         .from('bookings')
-        .select('id, status, estimated_price, final_price, description, address, scheduled_at, completed_at, created_at, customers(full_name, phone), service_categories(name)')
+        .select(`
+          id, status, estimated_price, final_price, description, address, scheduled_at, completed_at, created_at,
+          customers(full_name, phone),
+          service_categories(name),
+          payments(id, amount, status, method, paid_at, worker_payout, cooperative_share)
+        `)
         .eq('worker_id', user.id)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })

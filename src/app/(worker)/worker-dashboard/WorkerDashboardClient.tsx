@@ -52,6 +52,10 @@ interface CompletedJob {
   service: string;
   date: string;
   price: string;
+  amount?: number;
+  workerPayout?: number;
+  paymentStatus?: 'paid' | 'pending';
+  paymentMethod?: string;
 }
 
 const TRANSLATIONS: Record<Lang, Record<string, string>> = {
@@ -284,13 +288,28 @@ export function WorkerDashboardClient() {
           setActiveJobs(liveActive);
         }
         if (res.completedJobs) {
-          const liveCompleted: CompletedJob[] = res.completedJobs.map((c: any) => ({
-            id: c.id,
-            name: c.customers?.full_name || 'Customer',
-            service: c.service_categories?.name || 'Cooperative Service',
-            date: c.completed_at ? new Date(c.completed_at).toLocaleDateString() : 'Recent',
-            price: `₹ ${c.final_price || c.estimated_price || 400}`,
-          }));
+          const liveCompleted: CompletedJob[] = res.completedJobs.map((c: any) => {
+            const rawPrice = c.final_price || c.estimated_price || 450;
+            const pmts = c.payments || [];
+            const completedPayment = pmts.find((p: any) => p.status === 'completed');
+            const isPaid = Boolean(completedPayment);
+            const payout = completedPayment?.worker_payout || Math.round(rawPrice * 0.85);
+            const method = completedPayment?.method
+              ? (completedPayment.method === 'cash' ? 'Cash in Hand' : `Online (${completedPayment.method.toUpperCase()})`)
+              : 'Awaiting Settlement';
+
+            return {
+              id: c.id,
+              name: c.customers?.full_name || 'Household Customer',
+              service: c.service_categories?.name || 'Cooperative Service',
+              date: c.completed_at ? new Date(c.completed_at).toLocaleDateString() : 'Recent',
+              price: `₹ ${rawPrice}`,
+              amount: rawPrice,
+              workerPayout: payout,
+              paymentStatus: isPaid ? 'paid' : 'pending',
+              paymentMethod: method,
+            };
+          });
           setCompletedJobs(liveCompleted);
         }
       } catch (err) {
@@ -497,6 +516,17 @@ export function WorkerDashboardClient() {
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS['en'];
 
+  const paidCompletedJobs = completedJobs.filter((j) => j.paymentStatus === 'paid');
+  const totalEarningsPaid = paidCompletedJobs.reduce(
+    (acc, j) => acc + (j.workerPayout || Math.round((j.amount || 0) * 0.85)),
+    0
+  );
+  const pendingEarnings = completedJobs
+    .filter((j) => j.paymentStatus !== 'paid')
+    .reduce((acc, j) => acc + (j.workerPayout || Math.round((j.amount || 0) * 0.85)), 0);
+  const totalGrossPaid = paidCompletedJobs.reduce((acc, j) => acc + (j.amount || 0), 0);
+  const welfareFund = Math.round(totalGrossPaid * 0.05);
+
   return (
     <div className="worker-dashboard-container">
       {/* Sidebar */}
@@ -662,17 +692,17 @@ export function WorkerDashboardClient() {
             <div className="worker-stats-grid">
               <div className="worker-stat-card">
                 <h3>Customer Rating</h3>
-                <div className="worker-stat-val">★ 4.8</div>
+                <div className="worker-stat-val">★ 4.9</div>
               </div>
               <div className="worker-stat-card">
                 <h3>Completed Jobs</h3>
                 <div className="worker-stat-val">
-                  {126 + completedJobs.length}
+                  {completedJobs.length}
                 </div>
               </div>
               <div className="worker-stat-card">
-                <h3>Today&apos;s Earnings (85%)</h3>
-                <div className="worker-stat-val text-green">₹ 1,450</div>
+                <h3>Earnings Received (85%)</h3>
+                <div className="worker-stat-val text-green">₹ {totalEarningsPaid.toLocaleString()}</div>
               </div>
             </div>
 
@@ -1009,16 +1039,20 @@ export function WorkerDashboardClient() {
             <p className="worker-page-subtitle">Guaranteed 85% fair wage payout + 5% collective welfare fund.</p>
             <div className="worker-stats-grid mt-4">
               <div className="worker-stat-card">
-                <h3>This Week (85%)</h3>
-                <div className="worker-stat-val">₹ 4,200</div>
+                <h3>Total Paid Out (85%)</h3>
+                <div className="worker-stat-val">₹ {totalEarningsPaid.toLocaleString()}</div>
+                <small className="text-muted">{paidCompletedJobs.length} settled job{paidCompletedJobs.length === 1 ? '' : 's'}</small>
               </div>
               <div className="worker-stat-card">
-                <h3>This Month (85%)</h3>
-                <div className="worker-stat-val">₹ 18,450</div>
+                <h3>Pending Settlement</h3>
+                <div className="worker-stat-val" style={{ color: '#d97706' }}>
+                  ₹ {pendingEarnings.toLocaleString()}
+                </div>
+                <small className="text-muted">Awaiting customer payment</small>
               </div>
               <div className="worker-stat-card">
                 <h3>Welfare Pool (5%)</h3>
-                <div className="worker-stat-val text-green">₹ 1,085</div>
+                <div className="worker-stat-val text-green">₹ {welfareFund.toLocaleString()}</div>
                 <small className="text-muted">Cooperative health & tool fund</small>
               </div>
             </div>
@@ -1027,40 +1061,46 @@ export function WorkerDashboardClient() {
               Recent Transactions
             </h2>
             <div className="worker-table-container mt-2">
-              <table className="worker-data-table">
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Service</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Priya Sharma</td>
-                    <td>Plumbing Repair</td>
-                    <td>Today</td>
-                    <td>₹ 450</td>
-                    <td><span className="worker-status-badge success">Paid</span></td>
-                  </tr>
-                  <tr>
-                    <td>Rahul Verma</td>
-                    <td>Pipe Fitting</td>
-                    <td>Yesterday</td>
-                    <td>₹ 1,000</td>
-                    <td><span className="worker-status-badge success">Paid</span></td>
-                  </tr>
-                  <tr>
-                    <td>Amit Singh</td>
-                    <td>Water Leak Inspection</td>
-                    <td>Aug 22</td>
-                    <td>₹ 850</td>
-                    <td><span className="worker-status-badge warning">Pending</span></td>
-                  </tr>
-                </tbody>
-              </table>
+              {completedJobs.length === 0 ? (
+                <div style={{ padding: '2.5rem', textAlign: 'center', background: '#fff', borderRadius: '12px' }}>
+                  <p className="text-muted">No service transactions recorded yet. Completed jobs and payments will appear here.</p>
+                </div>
+              ) : (
+                <table className="worker-data-table">
+                  <thead>
+                    <tr>
+                      <th>Customer</th>
+                      <th>Service</th>
+                      <th>Date</th>
+                      <th>Total Bill</th>
+                      <th>Net Payout (85%)</th>
+                      <th>Payment Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completedJobs.map((txn) => {
+                      const netPayout = txn.workerPayout || Math.round((txn.amount || 0) * 0.85);
+                      const isPaid = txn.paymentStatus === 'paid';
+                      return (
+                        <tr key={txn.id}>
+                          <td><strong>{txn.name}</strong></td>
+                          <td>{txn.service}</td>
+                          <td>{txn.date}</td>
+                          <td>{txn.price}</td>
+                          <td style={{ color: 'var(--green, #10b981)', fontWeight: 700 }}>
+                            ₹ {netPayout.toLocaleString()}
+                          </td>
+                          <td>
+                            <span className={`worker-status-badge ${isPaid ? 'success' : 'warning'}`}>
+                              {isPaid ? `✓ Paid (${txn.paymentMethod || 'Settled'})` : '⏳ Awaiting Payment'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -1185,23 +1225,50 @@ export function WorkerDashboardClient() {
           <div className="worker-dashboard-view active">
             <h1 className="worker-page-title">Notifications</h1>
             <div className="mt-4">
-              <div className="worker-notification-card unread">
-                <div className="worker-notif-icon">💰</div>
-                <div>
-                  <strong>Payment Received</strong>
-                  <p className="text-sm text-gray-600">You received ₹450 from Priya Sharma for #SNX-992.</p>
-                  <small className="text-muted">2 hours ago</small>
+              {completedJobs.length === 0 && activeJobs.length === 0 && jobRequests.length === 0 ? (
+                <div style={{ padding: '2.5rem', textAlign: 'center', background: '#fff', borderRadius: '12px' }}>
+                  <p className="text-muted">No notifications yet. New service requests and payment receipts will appear here.</p>
                 </div>
-              </div>
-
-              <div className="worker-notification-card">
-                <div className="worker-notif-icon">⭐</div>
-                <div>
-                  <strong>New 5-Star Review</strong>
-                  <p className="text-sm text-gray-600">Rahul Verma left a 4-star review for Pipe Fitting.</p>
-                  <small className="text-muted">1 day ago</small>
-                </div>
-              </div>
+              ) : (
+                <>
+                  {completedJobs.filter((j) => j.paymentStatus === 'paid').map((j) => (
+                    <div key={`notif-pay-${j.id}`} className="worker-notification-card unread">
+                      <div className="worker-notif-icon">💰</div>
+                      <div>
+                        <strong>Payment Received</strong>
+                        <p className="text-sm text-gray-600">
+                          Settlement of ₹{(j.workerPayout || Math.round((j.amount || 0) * 0.85)).toLocaleString()} received for {j.service} from {j.name} ({j.paymentMethod}).
+                        </p>
+                        <small className="text-muted">{j.date}</small>
+                      </div>
+                    </div>
+                  ))}
+                  {activeJobs.map((j) => (
+                    <div key={`notif-active-${j.id}`} className="worker-notification-card">
+                      <div className="worker-notif-icon">🔧</div>
+                      <div>
+                        <strong>Service in Progress</strong>
+                        <p className="text-sm text-gray-600">
+                          Ongoing job: {j.service} for {j.name} at {j.address}.
+                        </p>
+                        <small className="text-muted">{j.date}</small>
+                      </div>
+                    </div>
+                  ))}
+                  {jobRequests.map((r) => (
+                    <div key={`notif-req-${r.id}`} className="worker-notification-card">
+                      <div className="worker-notif-icon">📋</div>
+                      <div>
+                        <strong>New Booking Request</strong>
+                        <p className="text-sm text-gray-600">
+                          {r.service} request from {r.name} ({r.price}).
+                        </p>
+                        <small className="text-muted">{r.date}</small>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         )}
