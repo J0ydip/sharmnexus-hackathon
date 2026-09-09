@@ -140,7 +140,6 @@ export function Navbar() {
       icon: CalendarClock,
       badge: activeBookings.length > 0 ? activeBookings.length : undefined,
     },
-    { href: '/#cooperatives', label: 'Cooperative', icon: Building2 },
     { href: '/#support', label: 'Help & Support', icon: HelpCircle },
     {
       href: '/emergency',
@@ -326,7 +325,7 @@ export function Navbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 p-0 rounded-2xl shadow-xl border border-gray-200">
               <div className="p-3.5 border-b border-gray-100 flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-900">Cooperative Notifications</span>
+                <span className="text-xs font-bold text-gray-900">Notifications</span>
                 <button
                   type="button"
                   onClick={handleMarkAllNotificationsRead}
