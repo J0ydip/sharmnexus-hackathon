@@ -46,9 +46,9 @@ export async function getAdminOverview(): Promise<AdminOverviewStats> {
       supabase.from('bookings').select('id, estimated_price, final_price, status', { count: 'exact' }),
     ]);
 
-    const totalWorkers = 5120 + (workersRes.count || 0);
-    const totalCustomers = 14250 + (customersRes.count || 0);
-    const totalBookings = 82400 + (bookingsRes.count || 0);
+    const totalWorkers = workersRes.count || 0;
+    const totalCustomers = customersRes.count || 0;
+    const totalBookings = bookingsRes.count || 0;
 
     let liveDbVolume = 0;
     if (bookingsRes.data && bookingsRes.data.length > 0) {
@@ -57,7 +57,7 @@ export async function getAdminOverview(): Promise<AdminOverviewStats> {
         0
       );
     }
-    const totalVolume = 21500000 + liveDbVolume;
+    const totalVolume = liveDbVolume;
 
     return {
       totalWorkers,
@@ -71,13 +71,13 @@ export async function getAdminOverview(): Promise<AdminOverviewStats> {
   } catch (err) {
     console.error('Error fetching admin overview:', err);
     return {
-      totalWorkers: 5120,
-      totalCustomers: 14250,
-      totalBookings: 82400,
-      totalVolume: 21500000,
-      platformCommission: 2150000,
-      welfarePool: 1075000,
-      workerDisbursements: 18275000,
+      totalWorkers: 0,
+      totalCustomers: 0,
+      totalBookings: 0,
+      totalVolume: 0,
+      platformCommission: 0,
+      welfarePool: 0,
+      workerDisbursements: 0,
     };
   }
 }
@@ -128,198 +128,103 @@ export interface AdminEarningsData {
 export async function getAdminEarnings(): Promise<AdminEarningsData> {
   const supabase = await createClient();
 
-  const SEED_TRANSACTIONS: AdminTransactionItem[] = [
-    {
-      id: 'pay_SNX_8941_RZP',
-      bookingId: '#SNX-8941',
-      customerName: 'Priya Sharma',
-      workerName: 'Raj Kumar',
-      serviceName: 'Plumbing Repair',
-      societyName: 'Patna District Labour Society',
-      grossAmount: 450,
-      workerPayout: 383,
-      welfareShare: 23,
-      platformFee: 44,
-      status: 'Completed',
-      method: 'Razorpay UPI',
-      paidAt: 'Today, 2:45 PM',
-    },
-    {
-      id: 'pay_SNX_9912_RZP',
-      bookingId: '#SNX-9912',
-      customerName: 'Rahul Verma',
-      workerName: 'Sunita Sharma',
-      serviceName: 'Deep Cleaning',
-      societyName: 'Patna District Labour Society',
-      grossAmount: 800,
-      workerPayout: 680,
-      welfareShare: 40,
-      platformFee: 80,
-      status: 'Completed',
-      method: 'Razorpay Escrow',
-      paidAt: 'Today, 1:15 PM',
-    },
-    {
-      id: 'pay_SNX_7812_RZP',
-      bookingId: '#SNX-7812',
-      customerName: 'Anita Desai',
-      workerName: 'Meena Devi',
-      serviceName: 'Electrical Wiring',
-      societyName: 'Pune Gig Workers Cooperative',
-      grossAmount: 1200,
-      workerPayout: 1020,
-      welfareShare: 60,
-      platformFee: 120,
-      status: 'Completed',
-      method: 'Online NetBanking',
-      paidAt: 'Yesterday, 6:30 PM',
-    },
-    {
-      id: 'pay_SNX_6641_RZP',
-      bookingId: '#SNX-6641',
-      customerName: 'Neha Gupta',
-      workerName: 'Vikram Yadav',
-      serviceName: 'Driver On-Demand',
-      societyName: 'Pune Gig Workers Cooperative',
-      grossAmount: 950,
-      workerPayout: 808,
-      welfareShare: 47,
-      platformFee: 95,
-      status: 'Completed',
-      method: 'Razorpay UPI',
-      paidAt: 'Yesterday, 4:10 PM',
-    },
-    {
-      id: 'pay_SNX_5521_RZP',
-      bookingId: '#SNX-5521',
-      customerName: 'Karan Mehra',
-      workerName: 'Amit Singh',
-      serviceName: 'Technician Checkup',
-      societyName: 'Patna District Labour Society',
-      grossAmount: 500,
-      workerPayout: 425,
-      welfareShare: 25,
-      platformFee: 50,
-      status: 'Completed',
-      method: 'Cooperative Escrow',
-      paidAt: 'Sep 04, 11:20 AM',
-    },
-  ];
-
-  const SEED_SOCIETIES: AdminSocietyEarnings[] = [
-    {
-      societyId: 'soc-patna',
-      societyName: 'Patna District Labour Society',
-      registrationNumber: 'PDLS-BR-01',
-      district: 'Patna, Bihar',
-      memberCount: 420,
-      totalJobs: 5824,
-      grossVolume: 12450000,
-      workerWagesDisbursed: Math.round(12450000 * 0.85),
-      welfareFundAccumulated: Math.round(12450000 * 0.05),
-      payoutStatus: '✓ Disbursed (NEFT Direct)',
-    },
-    {
-      societyId: 'soc-pune',
-      societyName: 'Pune Gig Workers Cooperative',
-      registrationNumber: 'PGWC-MH-12',
-      district: 'Pune, Maharashtra',
-      memberCount: 310,
-      totalJobs: 4180,
-      grossVolume: 9050000,
-      workerWagesDisbursed: Math.round(9050000 * 0.85),
-      welfareFundAccumulated: Math.round(9050000 * 0.05),
-      payoutStatus: '✓ Disbursed (NEFT Direct)',
-    },
-  ];
-
   try {
-    const { data: dbPayments } = await supabase
-      .from('payments')
-      .select(`
-        id,
-        amount,
-        platform_fee,
-        worker_payout,
-        cooperative_share,
-        status,
-        method,
-        paid_at,
-        razorpay_payment_id,
-        booking_id,
-        bookings (
+    const [dbPaymentsRes, dbSocietiesRes, settleLogsRes] = await Promise.all([
+      supabase
+        .from('payments')
+        .select(`
           id,
-          customer_id,
-          worker_id,
-          service_category_id,
-          customers (full_name),
-          workers (full_name, society_id, cooperative_societies (name)),
-          service_categories (name)
-        )
-      `)
-      .order('paid_at', { ascending: false });
+          amount,
+          platform_fee,
+          worker_payout,
+          cooperative_share,
+          status,
+          method,
+          paid_at,
+          razorpay_payment_id,
+          booking_id,
+          bookings (
+            id,
+            customer_id,
+            worker_id,
+            service_category_id,
+            customers (full_name),
+            workers (full_name, society_id, cooperative_societies:society_id (name)),
+            service_categories (name)
+          )
+        `)
+        .order('paid_at', { ascending: false }),
+      supabase
+        .from('cooperative_societies')
+        .select('id, name, registration_number, district, member_count')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('admin_audit_logs')
+        .select('*')
+        .eq('action', 'settle_payouts')
+        .order('created_at', { ascending: false })
+        .limit(1),
+    ]);
 
-    let mappedDbPayments: AdminTransactionItem[] = [];
-    let liveDbSum = 0;
-
-    if (dbPayments && dbPayments.length > 0) {
-      mappedDbPayments = dbPayments.map((p: any) => {
-        const b = p.bookings || {};
-        const gross = Number(p.amount) || 450;
-        liveDbSum += gross;
-        const workerPayout = Number(p.worker_payout) || Math.round(gross * 0.85);
-        const welfareShare = Number(p.cooperative_share) || Math.round(gross * 0.05);
-        const platformFee = Number(p.platform_fee) || Math.round(gross * 0.10);
-
-        const formattedDate = p.paid_at
-          ? new Date(p.paid_at).toLocaleString('en-IN', {
-              month: 'short',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : 'Recent';
-
-        return {
-          id: p.razorpay_payment_id || `txn_${p.id.substring(0, 10)}`,
-          bookingId: `#SNX-${(p.booking_id || '').substring(0, 4).toUpperCase()}`,
-          customerName: b.customers?.full_name || 'Customer',
-          workerName: b.workers?.full_name || 'Rajesh Plumber',
-          serviceName: b.service_categories?.name || 'Plumbing',
-          societyName: b.workers?.cooperative_societies?.name || 'Patna District Labour Society',
-          grossAmount: gross,
-          workerPayout,
-          welfareShare,
-          platformFee,
-          status: p.status === 'completed' ? 'Completed' : 'Pending',
-          method: p.method === 'upi_mock' ? 'Online UPI (Simulated)' : (p.method ? p.method.toUpperCase() : 'Razorpay Escrow'),
-          paidAt: formattedDate,
-        };
-      });
-    }
-
-    // Check if payouts have been settled recently in audit logs
-    const { data: settleLogs } = await supabase
-      .from('admin_audit_logs')
-      .select('*')
-      .eq('action', 'settle_payouts')
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    const isSettled = settleLogs && settleLogs.length > 0;
+    const dbPayments = dbPaymentsRes.data || [];
+    const dbSocieties = dbSocietiesRes.data || [];
+    const settleLogs = settleLogsRes.data || [];
+    const isSettled = settleLogs.length > 0;
     const latestBatch = isSettled ? settleLogs[0] : null;
 
-    const allTransactions = [...mappedDbPayments, ...SEED_TRANSACTIONS];
-    const totalVolume = 21500000 + liveDbSum;
+    let liveDbSum = 0;
+    const mappedDbPayments: AdminTransactionItem[] = dbPayments.map((p: any) => {
+      const b = p.bookings || {};
+      const gross = Number(p.amount) || 0;
+      liveDbSum += gross;
+      const workerPayout = Number(p.worker_payout) || Math.round(gross * 0.85);
+      const welfareShare = Number(p.cooperative_share) || Math.round(gross * 0.05);
+      const platformFee = Number(p.platform_fee) || Math.round(gross * 0.10);
+
+      const formattedDate = p.paid_at
+        ? new Date(p.paid_at).toLocaleString('en-IN', {
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : 'Recent';
+
+      return {
+        id: p.razorpay_payment_id || `txn_${p.id.substring(0, 10)}`,
+        bookingId: `#SNX-${(p.booking_id || '').substring(0, 8).toUpperCase()}`,
+        customerName: b.customers?.full_name || 'Customer',
+        workerName: b.workers?.full_name || 'Assigned Worker',
+        serviceName: b.service_categories?.name || 'Home Service',
+        societyName: b.workers?.cooperative_societies?.name || 'Labour Welfare Cooperative',
+        grossAmount: gross,
+        workerPayout,
+        welfareShare,
+        platformFee,
+        status: p.status === 'completed' ? 'Completed' : 'Pending',
+        method: p.method === 'upi_mock' ? 'Online UPI (Simulated)' : (p.method ? p.method.toUpperCase() : 'Cooperative Escrow'),
+        paidAt: formattedDate,
+      };
+    });
+
+    const totalVolume = liveDbSum;
     const platformCommission = Math.round(totalVolume * 0.10);
     const welfarePool = Math.round(totalVolume * 0.05);
-    const workerDisbursements = Math.round(totalVolume * 0.85) + (isSettled ? 14250 : 0);
+    const workerDisbursements = Math.round(totalVolume * 0.85);
 
-    const societies = SEED_SOCIETIES.map((s) => ({
-      ...s,
+    const societies: AdminSocietyEarnings[] = dbSocieties.map((s: any) => ({
+      societyId: s.id,
+      societyName: s.name,
+      registrationNumber: s.registration_number || 'N/A',
+      district: s.district || 'All Districts',
+      memberCount: s.member_count || 0,
+      totalJobs: 0,
+      grossVolume: 0,
+      workerWagesDisbursed: 0,
+      welfareFundAccumulated: 0,
       payoutStatus: isSettled
         ? `✓ Disbursed (${latestBatch?.target_id || 'NEFT'} Settled)`
-        : '⏳ Pending Batch Settlement (Escrow Held)',
+        : 'Escrow Protected',
     }));
 
     return {
@@ -328,30 +233,27 @@ export async function getAdminEarnings(): Promise<AdminEarningsData> {
         platformCommission,
         welfarePool,
         workerDisbursements,
-        todayVolume: 84500 + liveDbSum,
-        completedCount: 82400 + mappedDbPayments.length,
-        escrowLockedVolume: isSettled ? 0 : 14250,
+        todayVolume: liveDbSum,
+        completedCount: mappedDbPayments.filter((p) => p.status === 'Completed').length,
+        escrowLockedVolume: isSettled ? 0 : Math.round(totalVolume * 0.15),
       },
-      transactions: allTransactions,
+      transactions: mappedDbPayments,
       societies,
     };
   } catch (err) {
     console.error('Error fetching admin earnings:', err);
     return {
       overview: {
-        totalVolume: 21500000,
-        platformCommission: 2150000,
-        welfarePool: 1075000,
-        workerDisbursements: 18275000,
-        todayVolume: 84500,
-        completedCount: 82400,
-        escrowLockedVolume: 14250,
+        totalVolume: 0,
+        platformCommission: 0,
+        welfarePool: 0,
+        workerDisbursements: 0,
+        todayVolume: 0,
+        completedCount: 0,
+        escrowLockedVolume: 0,
       },
-      transactions: SEED_TRANSACTIONS,
-      societies: SEED_SOCIETIES.map((s) => ({
-        ...s,
-        payoutStatus: '⏳ Pending Batch Settlement (Escrow Held)',
-      })),
+      transactions: [],
+      societies: [],
     };
   }
 }
@@ -371,19 +273,16 @@ export interface AdminWorkerItem {
 export async function getAdminWorkers(): Promise<AdminWorkerItem[]> {
   const supabase = await createClient();
 
-  const SEED_WORKERS: AdminWorkerItem[] = [
-    { id: 'sw-1', name: 'Raj Kumar', cat: 'Plumbing', jobs: 327, earn: '₹ 145,200', verif: 'Verified', status: 'Online' },
-    { id: 'sw-2', name: 'Meena Devi', cat: 'Electrical', jobs: 184, earn: '₹ 82,400', verif: 'Verified', status: 'Offline' },
-    { id: 'sw-3', name: 'Sunita Sharma', cat: 'Cleaning', jobs: 412, earn: '₹ 198,000', verif: 'Verified', status: 'Online' },
-    { id: 'sw-4', name: 'Amit Singh', cat: 'Technician', jobs: 56, earn: '₹ 34,500', verif: 'Pending', status: 'Offline' },
-    { id: 'sw-5', name: 'Vikram Yadav', cat: 'Driver', jobs: 210, earn: '₹ 95,000', verif: 'Verified', status: 'Online' },
-  ];
-
   try {
     const [workersRes, auditRes] = await Promise.all([
       supabase
         .from('workers')
-        .select('id, full_name, phone, email, is_verified, is_available, verification_status, avg_rating, total_jobs_completed, worker_skills(service_categories(name))')
+        .select(`
+          id, full_name, phone, email, is_verified, is_available, verification_status, avg_rating, total_jobs_completed,
+          worker_skills (
+            service_categories (name)
+          )
+        `)
         .order('created_at', { ascending: false }),
       supabase
         .from('admin_audit_logs')
@@ -401,15 +300,12 @@ export async function getAdminWorkers(): Promise<AdminWorkerItem[]> {
       }
     });
 
-    const data = workersRes.data;
-    if (!data || data.length === 0) {
-      return SEED_WORKERS.filter((w) => !removedWorkerIds.has(w.id));
-    }
+    const data = workersRes.data || [];
 
     const mappedDbWorkers: AdminWorkerItem[] = data
-      .filter((w: any) => w.verification_status !== 'suspended')
+      .filter((w: any) => w.verification_status !== 'suspended' && !removedWorkerIds.has(w.id))
       .map((w: any) => {
-        const catName = w.worker_skills?.[0]?.service_categories?.name || 'General';
+        const catName = w.worker_skills?.[0]?.service_categories?.name || 'General Trade';
         const jobs = w.total_jobs_completed || 0;
         const earnings = jobs > 0 ? `₹ ${(jobs * 450).toLocaleString('en-IN')}` : '₹ 0';
         const isVerified = w.is_verified || w.verification_status === 'verified';
@@ -426,14 +322,10 @@ export async function getAdminWorkers(): Promise<AdminWorkerItem[]> {
         };
       });
 
-    const allWorkers = [...mappedDbWorkers, ...SEED_WORKERS].filter(
-      (w) => !removedWorkerIds.has(w.id)
-    );
-
-    return allWorkers;
+    return mappedDbWorkers;
   } catch (err) {
     console.error('Error fetching admin workers:', err);
-    return SEED_WORKERS;
+    return [];
   }
 }
 
@@ -450,22 +342,14 @@ export interface AdminCustomerItem {
 export async function getAdminCustomers(): Promise<AdminCustomerItem[]> {
   const supabase = await createClient();
 
-  const SEED_CUSTOMERS: AdminCustomerItem[] = [
-    { id: 'sc-1', name: 'Priya Sharma', email: 'priya.s@example.com', bookings: 12, spent: '₹ 5,400', status: 'Active', date: 'Jan 12, 2024' },
-    { id: 'sc-2', name: 'Rahul Verma', email: 'rahul.v@example.com', bookings: 4, spent: '₹ 1,800', status: 'Active', date: 'Mar 05, 2024' },
-    { id: 'sc-3', name: 'Anita Desai', email: 'anita.d@example.com', bookings: 28, spent: '₹ 14,200', status: 'Active', date: 'Nov 22, 2023' },
-    { id: 'sc-4', name: 'Vikram Singh', email: 'vik.singh@example.com', bookings: 0, spent: '₹ 0', status: 'Inactive', date: 'Oct 10, 2024' },
-    { id: 'sc-5', name: 'Neha Gupta', email: 'neha.g@example.com', bookings: 7, spent: '₹ 3,150', status: 'Active', date: 'Aug 18, 2024' },
-  ];
-
   try {
     const { data, error } = await supabase
       .from('customers')
       .select('id, full_name, phone, email, created_at, bookings(id, estimated_price, final_price)')
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) {
-      return SEED_CUSTOMERS;
+    if (error || !data) {
+      return [];
     }
 
     const mappedDbCustomers: AdminCustomerItem[] = data.map((c: any) => {
@@ -489,10 +373,10 @@ export async function getAdminCustomers(): Promise<AdminCustomerItem[]> {
       };
     });
 
-    return [...mappedDbCustomers, ...SEED_CUSTOMERS];
+    return mappedDbCustomers;
   } catch (err) {
     console.error('Error fetching admin customers:', err);
-    return SEED_CUSTOMERS;
+    return [];
   }
 }
 
@@ -510,22 +394,14 @@ export interface AdminBookingItem {
 export async function getAdminBookings(): Promise<AdminBookingItem[]> {
   const supabase = await createClient();
 
-  const SEED_BOOKINGS: AdminBookingItem[] = [
-    { id: '#SNX-992', c: 'Priya Sharma', w: 'Raj Kumar', s: 'Plumbing', d: 'Oct 14, 2024', a: '₹ 450', st: 'Ongoing', bc: 'badge-ongoing' },
-    { id: '#SNX-991', c: 'Rahul Verma', w: 'Sunita Sharma', s: 'Cleaning', d: 'Oct 14, 2024', a: '₹ 800', st: 'Pending', bc: 'badge-pending' },
-    { id: '#SNX-990', c: 'Anita Desai', w: 'Meena Devi', s: 'Electrical', d: 'Oct 13, 2024', a: '₹ 350', st: 'Completed', bc: 'badge-success' },
-    { id: '#SNX-989', c: 'Neha Gupta', w: 'Vikram Yadav', s: 'Driver', d: 'Oct 12, 2024', a: '₹ 1200', st: 'Completed', bc: 'badge-success' },
-    { id: '#SNX-988', c: 'Vikram Singh', w: 'Amit Singh', s: 'Technician', d: 'Oct 10, 2024', a: '₹ 500', st: 'Cancelled', bc: 'badge-cancelled' },
-  ];
-
   try {
     const { data, error } = await supabase
       .from('bookings')
       .select('id, status, estimated_price, final_price, created_at, scheduled_at, customers(full_name), workers(full_name), service_categories(name)')
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) {
-      return SEED_BOOKINGS;
+    if (error || !data) {
+      return [];
     }
 
     const mappedDbBookings: AdminBookingItem[] = data.map((b: any) => {
@@ -547,12 +423,12 @@ export async function getAdminBookings(): Promise<AdminBookingItem[]> {
         ? new Date(b.scheduled_at || b.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
         : 'Recent';
 
-      const amount = Number(b.final_price) || Number(b.estimated_price) || 450;
+      const amount = Number(b.final_price) || Number(b.estimated_price) || 0;
 
       return {
-        id: `#SNX-${b.id.substring(0, 4).toUpperCase()}`,
+        id: `#SNX-${b.id.substring(0, 8).toUpperCase()}`,
         c: b.customers?.full_name || 'Customer',
-        w: b.workers?.full_name || 'Assigned Worker',
+        w: b.workers?.full_name || 'Unassigned',
         s: b.service_categories?.name || 'Home Service',
         d: formattedDate,
         a: `₹ ${amount}`,
@@ -561,10 +437,10 @@ export async function getAdminBookings(): Promise<AdminBookingItem[]> {
       };
     });
 
-    return [...mappedDbBookings, ...SEED_BOOKINGS];
+    return mappedDbBookings;
   } catch (err) {
     console.error('Error fetching admin bookings:', err);
-    return SEED_BOOKINGS;
+    return [];
   }
 }
 
@@ -581,21 +457,14 @@ export interface AdminReviewItem {
 export async function getAdminReviews(): Promise<AdminReviewItem[]> {
   const supabase = await createClient();
 
-  const SEED_REVIEWS: AdminReviewItem[] = [
-    { c: 'Priya Sharma', w: 'Raj Kumar', s: 'Plumbing', r: '★★★★★', rev: 'Excellent work, arrived on time with cooperative tools.', d: 'Today' },
-    { c: 'Rahul Verma', w: 'Meena Devi', s: 'Electrical', r: '★★★★☆', rev: 'Good job fixing meter board, cleanly done.', d: 'Yesterday' },
-    { c: 'Anita Desai', w: 'Sunita Sharma', s: 'Cleaning', r: '★★★★★', rev: 'Spotless cleaning. Highly recommend ShramNexus cooperative team.', d: 'Oct 12' },
-    { c: 'Vikram Singh', w: 'Amit Singh', s: 'Technician', r: '★★☆☆☆', rev: 'Arrived a bit late, but resolved AC cooling.', d: 'Oct 10' },
-  ];
-
   try {
     const { data, error } = await supabase
       .from('ratings')
       .select('id, score, review, created_at, customers(full_name), workers(full_name), bookings(service_categories(name))')
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) {
-      return SEED_REVIEWS;
+    if (error || !data) {
+      return [];
     }
 
     const mappedDbReviews: AdminReviewItem[] = data.map((r: any) => {
@@ -611,15 +480,15 @@ export async function getAdminReviews(): Promise<AdminReviewItem[]> {
         w: r.workers?.full_name || 'Cooperative Worker',
         s: r.bookings?.service_categories?.name || 'General Service',
         r: stars,
-        rev: r.review || 'Excellent service through ShramNexus.',
+        rev: r.review || 'Verified feedback.',
         d: formattedDate,
       };
     });
 
-    return [...mappedDbReviews, ...SEED_REVIEWS];
+    return mappedDbReviews;
   } catch (err) {
     console.error('Error fetching admin reviews:', err);
-    return SEED_REVIEWS;
+    return [];
   }
 }
 
@@ -627,11 +496,6 @@ export async function updateWorkerVerification(workerId: string, isVerified: boo
   const isAdmin = await checkAdminSession();
   if (!isAdmin) {
     throw new Error('Unauthorized: Admin credentials required');
-  }
-
-  // Handle seed worker IDs gracefully
-  if (workerId.startsWith('sw-')) {
-    return { success: true };
   }
 
   const supabase = await createClient();
@@ -705,12 +569,6 @@ export interface AdminCooperativeItem {
 export async function getAdminCooperatives(): Promise<AdminCooperativeItem[]> {
   const supabase = await createClient();
 
-  const SEED_COOPS: AdminCooperativeItem[] = [
-    { id: 'C1', name: 'Shakti Labour Coop', reg: 'REG-9921', members: 248, status: 'Active' },
-    { id: 'C2', name: 'Rajasthan Navnirman', reg: 'REG-8834', members: 112, status: 'Under Review' },
-    { id: 'C3', name: 'Jaipur Cleaning Society', reg: 'REG-7721', members: 45, status: 'Active' },
-  ];
-
   try {
     const [coopsRes, auditRes] = await Promise.all([
       supabase
@@ -729,8 +587,8 @@ export async function getAdminCooperatives(): Promise<AdminCooperativeItem[]> {
       coopActionMap.set(l.target_id, l.action);
     });
 
-    const data = coopsRes.data;
-    const mappedCoops: AdminCooperativeItem[] = (data || []).map((c: any) => {
+    const data = coopsRes.data || [];
+    const mappedCoops: AdminCooperativeItem[] = data.map((c: any) => {
       const lastAction = coopActionMap.get(c.id);
       let status: 'Active' | 'Under Review' | 'Suspended' = c.is_active ? 'Active' : 'Suspended';
       if (lastAction === 'suspend') status = 'Suspended';
@@ -739,24 +597,16 @@ export async function getAdminCooperatives(): Promise<AdminCooperativeItem[]> {
       return {
         id: c.id,
         name: c.name,
-        reg: c.registration_number,
-        members: c.member_count || 45,
+        reg: c.registration_number || 'N/A',
+        members: c.member_count || 0,
         status,
       };
     });
 
-    const seedCoops: AdminCooperativeItem[] = SEED_COOPS.map((c) => {
-      const lastAction = coopActionMap.get(c.id);
-      let status = c.status;
-      if (lastAction === 'suspend') status = 'Suspended';
-      if (lastAction === 'reactivate') status = 'Active';
-      return { ...c, status };
-    });
-
-    return mappedCoops.length > 0 ? [...mappedCoops, ...seedCoops] : seedCoops;
+    return mappedCoops;
   } catch (err) {
     console.error('Error fetching admin cooperatives:', err);
-    return SEED_COOPS;
+    return [];
   }
 }
 

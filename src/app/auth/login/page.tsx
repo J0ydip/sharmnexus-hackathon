@@ -693,9 +693,9 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setLoginEmail('manoj.verma@shramnexus.coop');
+                      setLoginEmail('rajesh.kumar@shramnexus.coop');
                       setLoginPassword('worker123');
-                      toast.success('Filled credentials for Manoj Verma (Technician)! Click "Sign in" below.');
+                      toast.success('Demo worker credentials filled! Click "Sign in" below.');
                     }}
                     style={{
                       background: 'var(--terracotta)',
@@ -709,7 +709,7 @@ export default function AuthPage() {
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    Auto-Fill (Manoj Verma)
+                    Auto-Fill Demo Worker
                   </button>
                 </div>
               )}

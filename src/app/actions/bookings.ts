@@ -123,10 +123,6 @@ export async function createBooking(data: {
         realWorkerId = skillRows[0].worker_id;
       }
     }
-    if (!realWorkerId) {
-      const { data: anyWorker } = await supabase.from('workers').select('id').limit(1).maybeSingle();
-      realWorkerId = anyWorker?.id || null;
-    }
   }
 
   const addressStr = data.address || data.address_line1 || '';

@@ -50,42 +50,7 @@ type AdminTab =
   | 'view-audit'
   | 'view-support';
 
-const INITIAL_CUSTOMERS: AdminCustomerItem[] = [
-  { id: 'sc-1', name: 'Priya Sharma', email: 'priya.s@example.com', bookings: 12, spent: '₹ 5,400', status: 'Active', date: 'Jan 12, 2024' },
-  { id: 'sc-2', name: 'Rahul Verma', email: 'rahul.v@example.com', bookings: 4, spent: '₹ 1,800', status: 'Active', date: 'Mar 05, 2024' },
-  { id: 'sc-3', name: 'Anita Desai', email: 'anita.d@example.com', bookings: 28, spent: '₹ 14,200', status: 'Active', date: 'Nov 22, 2023' },
-  { id: 'sc-4', name: 'Vikram Singh', email: 'vik.singh@example.com', bookings: 0, spent: '₹ 0', status: 'Inactive', date: 'Oct 10, 2024' },
-  { id: 'sc-5', name: 'Neha Gupta', email: 'neha.g@example.com', bookings: 7, spent: '₹ 3,150', status: 'Active', date: 'Aug 18, 2024' },
-];
 
-const INITIAL_WORKERS: AdminWorkerItem[] = [
-  { id: 'sw-1', name: 'Raj Kumar', cat: 'Plumbing', jobs: 327, earn: '₹ 145,200', verif: 'Verified', status: 'Online' },
-  { id: 'sw-2', name: 'Meena Devi', cat: 'Electrical', jobs: 184, earn: '₹ 82,400', verif: 'Verified', status: 'Offline' },
-  { id: 'sw-3', name: 'Sunita Sharma', cat: 'Cleaning', jobs: 412, earn: '₹ 198,000', verif: 'Verified', status: 'Online' },
-  { id: 'sw-4', name: 'Amit Singh', cat: 'Technician', jobs: 56, earn: '₹ 34,500', verif: 'Pending', status: 'Offline' },
-  { id: 'sw-5', name: 'Vikram Yadav', cat: 'Driver', jobs: 210, earn: '₹ 95,000', verif: 'Verified', status: 'Online' },
-];
-
-const INITIAL_REVIEWS: AdminReviewItem[] = [
-  { c: 'Priya Sharma', w: 'Raj Kumar', s: 'Plumbing', r: '★★★★★', rev: 'Excellent work, arrived on time with cooperative tools.', d: 'Today' },
-  { c: 'Rahul Verma', w: 'Meena Devi', s: 'Electrical', r: '★★★★☆', rev: 'Good job fixing meter board, cleanly done.', d: 'Yesterday' },
-  { c: 'Anita Desai', w: 'Sunita Sharma', s: 'Cleaning', r: '★★★★★', rev: 'Spotless cleaning. Highly recommend ShramNexus cooperative team.', d: 'Oct 12' },
-  { c: 'Vikram Singh', w: 'Amit Singh', s: 'Technician', r: '★★☆☆☆', rev: 'Arrived a bit late, but resolved AC cooling.', d: 'Oct 10' },
-];
-
-const INITIAL_BOOKINGS: AdminBookingItem[] = [
-  { id: '#SNX-992', c: 'Priya Sharma', w: 'Raj Kumar', s: 'Plumbing', d: 'Oct 14, 2024', a: '₹ 450', st: 'Ongoing', bc: 'badge-ongoing' },
-  { id: '#SNX-991', c: 'Rahul Verma', w: 'Sunita Sharma', s: 'Cleaning', d: 'Oct 14, 2024', a: '₹ 800', st: 'Pending', bc: 'badge-pending' },
-  { id: '#SNX-990', c: 'Anita Desai', w: 'Meena Devi', s: 'Electrical', d: 'Oct 13, 2024', a: '₹ 350', st: 'Completed', bc: 'badge-success' },
-  { id: '#SNX-989', c: 'Neha Gupta', w: 'Vikram Yadav', s: 'Driver', d: 'Oct 12, 2024', a: '₹ 1200', st: 'Completed', bc: 'badge-success' },
-  { id: '#SNX-988', c: 'Vikram Singh', w: 'Amit Singh', s: 'Technician', d: 'Oct 10, 2024', a: '₹ 500', st: 'Cancelled', bc: 'badge-cancelled' },
-];
-
-const INITIAL_COOPERATIVES: AdminCooperativeItem[] = [
-  { id: 'C1', name: 'Shakti Labour Coop', reg: 'REG-9921', members: 248, status: 'Active' },
-  { id: 'C2', name: 'Rajasthan Navnirman', reg: 'REG-8834', members: 112, status: 'Under Review' },
-  { id: 'C3', name: 'Jaipur Cleaning Society', reg: 'REG-7721', members: 45, status: 'Active' },
-];
 
 export const VELOCITY_DATA: Record<
   '7D' | '30D' | '6M' | '1Y',
@@ -132,20 +97,20 @@ export function AdminDashboardClient() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const [stats, setStats] = useState<AdminOverviewStats>({
-    totalWorkers: 5120,
-    totalCustomers: 14250,
-    totalBookings: 82400,
-    totalVolume: 21500000,
-    platformCommission: 2150000,
-    welfarePool: 1075000,
-    workerDisbursements: 18275000,
+    totalWorkers: 0,
+    totalCustomers: 0,
+    totalBookings: 0,
+    totalVolume: 0,
+    platformCommission: 0,
+    welfarePool: 0,
+    workerDisbursements: 0,
   });
 
-  const [customers, setCustomers] = useState<AdminCustomerItem[]>(INITIAL_CUSTOMERS);
-  const [workers, setWorkers] = useState<AdminWorkerItem[]>(INITIAL_WORKERS);
-  const [bookings, setBookings] = useState<AdminBookingItem[]>(INITIAL_BOOKINGS);
-  const [reviews, setReviews] = useState<AdminReviewItem[]>(INITIAL_REVIEWS);
-  const [cooperatives, setCooperatives] = useState<AdminCooperativeItem[]>(INITIAL_COOPERATIVES);
+  const [customers, setCustomers] = useState<AdminCustomerItem[]>([]);
+  const [workers, setWorkers] = useState<AdminWorkerItem[]>([]);
+  const [bookings, setBookings] = useState<AdminBookingItem[]>([]);
+  const [reviews, setReviews] = useState<AdminReviewItem[]>([]);
+  const [cooperatives, setCooperatives] = useState<AdminCooperativeItem[]>([]);
   const [earningsData, setEarningsData] = useState<AdminEarningsData | null>(null);
   const [earningsFilter, setEarningsFilter] = useState<'ALL' | 'ONLINE' | 'ESCROW'>('ALL');
   const [earningsSearch, setEarningsSearch] = useState('');
@@ -205,96 +170,15 @@ export function AdminDashboardClient() {
       if (s) setStats(s);
       if (w) setWorkers(w);
       if (c) setCustomers(c);
-      if (b) {
-        let mergedBookings = [...b];
-        try {
-          const storeStr = localStorage.getItem('shramnexus-customer-store-v3');
-          if (storeStr) {
-            const store = JSON.parse(storeStr);
-            const clientBookings = store?.state?.bookings || [];
-            clientBookings.forEach((cb: any) => {
-              const formattedId = cb.id?.startsWith('#') ? cb.id : `#${cb.id}`;
-              const exists = mergedBookings.some(
-                (item) =>
-                  item.id.toLowerCase() === formattedId.toLowerCase() ||
-                  (cb.id && item.id.includes(cb.id.substring(0, 6)))
-              );
-              if (!exists) {
-                let st: 'Ongoing' | 'Pending' | 'Completed' | 'Cancelled' = 'Pending';
-                let bc = 'badge-pending';
-                if (cb.status === 'in_progress' || cb.status === 'accepted' || cb.status === 'assigned') {
-                  st = 'Ongoing';
-                  bc = 'badge-ongoing';
-                } else if (cb.status === 'completed') {
-                  st = 'Completed';
-                  bc = 'badge-success';
-                } else if (cb.status === 'cancelled') {
-                  st = 'Cancelled';
-                  bc = 'badge-cancelled';
-                }
-                mergedBookings.unshift({
-                  id: formattedId,
-                  c: cb.customer_name || 'Customer',
-                  w: cb.worker?.full_name || 'Assigned Worker',
-                  s: cb.service_name || 'Home Service',
-                  d: 'Today',
-                  a: `₹ ${cb.final_price || cb.estimated_price || 450}`,
-                  st,
-                  bc,
-                });
-              }
-            });
-          }
-        } catch (err) {}
-        setBookings(mergedBookings);
-      }
+      if (b) setBookings(b);
       if (r) setReviews(r);
-      if (e) {
-        let mergedEarnings = { ...e };
-        try {
-          const storeStr = localStorage.getItem('shramnexus-customer-store-v3');
-          if (storeStr) {
-            const store = JSON.parse(storeStr);
-            const clientBookings = store?.state?.bookings || [];
-            clientBookings.forEach((cb: any) => {
-              if (cb.status === 'completed' || cb.payment_status === 'completed') {
-                const formattedId = cb.id?.startsWith('#') ? cb.id : `#${cb.id}`;
-                const exists = mergedEarnings.transactions.some(
-                  (tx) => tx.bookingId.toLowerCase() === formattedId.toLowerCase()
-                );
-                if (!exists) {
-                  const gross = Number(cb.final_price) || Number(cb.estimated_price) || 450;
-                  const workerPayout = Math.round(gross * 0.85);
-                  const welfareShare = Math.round(gross * 0.05);
-                  const platformFee = Math.round(gross * 0.10);
-                  mergedEarnings.transactions.unshift({
-                    id: `pay_${(cb.id || '').replace(/[^a-zA-Z0-9]/g, '')}`,
-                    bookingId: formattedId,
-                    customerName: cb.customer_name || 'Customer',
-                    workerName: cb.worker?.full_name || 'Assigned Worker',
-                    serviceName: cb.service_name || 'Home Service',
-                    societyName: cb.worker?.society_name || 'Patna District Labour Society',
-                    grossAmount: gross,
-                    workerPayout,
-                    welfareShare,
-                    platformFee,
-                    status: 'Completed',
-                    method: cb.payment_method || 'Online Razorpay / UPI',
-                    paidAt: 'Just Now',
-                  });
-                }
-              }
-            });
-          }
-        } catch (err) {}
-        setEarningsData(mergedEarnings);
-      }
+      if (e) setEarningsData(e);
       if (coops) setCooperatives(coops);
       if (logs) setAuditLogs(logs);
       if (tickets) setSupportTickets(tickets);
       setLastSynced(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
     } catch (err) {
-      console.error('Failed to fetch admin data:', err);
+      console.error('Error loading admin dashboard data:', err);
     }
   };
 
