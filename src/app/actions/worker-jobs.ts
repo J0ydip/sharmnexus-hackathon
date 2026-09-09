@@ -127,6 +127,10 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
   revalidatePath('/earnings');
   revalidatePath('/history');
   revalidatePath('/admin');
+  revalidatePath('/track');
+  revalidatePath(`/track/${targetId}`);
+  revalidatePath('/bookings');
+  revalidatePath(`/bookings/${targetId}`);
 
   return { success: true, bookingId: targetId, status: newStatus };
 }
@@ -161,7 +165,7 @@ export async function getWorkerDashboardData() {
       supabase
         .from('bookings')
         .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, worker_id, service_category_id, customers(full_name, phone), service_categories(name)')
-        .eq('status', 'requested')
+        .in('status', ['requested', 'assigned'])
         .order('created_at', { ascending: false })
         .limit(50),
       supabase
@@ -180,16 +184,22 @@ export async function getWorkerDashboardData() {
     ]);
 
     // Filter incoming requests strictly for this worker:
-    // 1. Direct requests explicitly assigned to this worker (worker_id == user.id)
-    // 2. Open requests in the cooperative network matching this worker's registered trade / skill categories
+    // 1. Direct requests or assigned bookings specifically for this worker
+    // 2. Open pool requests in the cooperative network matching this worker's registered trade
     const relevantRequests = (requestsRes.data || []).filter((r: any) => {
-      // Specifically requested for this worker
-      if (r.worker_id === user.id) return true;
-      // Matching this worker's skill/trade category and not assigned to someone else
+      // Specifically assigned to or requested for this worker
+      if (r.worker_id === user.id) {
+        return r.status === 'requested' || r.status === 'assigned';
+      }
+      // If assigned to a different worker, do not show
+      if (r.worker_id && r.worker_id !== user.id) {
+        return false;
+      }
+      // Open pool requests matching worker's trade
       if (
+        r.status === 'requested' &&
         workerSkillCategoryIds.length > 0 &&
-        workerSkillCategoryIds.includes(r.service_category_id) &&
-        (!r.worker_id || r.worker_id === user.id)
+        workerSkillCategoryIds.includes(r.service_category_id)
       ) {
         return true;
       }

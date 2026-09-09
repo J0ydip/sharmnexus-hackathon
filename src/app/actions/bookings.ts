@@ -187,7 +187,7 @@ export async function getCustomerBookings(customerId?: string) {
     .from('bookings')
     .select(`
       *,
-      worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating),
+      worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating, total_jobs_completed, society:society_id(name, district)),
       service:service_category_id (id, name, name_hi, icon_url, base_price),
       payments:payments (id, amount, status, razorpay_payment_id, method, paid_at)
     `)
@@ -211,7 +211,7 @@ export async function getBookingById(bookingId: string) {
 
   const selectQuery = `
     *,
-    worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating),
+    worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating, total_jobs_completed, society:society_id(name, district)),
     service:service_category_id (id, name, name_hi, icon_url, base_price),
     payments:payments (id, amount, status, razorpay_payment_id, method, paid_at)
   `;

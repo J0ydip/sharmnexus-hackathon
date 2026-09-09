@@ -42,6 +42,7 @@ interface ActiveJob {
   date: string;
   price: string;
   address: string;
+  status: string;
   otp?: string;
 }
 
@@ -277,6 +278,7 @@ export function WorkerDashboardClient() {
             date: j.scheduled_at ? new Date(j.scheduled_at).toLocaleDateString() : 'Today',
             price: `₹ ${j.final_price || j.estimated_price || 400}`,
             address: j.address || 'Customer Location',
+            status: j.status || 'accepted',
             otp: getBookingOtp(j.id),
           }));
           setActiveJobs(liveActive);
@@ -339,6 +341,9 @@ export function WorkerDashboardClient() {
     setIsAcceptingId(id);
     try {
       await updateBookingStatus(id, 'accepted');
+      try {
+        useBookingStore.getState().updateBookingStatus(id, 'accepted');
+      } catch (err) {}
       const found = jobRequests.find((r) => r.id === id);
       if (found) {
         setJobRequests((prev) => prev.filter((r) => r.id !== id));
@@ -350,20 +355,38 @@ export function WorkerDashboardClient() {
             date: found.date,
             price: found.price,
             address: found.address || 'Address provided via cooperative dispatch',
+            status: 'accepted',
             otp: found.otp,
           },
-          ...prev,
+          ...prev.filter((j) => j.id !== id),
         ]);
+      } else {
+        setActiveJobs((prev) =>
+          prev.map((j) => (j.id === id ? { ...j, status: 'accepted' } : j))
+        );
       }
-      try {
-        useBookingStore.getState().updateBookingStatus(id, 'accepted');
-      } catch (err) {}
-      showToast('✅ Job Accepted successfully! Moved to Active Jobs.');
+      showToast('✅ Job Accepted successfully! Confirmed appointment.');
     } catch (err: any) {
       console.error('Accept job error:', err);
       showToast(`❌ Could not accept job: ${err?.message || 'Server error'}`);
     } finally {
       setIsAcceptingId(null);
+    }
+  };
+
+  const handleStartJob = async (id: string) => {
+    try {
+      await updateBookingStatus(id, 'in_progress');
+      try {
+        useBookingStore.getState().updateBookingStatus(id, 'in_progress');
+      } catch (err) {}
+      setActiveJobs((prev) =>
+        prev.map((j) => (j.id === id ? { ...j, status: 'in_progress' } : j))
+      );
+      showToast('🚗 You are now marked On the Way / Started!');
+    } catch (err: any) {
+      console.error('Start job error:', err);
+      showToast(`❌ Could not update status: ${err?.message || 'Server error'}`);
     }
   };
 
@@ -694,6 +717,99 @@ export function WorkerDashboardClient() {
                 ))
               )}
             </div>
+
+            {activeJobs.length > 0 && (
+              <>
+                <h2 className="worker-page-title mt-6" style={{ fontSize: '1.4rem' }}>
+                  Current Active Jobs ({activeJobs.length})
+                </h2>
+                <div className="worker-requests-grid mt-2">
+                  {activeJobs.map((job, idx) => (
+                    <div key={`dash-${job.id}-${idx}`} className="worker-req-card">
+                      <div className="worker-req-head">
+                        <div>
+                          <h3>{job.service}</h3>
+                          <span>{job.name}</span>
+                        </div>
+                        <span
+                          className="badge"
+                          style={{
+                            background:
+                              job.status === 'in_progress'
+                                ? '#fef3c7'
+                                : job.status === 'accepted'
+                                ? '#e0f2fe'
+                                : 'var(--mint)',
+                            color:
+                              job.status === 'in_progress'
+                                ? '#b45309'
+                                : job.status === 'accepted'
+                                ? '#0369a1'
+                                : 'var(--green)',
+                          }}
+                        >
+                          {job.status === 'in_progress'
+                            ? '🚗 On the Way / Started'
+                            : job.status === 'accepted'
+                            ? '✓ Accepted'
+                            : '📋 Assigned'}
+                        </span>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+                        📍 {job.address}<br />📅 {job.date}
+                      </p>
+                      <div className="worker-req-price">{job.price}</div>
+                      <div className="worker-req-actions">
+                        <button
+                          type="button"
+                          className="worker-btn worker-btn-outline"
+                          onClick={() => handleOpenChat(job.name)}
+                        >
+                          Message
+                        </button>
+                        {job.status === 'assigned' && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-gold"
+                            onClick={() => handleAcceptRequest(job.id)}
+                          >
+                            Accept Job
+                          </button>
+                        )}
+                        {job.status === 'accepted' && (
+                          <button
+                            type="button"
+                            className="worker-btn"
+                            style={{ background: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }}
+                            onClick={() => handleStartJob(job.id)}
+                          >
+                            On the Way / Start
+                          </button>
+                        )}
+                        {job.status === 'in_progress' && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-dark"
+                            onClick={() => handleInitiateCompleteJob(job)}
+                          >
+                            Complete (Enter PIN)
+                          </button>
+                        )}
+                        {(!job.status || (job.status !== 'assigned' && job.status !== 'accepted' && job.status !== 'in_progress')) && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-dark"
+                            onClick={() => handleInitiateCompleteJob(job)}
+                          >
+                            Complete Job
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -783,8 +899,28 @@ export function WorkerDashboardClient() {
                           <h3>{job.service}</h3>
                           <span>{job.name}</span>
                         </div>
-                        <span className="badge" style={{ background: 'var(--mint)', color: 'var(--green)' }}>
-                          Active
+                        <span
+                          className="badge"
+                          style={{
+                            background:
+                              job.status === 'in_progress'
+                                ? '#fef3c7'
+                                : job.status === 'accepted'
+                                ? '#e0f2fe'
+                                : 'var(--mint)',
+                            color:
+                              job.status === 'in_progress'
+                                ? '#b45309'
+                                : job.status === 'accepted'
+                                ? '#0369a1'
+                                : 'var(--green)',
+                          }}
+                        >
+                          {job.status === 'in_progress'
+                            ? '🚗 On the Way / Started'
+                            : job.status === 'accepted'
+                            ? '✓ Accepted'
+                            : '📋 Assigned'}
                         </span>
                       </div>
                       <p className="text-muted" style={{ fontSize: '0.85rem' }}>
@@ -799,13 +935,43 @@ export function WorkerDashboardClient() {
                         >
                           Message
                         </button>
-                        <button
-                          type="button"
-                          className="worker-btn worker-btn-dark"
-                          onClick={() => handleInitiateCompleteJob(job)}
-                        >
-                          Complete Job
-                        </button>
+                        {job.status === 'assigned' && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-gold"
+                            onClick={() => handleAcceptRequest(job.id)}
+                          >
+                            Accept Job
+                          </button>
+                        )}
+                        {job.status === 'accepted' && (
+                          <button
+                            type="button"
+                            className="worker-btn"
+                            style={{ background: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }}
+                            onClick={() => handleStartJob(job.id)}
+                          >
+                            On the Way / Start
+                          </button>
+                        )}
+                        {job.status === 'in_progress' && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-dark"
+                            onClick={() => handleInitiateCompleteJob(job)}
+                          >
+                            Complete (Enter PIN)
+                          </button>
+                        )}
+                        {(!job.status || (job.status !== 'assigned' && job.status !== 'accepted' && job.status !== 'in_progress')) && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-dark"
+                            onClick={() => handleInitiateCompleteJob(job)}
+                          >
+                            Complete Job
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))

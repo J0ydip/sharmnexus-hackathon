@@ -70,20 +70,22 @@ export default function BookingTrackingPage({ params }: PageProps) {
               id: b.worker.id,
               full_name: b.worker.full_name,
               phone: b.worker.phone || '',
-              society_name: 'Cooperative Society',
+              society_name: b.worker.society?.name || 'Cooperative Society',
               profile_photo_url: b.worker.profile_photo_url || '',
               profession: b.service?.name || 'Service Professional',
+              primary_skill: b.service?.name || 'Service Professional',
               avg_rating: b.worker.avg_rating || 4.8,
               approx_distance_km: 2.5,
               hourly_rate: 300,
               is_verified: true,
               verification_status: 'verified',
-              cooperative_member_id: 'MEM-001',
-              total_jobs_completed: 12,
+              cooperative_member_id: `MEM-${(b.worker.id || '').substring(0, 4).toUpperCase()}`,
+              total_jobs_completed: b.worker.total_jobs_completed || 12,
               skills: [b.service?.name || 'General'],
               badges: ['Verified'],
               availability: 'Immediate (within 45 mins)',
               experience_years: 4,
+              years_experience: 4,
               rating_count: 15,
             } : (workers[0] || ({} as any)),
             service_category_id: b.service_category_id || '',
@@ -469,11 +471,17 @@ export default function BookingTrackingPage({ params }: PageProps) {
             {/* Worker Contact Card */}
             <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
               <div className="flex items-center gap-3">
-                <img
-                  src={worker.profile_photo_url}
-                  alt={worker.full_name}
-                  className="w-14 h-14 rounded-2xl object-cover border border-[#e6dcd0] shadow-xs"
-                />
+                {worker.profile_photo_url && worker.profile_photo_url.trim() ? (
+                  <img
+                    src={worker.profile_photo_url}
+                    alt={worker.full_name || 'Worker'}
+                    className="w-14 h-14 rounded-2xl object-cover border border-[#e6dcd0] shadow-xs shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#24172f] to-[#b85435] text-white font-bold text-xl flex items-center justify-center border border-[#e6dcd0] shadow-xs shrink-0">
+                    {worker.full_name?.charAt(0)?.toUpperCase() || 'W'}
+                  </div>
+                )}
                 <div>
                   <div className="flex items-center gap-1.5">
                     <h3 className="font-bold text-gray-900 text-base">{worker.full_name}</h3>
@@ -482,7 +490,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                     </span>
                   </div>
                   <span className="text-xs font-semibold text-[#d96f4d] block mt-0.5">
-                    {worker.primary_skill} ({worker.years_experience} yrs exp)
+                    {(worker as any).primary_skill || (worker as any).profession || 'Service Professional'} ({(worker as any).years_experience || (worker as any).experience_years || 4} yrs exp)
                   </span>
                   <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-0.5">
                     <Building2 className="w-3 h-3 text-[#d96f4d] shrink-0" />
