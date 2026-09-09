@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
 import { getBookingById as getBookingByIdAction } from '@/app/actions/bookings';
 import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
+import { recordCashPayment as recordCashPaymentAction } from '@/app/actions/payments';
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
 import { getBookingOtp } from '@/lib/utils';
 import {
@@ -58,8 +59,8 @@ export default function BookingTrackingPage({ params }: PageProps) {
       try {
         const b = await getBookingByIdAction(bookingId);
         if (b && isMounted) {
-          const hasPaid = (b.payments && b.payments.some((p: any) => p.status === 'completed')) || b.status === 'completed';
-          const latestPayment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
+          const hasPaid = Boolean(b.payments && b.payments.some((p: any) => p.status === 'completed' && p.method !== 'pin_verified' && p.method !== 'pay_after_work'));
+          const latestPayment = b.payments && b.payments.length > 0 ? b.payments.find((p: any) => p.status === 'completed' && p.method !== 'pin_verified') || b.payments[0] : null;
           setDbBooking({
             id: b.id,
             customer_id: b.customer_id,
@@ -106,8 +107,8 @@ export default function BookingTrackingPage({ params }: PageProps) {
             otp: getBookingOtp(b.id),
             payment_status: hasPaid ? 'completed' : 'pending',
             payment_method: hasPaid
-              ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
-              : (b.payment_method || 'Pay after service'),
+              ? (latestPayment?.method ? (latestPayment.method === 'cash' ? 'Cash Handover to Worker' : `Online (${latestPayment.method.toUpperCase()})`) : 'Online Razorpay / UPI')
+              : (b.payment_method || 'Pay after service (Pending)'),
             created_at: b.created_at,
           } as any);
         }
@@ -228,6 +229,29 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const handleChatWorker = () => {
     if (worker?.full_name) {
       toast.info(`Connecting to secure cooperative messenger with ${worker.full_name}`);
+    }
+  };
+
+  const handleMarkCashPaid = async () => {
+    try {
+      const amount = booking?.final_price || booking?.estimated_price || 450;
+      const res = await recordCashPaymentAction(bookingId, amount);
+      if (res?.error) {
+        toast.error(`Could not record cash payment: ${res.error}`);
+        return;
+      }
+      if (dbBooking) {
+        setDbBooking({
+          ...dbBooking,
+          payment_status: 'completed',
+          payment_method: 'Cash Handover to Worker',
+        });
+      }
+      setBookingPaymentStatus(bookingId, 'completed', 'Cash Handover to Worker');
+      setIsReceiptOpen(true);
+      toast.success('💵 Cash payment recorded! Official cooperative receipt generated.');
+    } catch (e: any) {
+      toast.error('Could not record cash payment: ' + (e?.message || 'Error'));
     }
   };
 
@@ -367,6 +391,60 @@ export default function BookingTrackingPage({ params }: PageProps) {
               <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
                 {getBookingOtp(booking.id, booking.otp)}
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* High-Visibility Payment Action Banner when Work is Completed */}
+        {booking.status === 'completed' && booking.payment_status !== 'completed' && (
+          <div className="bg-gradient-to-r from-[#24172f] via-[#b85435] to-[#24172f] text-white rounded-2xl p-5 shadow-lg border border-[#e6aa3b]/40 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+                <Receipt className="w-6 h-6 text-[#f5dfad]" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#f5dfad] bg-white/10 px-2.5 py-0.5 rounded-full inline-block">
+                  🔔 Action Required • Work Completed
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-white mt-1">
+                  Pay Service Fee: ₹{booking.final_price || booking.estimated_price || 450}
+                </h3>
+                <p className="text-xs text-white/80 mt-0.5">
+                  Task verified via PIN. Settle online via UPI / Cards or confirm cash handover.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto shrink-0">
+              <div className="w-full sm:w-auto">
+                <RazorpayPaymentButton
+                  bookingId={booking.id}
+                  amount={booking.final_price || booking.estimated_price || 450}
+                  customerName={booking.customer_name}
+                  customerPhone={booking.customer_phone}
+                  serviceName={booking.service_name}
+                  className="w-full sm:w-auto bg-[#e6aa3b] hover:bg-[#d96f4d] text-white font-bold px-5 py-2.5 rounded-xl shadow-md text-xs whitespace-nowrap cursor-pointer transition-all"
+                  onPaymentSuccess={(data) => {
+                    setPaymentData(data);
+                    if (dbBooking) {
+                      setDbBooking({
+                        ...dbBooking,
+                        payment_status: 'completed',
+                        payment_method: data?.method || 'Online Razorpay / UPI',
+                      });
+                    }
+                    setBookingPaymentStatus(booking.id, 'completed', data?.method || 'Online Razorpay / UPI');
+                    setIsReceiptOpen(true);
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={handleMarkCashPaid}
+                className="w-full sm:w-auto bg-white/15 hover:bg-white/25 text-white font-bold border border-white/30 text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+              >
+                💵 Paid Cash to Worker
+              </Button>
             </div>
           </div>
         )}
@@ -612,6 +690,14 @@ export default function BookingTrackingPage({ params }: PageProps) {
                       setIsReceiptOpen(true);
                     }}
                   />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleMarkCashPaid}
+                    className="w-full rounded-xl py-2 text-xs font-semibold border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    💵 Paid Cash to Worker
+                  </Button>
                   <p className="text-[10px] text-center text-gray-400">
                     UPI, Cards, NetBanking • Protected by Cooperative Fair-Share Guarantee
                   </p>

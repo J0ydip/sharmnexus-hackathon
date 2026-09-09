@@ -94,32 +94,6 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
         .update({ total_jobs_completed: (worker.total_jobs_completed || 0) + 1 })
         .eq('id', user.id);
     }
-
-    // Check if payment already recorded (e.g. via online Razorpay)
-    const { data: existingPayment } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('booking_id', targetId)
-      .maybeSingle();
-
-    if (!existingPayment) {
-      const gross = Number(existingBooking.final_price) || Number(existingBooking.estimated_price) || 450;
-      const workerPayout = Math.round(gross * 0.85);
-      const cooperativeShare = Math.round(gross * 0.05);
-      const platformFee = Math.round(gross * 0.10);
-
-      await supabase.from('payments').insert({
-        booking_id: targetId,
-        amount: gross,
-        platform_fee: platformFee,
-        worker_payout: workerPayout,
-        cooperative_share: cooperativeShare,
-        status: 'completed',
-        method: 'pin_verified',
-        paid_at: new Date().toISOString(),
-        razorpay_payment_id: `pin_verified_${targetId.substring(0, 8)}`,
-      });
-    }
   }
 
   revalidatePath('/jobs');

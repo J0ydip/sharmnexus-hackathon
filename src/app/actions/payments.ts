@@ -220,3 +220,62 @@ export async function getPaymentByBookingId(bookingId: string) {
 
   return payment;
 }
+
+// ---------------------------------------------------------------------------
+// recordCashPayment — records cash handover payment and calculates cooperative split
+// ---------------------------------------------------------------------------
+export async function recordCashPayment(bookingId: string, amount: number) {
+  const supabase = await createClient();
+
+  const isUuid = (str?: string) =>
+    !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+  let targetId = bookingId;
+  if (!isUuid(targetId)) {
+    const { data: latest } = await supabase
+      .from('bookings')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latest?.id) targetId = latest.id;
+  }
+
+  const workerPayout = Math.round(amount * 0.85);
+  const cooperativeShare = Math.round(amount * 0.05);
+  const platformFee = amount - workerPayout - cooperativeShare;
+
+  const { data: paymentRecord, error } = await supabase
+    .from('payments')
+    .insert({
+      booking_id: targetId,
+      amount,
+      platform_fee: platformFee,
+      worker_payout: workerPayout,
+      cooperative_share: cooperativeShare,
+      status: 'completed',
+      method: 'cash',
+      paid_at: new Date().toISOString(),
+      razorpay_payment_id: `cash_${targetId.substring(0, 8)}`,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error recording cash payment:', error);
+    return { success: false, error: error.message };
+  }
+
+  await supabase
+    .from('bookings')
+    .update({ final_price: amount })
+    .eq('id', targetId);
+
+  revalidatePath(`/track/${bookingId}`);
+  revalidatePath('/history');
+  revalidatePath('/earnings');
+  revalidatePath('/worker-dashboard');
+  revalidatePath('/jobs');
+
+  return { success: true, payment: paymentRecord };
+}
