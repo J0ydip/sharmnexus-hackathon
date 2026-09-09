@@ -264,18 +264,16 @@ export default function BookingTrackingPage({ params }: PageProps) {
 
   const handleCancelBooking = async () => {
     if (!booking) return;
-    if (confirm('Are you sure you want to cancel this booking?')) {
-      try {
-        if (dbBooking) {
-          setDbBooking({ ...dbBooking, status: 'cancelled' });
-        }
-        updateBookingStatus(booking.id, 'cancelled');
-        await updateBookingStatusAction(booking.id, 'cancelled');
-        toast.info('Booking has been cancelled.');
-      } catch (err: any) {
-        console.warn('Error cancelling booking:', err);
-        toast.error(err?.message || 'Could not cancel booking');
+    try {
+      if (dbBooking) {
+        setDbBooking({ ...dbBooking, status: 'cancelled' });
       }
+      updateBookingStatus(booking.id, 'cancelled');
+      await updateBookingStatusAction(booking.id, 'cancelled');
+      toast.info('Booking has been cancelled.');
+    } catch (err: any) {
+      console.warn('Error cancelling booking:', err);
+      toast.error(err?.message || 'Could not cancel booking');
     }
   };
 

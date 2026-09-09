@@ -206,23 +206,21 @@ export default function HistoryPage() {
   };
 
   const handleCancelBooking = async (bookingId: string) => {
-    if (confirm('Are you sure you want to cancel this booking?')) {
-      updateBookingStatus(bookingId, 'cancelled');
-      setDbBookings((prev) =>
-        prev.map((item) =>
-          item.id === bookingId
-            ? { ...item, status: 'cancelled' }
-            : item
-        )
-      );
-      try {
-        await updateBookingStatusAction(bookingId, 'cancelled');
-      } catch (err) {
-        console.warn('Cancel action error:', err);
-      }
-      toast.info('Booking has been cancelled.');
-      setActiveTab('cancelled');
+    updateBookingStatus(bookingId, 'cancelled');
+    setDbBookings((prev) =>
+      prev.map((item) =>
+        item.id === bookingId
+          ? { ...item, status: 'cancelled' }
+          : item
+      )
+    );
+    try {
+      await updateBookingStatusAction(bookingId, 'cancelled');
+    } catch (err) {
+      console.warn('Cancel action error:', err);
     }
+    toast.info('Booking has been cancelled.');
+    setActiveTab('cancelled');
   };
 
   if (!mounted) {
