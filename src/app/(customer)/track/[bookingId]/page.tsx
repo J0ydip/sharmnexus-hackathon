@@ -395,60 +395,6 @@ export default function BookingTrackingPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* High-Visibility Payment Action Banner when Work is Completed */}
-        {booking.status === 'completed' && booking.payment_status !== 'completed' && (
-          <div className="bg-gradient-to-r from-[#24172f] via-[#b85435] to-[#24172f] text-white rounded-2xl p-5 shadow-lg border border-[#e6aa3b]/40 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-                <Receipt className="w-6 h-6 text-[#f5dfad]" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#f5dfad] bg-white/10 px-2.5 py-0.5 rounded-full inline-block">
-                  🔔 Action Required • Work Completed
-                </span>
-                <h3 className="text-base sm:text-lg font-black text-white mt-1">
-                  Pay Service Fee: ₹{booking.final_price || booking.estimated_price || 450}
-                </h3>
-                <p className="text-xs text-white/80 mt-0.5">
-                  Task verified via PIN. Settle online via UPI / Cards or confirm cash handover.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto shrink-0">
-              <div className="w-full sm:w-auto">
-                <RazorpayPaymentButton
-                  bookingId={booking.id}
-                  amount={booking.final_price || booking.estimated_price || 450}
-                  customerName={booking.customer_name}
-                  customerPhone={booking.customer_phone}
-                  serviceName={booking.service_name}
-                  className="w-full sm:w-auto bg-[#e6aa3b] hover:bg-[#d96f4d] text-white font-bold px-5 py-2.5 rounded-xl shadow-md text-xs whitespace-nowrap cursor-pointer transition-all"
-                  onPaymentSuccess={(data) => {
-                    setPaymentData(data);
-                    if (dbBooking) {
-                      setDbBooking({
-                        ...dbBooking,
-                        payment_status: 'completed',
-                        payment_method: data?.method || 'Online Razorpay / UPI',
-                      });
-                    }
-                    setBookingPaymentStatus(booking.id, 'completed', data?.method || 'Online Razorpay / UPI');
-                    setIsReceiptOpen(true);
-                  }}
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={handleMarkCashPaid}
-                className="w-full sm:w-auto bg-white/15 hover:bg-white/25 text-white font-bold border border-white/30 text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap"
-              >
-                💵 Paid Cash to Worker
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* 2-Column Grid: Left (Timeline + Map), Right (Worker Card + Invoice) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left 2 Cols: Timeline & Map */}
