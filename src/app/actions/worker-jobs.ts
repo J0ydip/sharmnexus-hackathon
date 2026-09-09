@@ -153,13 +153,17 @@ export async function getWorkerDashboardData() {
       .eq('id', user.id)
       .maybeSingle();
 
+    const workerSkillCategoryIds: string[] = (worker?.skills || [])
+      .map((s: any) => s.service_category_id)
+      .filter(Boolean);
+
     const [requestsRes, activeRes, completedRes] = await Promise.all([
       supabase
         .from('bookings')
-        .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name, phone), service_categories(name)')
+        .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, worker_id, service_category_id, customers(full_name, phone), service_categories(name)')
         .eq('status', 'requested')
         .order('created_at', { ascending: false })
-        .limit(25),
+        .limit(50),
       supabase
         .from('bookings')
         .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name, phone), service_categories(name)')
@@ -175,9 +179,26 @@ export async function getWorkerDashboardData() {
         .limit(20),
     ]);
 
+    // Filter incoming requests strictly for this worker:
+    // 1. Direct requests explicitly assigned to this worker (worker_id == user.id)
+    // 2. Open requests in the cooperative network matching this worker's registered trade / skill categories
+    const relevantRequests = (requestsRes.data || []).filter((r: any) => {
+      // Specifically requested for this worker
+      if (r.worker_id === user.id) return true;
+      // Matching this worker's skill/trade category and not assigned to someone else
+      if (
+        workerSkillCategoryIds.length > 0 &&
+        workerSkillCategoryIds.includes(r.service_category_id) &&
+        (!r.worker_id || r.worker_id === user.id)
+      ) {
+        return true;
+      }
+      return false;
+    });
+
     return {
       worker,
-      requests: requestsRes.data || [],
+      requests: relevantRequests,
       activeJobs: activeRes.data || [],
       completedJobs: completedRes.data || [],
     };
