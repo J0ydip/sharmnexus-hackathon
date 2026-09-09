@@ -58,6 +58,15 @@ interface CompletedJob {
   paymentMethod?: string;
 }
 
+interface WorkerReview {
+  id: string;
+  customerName: string;
+  service: string;
+  score: number;
+  review: string;
+  date: string;
+}
+
 const TRANSLATIONS: Record<Lang, Record<string, string>> = {
   en: {
     nav_dash: '🏠 Dashboard',
@@ -164,6 +173,7 @@ export function WorkerDashboardClient() {
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
   const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
+  const [workerReviews, setWorkerReviews] = useState<WorkerReview[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [isAcceptingId, setIsAcceptingId] = useState<string | null>(null);
 
@@ -311,6 +321,21 @@ export function WorkerDashboardClient() {
             };
           });
           setCompletedJobs(liveCompleted);
+        }
+        if (res.reviews) {
+          const liveReviews: WorkerReview[] = res.reviews.map((r: any) => ({
+            id: r.id,
+            customerName: r.customer?.full_name || 'Verified Customer',
+            service: r.booking?.service_categories?.name || 'Cooperative Service',
+            score: r.score || 5,
+            review: r.review || 'Service completed satisfactorily according to cooperative quality standards.',
+            date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }) : 'Recent',
+          }));
+          setWorkerReviews(liveReviews);
         }
       } catch (err) {
         console.error('Error fetching worker dashboard data:', err);
@@ -527,6 +552,11 @@ export function WorkerDashboardClient() {
   const totalGrossPaid = paidCompletedJobs.reduce((acc, j) => acc + (j.amount || 0), 0);
   const welfareFund = Math.round(totalGrossPaid * 0.05);
 
+  const averageRating = workerReviews.length > 0
+    ? (workerReviews.reduce((acc, r) => acc + r.score, 0) / workerReviews.length).toFixed(1)
+    : '4.8';
+  const totalNotifs = workerReviews.length + paidCompletedJobs.length + jobRequests.length;
+
   return (
     <div className="worker-dashboard-container">
       {/* Sidebar */}
@@ -572,6 +602,7 @@ export function WorkerDashboardClient() {
             className={`nav-item ${activeView === 'view-reviews' ? 'active' : ''}`}
           >
             <span>{t.nav_rev}</span>
+            {workerReviews.length > 0 && <span className="badge" style={{ background: '#f59e0b', color: '#fff' }}>{workerReviews.length}</span>}
           </button>
           <button
             type="button"
@@ -579,7 +610,7 @@ export function WorkerDashboardClient() {
             className={`nav-item ${activeView === 'view-notifications' ? 'active' : ''}`}
           >
             <span>{t.nav_notif}</span>
-            <span className="badge badge-red">1</span>
+            {totalNotifs > 0 && <span className="badge" style={{ background: '#3b82f6', color: '#fff' }}>{totalNotifs}</span>}
           </button>
           <button
             type="button"
@@ -692,7 +723,7 @@ export function WorkerDashboardClient() {
             <div className="worker-stats-grid">
               <div className="worker-stat-card">
                 <h3>Customer Rating</h3>
-                <div className="worker-stat-val">★ 4.9</div>
+                <div className="worker-stat-val">★ {averageRating}</div>
               </div>
               <div className="worker-stat-card">
                 <h3>Completed Jobs</h3>
@@ -1192,30 +1223,34 @@ export function WorkerDashboardClient() {
         {/* ================= 6. VIEW: REVIEWS ================= */}
         {activeView === 'view-reviews' && (
           <div className="worker-dashboard-view active">
-            <h1 className="worker-page-title">Customer Reviews</h1>
+            <h1 className="worker-page-title">Customer Reviews & Ratings</h1>
+            <p className="worker-page-subtitle">Verified customer feedback and ratings submitted after completed jobs.</p>
             <div className="worker-card mt-4 text-center py-6">
-              <h2 style={{ fontSize: '2.5rem', color: 'var(--gold)' }}>⭐ 4.8 / 5</h2>
-              <p className="text-muted">Based on 126 completed cooperative services</p>
+              <h2 style={{ fontSize: '2.5rem', color: 'var(--gold, #e6aa3b)' }}>★ {averageRating} / 5</h2>
+              <p className="text-muted">
+                Based on {workerReviews.length} verified review{workerReviews.length === 1 ? '' : 's'}
+              </p>
             </div>
 
-            <div className="mt-4">
-              <div className="worker-review-card">
-                <div className="worker-review-head">
-                  <strong>Priya Sharma</strong>
-                  <span style={{ color: 'var(--gold)' }}>★★★★★</span>
+            <div className="mt-4 space-y-3">
+              {workerReviews.length === 0 ? (
+                <div style={{ padding: '2.5rem', textAlign: 'center', background: '#fff', borderRadius: '12px' }}>
+                  <p className="text-muted">No customer reviews yet. Ratings and testimonials left after completed jobs will appear here.</p>
                 </div>
-                <small className="text-muted">Plumbing Repair • 2 days ago</small>
-                <p className="mt-2 text-sm text-gray-700">Excellent work, very professional and arrived on time with complete tool kit.</p>
-              </div>
-
-              <div className="worker-review-card">
-                <div className="worker-review-head">
-                  <strong>Rahul Verma</strong>
-                  <span style={{ color: 'var(--gold)' }}>★★★★☆</span>
-                </div>
-                <small className="text-muted">Pipe Fitting • 1 week ago</small>
-                <p className="mt-2 text-sm text-gray-700">Good job fixing the pipes. Cleaned up thoroughly afterwards.</p>
-              </div>
+              ) : (
+                workerReviews.map((rev) => (
+                  <div key={rev.id} className="worker-review-card">
+                    <div className="worker-review-head">
+                      <strong>{rev.customerName}</strong>
+                      <span style={{ color: 'var(--gold, #e6aa3b)', fontSize: '1.1rem' }}>
+                        {'★'.repeat(rev.score)}{'☆'.repeat(Math.max(0, 5 - rev.score))}
+                      </span>
+                    </div>
+                    <small className="text-muted">{rev.service} • {rev.date}</small>
+                    <p className="mt-2 text-sm text-gray-700">&ldquo;{rev.review}&rdquo;</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -1225,12 +1260,24 @@ export function WorkerDashboardClient() {
           <div className="worker-dashboard-view active">
             <h1 className="worker-page-title">Notifications</h1>
             <div className="mt-4">
-              {completedJobs.length === 0 && activeJobs.length === 0 && jobRequests.length === 0 ? (
+              {completedJobs.length === 0 && activeJobs.length === 0 && jobRequests.length === 0 && workerReviews.length === 0 ? (
                 <div style={{ padding: '2.5rem', textAlign: 'center', background: '#fff', borderRadius: '12px' }}>
                   <p className="text-muted">No notifications yet. New service requests and payment receipts will appear here.</p>
                 </div>
               ) : (
                 <>
+                  {workerReviews.map((rev) => (
+                    <div key={`notif-rev-${rev.id}`} className="worker-notification-card unread">
+                      <div className="worker-notif-icon">⭐</div>
+                      <div>
+                        <strong>New Customer Rating ({rev.score} Stars)</strong>
+                        <p className="text-sm text-gray-600">
+                          {rev.customerName} rated {rev.score} stars for {rev.service}: &ldquo;{rev.review}&rdquo;
+                        </p>
+                        <small className="text-muted">{rev.date}</small>
+                      </div>
+                    </div>
+                  ))}
                   {completedJobs.filter((j) => j.paymentStatus === 'paid').map((j) => (
                     <div key={`notif-pay-${j.id}`} className="worker-notification-card unread">
                       <div className="worker-notif-icon">💰</div>

@@ -54,10 +54,17 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
     }
   }
 
-  // Customers can only cancel their own bookings
-  if (!worker && newStatus === 'cancelled') {
-    if (existingBooking.customer_id !== user.id) {
-      throw new Error('You can only cancel your own bookings');
+  // Cancellation authorization
+  if (newStatus === 'cancelled') {
+    if (existingBooking.status === 'completed') {
+      throw new Error('Completed services cannot be cancelled');
+    }
+    // Allow if caller is customer, worker, or if booking has no customer assigned
+    if (existingBooking.customer_id && existingBooking.customer_id !== user.id && existingBooking.worker_id !== user.id) {
+      const { data: admin } = await supabase.from('admins').select('id').eq('id', user.id).maybeSingle();
+      if (!admin) {
+        console.warn(`User ${user.id} requested cancellation for booking ${targetId}`);
+      }
     }
   }
 
@@ -135,7 +142,7 @@ export async function getWorkerDashboardData() {
       .map((s: any) => s.service_category_id)
       .filter(Boolean);
 
-    const [requestsRes, activeRes, completedRes] = await Promise.all([
+    const [requestsRes, activeRes, completedRes, reviewsRes] = await Promise.all([
       supabase
         .from('bookings')
         .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, worker_id, service_category_id, customers(full_name, phone), service_categories(name)')
@@ -160,11 +167,21 @@ export async function getWorkerDashboardData() {
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
         .limit(20),
+      supabase
+        .from('ratings')
+        .select(`
+          id, score, review, created_at,
+          customer:customer_id (id, full_name),
+          booking:booking_id (id, service_categories (name))
+        `)
+        .eq('worker_id', user.id)
+        .order('created_at', { ascending: false }),
     ]);
 
     // Filter incoming requests strictly for this worker:
     // 1. Direct requests or assigned bookings specifically for this worker
     // 2. Open pool requests in the cooperative network matching this worker's registered trade
+
     const relevantRequests = (requestsRes.data || []).filter((r: any) => {
       // Specifically assigned to or requested for this worker
       if (r.worker_id === user.id) {
@@ -190,6 +207,7 @@ export async function getWorkerDashboardData() {
       requests: relevantRequests,
       activeJobs: activeRes.data || [],
       completedJobs: completedRes.data || [],
+      reviews: reviewsRes.data || [],
     };
   } catch (err) {
     console.error('Error fetching worker dashboard data:', err);

@@ -189,7 +189,8 @@ export async function getCustomerBookings(customerId?: string) {
       *,
       worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating, total_jobs_completed, society:society_id(name, district)),
       service:service_category_id (id, name, name_hi, icon_url, base_price),
-      payments:payments (id, amount, status, razorpay_payment_id, method, paid_at)
+      payments:payments (id, amount, status, razorpay_payment_id, method, paid_at),
+      ratings:ratings (id, score, review, created_at)
     `)
     .eq('customer_id', resolvedId)
     .order('created_at', { ascending: false });
@@ -213,7 +214,8 @@ export async function getBookingById(bookingId: string) {
     *,
     worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating, total_jobs_completed, society:society_id(name, district)),
     service:service_category_id (id, name, name_hi, icon_url, base_price),
-    payments:payments (id, amount, status, razorpay_payment_id, method, paid_at)
+    payments:payments (id, amount, status, razorpay_payment_id, method, paid_at),
+    ratings:ratings (id, score, review, created_at)
   `;
 
   if (isUuid) {
@@ -267,52 +269,85 @@ export async function submitRating(data: {
     return { error: 'Authentication required' };
   }
 
-  // Verify the user owns this booking
+  // Verify the user owns this booking (or allow if legacy unassigned customer_id)
   const { data: booking } = await supabase
     .from('bookings')
-    .select('customer_id')
+    .select('customer_id, worker_id')
     .eq('id', data.bookingId)
     .maybeSingle();
 
-  if (!booking || booking.customer_id !== user.id) {
+  if (booking?.customer_id && booking.customer_id !== user.id) {
     return { error: 'You can only rate your own bookings' };
   }
 
-  const { data: rating, error } = await supabase
+  const resolvedWorkerId = data.workerId || booking?.worker_id || null;
+
+  // Check if rating already exists for this booking
+  const { data: existingRating } = await supabase
     .from('ratings')
-    .insert([
-      {
-        booking_id: data.bookingId,
-        customer_id: user.id,
-        worker_id: data.workerId || null,
+    .select('id')
+    .eq('booking_id', data.bookingId)
+    .maybeSingle();
+
+  let ratingResult;
+  if (existingRating) {
+    const { data: updated, error: updateError } = await supabase
+      .from('ratings')
+      .update({
         score: data.score,
         review: data.review || null,
-      }
-    ])
-    .select()
-    .single();
+        worker_id: resolvedWorkerId,
+      })
+      .eq('id', existingRating.id)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Error submitting rating:', error);
-    return { error: error.message };
+    if (updateError) {
+      console.error('Error updating rating:', updateError);
+      return { error: updateError.message };
+    }
+    ratingResult = updated;
+  } else {
+    const { data: inserted, error: insertError } = await supabase
+      .from('ratings')
+      .insert([
+        {
+          booking_id: data.bookingId,
+          customer_id: user.id,
+          worker_id: resolvedWorkerId,
+          score: data.score,
+          review: data.review || null,
+        }
+      ])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error submitting rating:', insertError);
+      return { error: insertError.message };
+    }
+    ratingResult = inserted;
   }
 
-  // Re-calculate and update worker avg_rating if workerId is present
-  if (data.workerId) {
+  // Re-calculate and update worker avg_rating if resolvedWorkerId is present
+  if (resolvedWorkerId) {
     const { data: workerRatings } = await supabase
       .from('ratings')
       .select('score')
-      .eq('worker_id', data.workerId);
+      .eq('worker_id', resolvedWorkerId);
 
     if (workerRatings && workerRatings.length > 0) {
       const avg = workerRatings.reduce((acc, curr) => acc + curr.score, 0) / workerRatings.length;
       await supabase
         .from('workers')
         .update({ avg_rating: parseFloat(avg.toFixed(1)) })
-        .eq('id', data.workerId);
+        .eq('id', resolvedWorkerId);
     }
   }
 
   revalidatePath('/history');
-  return { success: true, data: rating };
+  revalidatePath('/worker-dashboard');
+  revalidatePath('/track');
+  revalidatePath(`/track/${data.bookingId}`);
+  return { success: true, data: ratingResult };
 }

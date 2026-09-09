@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/data/mockData';
 import { toast } from 'sonner';
 import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
-import { getBookingById as getBookingByIdAction } from '@/app/actions/bookings';
+import { getBookingById as getBookingByIdAction, submitRating } from '@/app/actions/bookings';
 import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
 import { recordCashPayment as recordCashPaymentAction } from '@/app/actions/payments';
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
@@ -34,6 +34,7 @@ import {
   Truck,
   Wrench,
   Award,
+  Star,
 } from 'lucide-react';
 
 interface PageProps {
@@ -50,6 +51,9 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [dbBooking, setDbBooking] = useState<Booking | null>(null);
+  const [ratingStars, setRatingStars] = useState(5);
+  const [ratingReviewText, setRatingReviewText] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -61,6 +65,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
         if (b && isMounted) {
           const hasPaid = Boolean(b.payments && b.payments.some((p: any) => p.status === 'completed' && p.method !== 'pin_verified' && p.method !== 'pay_after_work'));
           const latestPayment = b.payments && b.payments.length > 0 ? b.payments.find((p: any) => p.status === 'completed' && p.method !== 'pin_verified') || b.payments[0] : null;
+          const userRating = (b.ratings && b.ratings.length > 0) ? b.ratings[0] : null;
           setDbBooking({
             id: b.id,
             customer_id: b.customer_id,
@@ -105,6 +110,8 @@ export default function BookingTrackingPage({ params }: PageProps) {
             estimated_price: b.estimated_price || 350,
             final_price: b.final_price || b.estimated_price || 350,
             otp: getBookingOtp(b.id),
+            rating: userRating?.score,
+            review: userRating?.review,
             payment_status: hasPaid ? 'completed' : 'pending',
             payment_method: hasPaid
               ? (latestPayment?.method ? (latestPayment.method === 'cash' ? 'Cash Handover to Worker' : `Online (${latestPayment.method.toUpperCase()})`) : 'Online Razorpay / UPI')
@@ -255,6 +262,49 @@ export default function BookingTrackingPage({ params }: PageProps) {
     }
   };
 
+  const handleCancelBooking = async () => {
+    if (!booking) return;
+    if (confirm('Are you sure you want to cancel this booking?')) {
+      try {
+        if (dbBooking) {
+          setDbBooking({ ...dbBooking, status: 'cancelled' });
+        }
+        updateBookingStatus(booking.id, 'cancelled');
+        await updateBookingStatusAction(booking.id, 'cancelled');
+        toast.info('Booking has been cancelled.');
+      } catch (err: any) {
+        console.warn('Error cancelling booking:', err);
+        toast.error(err?.message || 'Could not cancel booking');
+      }
+    }
+  };
+
+  const handleRatingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!booking) return;
+    setIsSubmittingRating(true);
+    try {
+      await submitRating({
+        bookingId: booking.id,
+        workerId: booking.worker_id,
+        score: ratingStars,
+        review: ratingReviewText,
+      });
+      if (dbBooking) {
+        setDbBooking({
+          ...dbBooking,
+          rating: ratingStars,
+          review: ratingReviewText,
+        });
+      }
+      toast.success('Thank you! Your verified rating was submitted to the cooperative.');
+    } catch (err: any) {
+      toast.error('Could not submit rating: ' + (err?.message || 'Error'));
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12 flex items-center justify-center">
@@ -319,18 +369,29 @@ export default function BookingTrackingPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Prototype Demo Simulator Button */}
+          {/* Prototype Demo Simulator Button & Cancel Button */}
           {booking.status !== 'completed' && booking.status !== 'cancelled' && (
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSimulateNextStatus}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-8 px-3 rounded-xl shadow-xs flex items-center gap-1.5 animate-pulse"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span className="hidden sm:inline">Simulate Next Status</span>
-              <span className="sm:hidden">Next</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleCancelBooking}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold text-xs h-8 px-3 rounded-xl shadow-xs cursor-pointer"
+              >
+                Cancel Booking
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSimulateNextStatus}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-8 px-3 rounded-xl shadow-xs flex items-center gap-1.5 animate-pulse cursor-pointer"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span className="hidden sm:inline">Simulate Next Status</span>
+                <span className="sm:hidden">Next</span>
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -551,6 +612,66 @@ export default function BookingTrackingPage({ params }: PageProps) {
                 </Button>
               </div>
             </div>
+
+            {/* Verified Rating Display */}
+            {booking.status === 'completed' && (booking.rating || (dbBooking as any)?.ratings?.[0]) && (
+              <div className="bg-amber-50/90 p-4 rounded-2xl border border-amber-200 text-xs space-y-1.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-900 flex items-center gap-1.5 text-sm">
+                    <Star className="w-4 h-4 text-amber-500 fill-current" />
+                    Your Rating: {booking.rating || (dbBooking as any)?.ratings?.[0]?.score} / 5 Stars
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded">
+                    Verified
+                  </span>
+                </div>
+                {(booking.review || (dbBooking as any)?.ratings?.[0]?.review) && (
+                  <p className="text-gray-700 text-xs italic mt-1">&ldquo;{booking.review || (dbBooking as any)?.ratings?.[0]?.review}&rdquo;</p>
+                )}
+              </div>
+            )}
+
+            {/* Rating & Review Form (if completed and not rated yet) */}
+            {booking.status === 'completed' && !booking.rating && !(dbBooking as any)?.ratings?.[0] && (
+              <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-[#e6aa3b] fill-current" />
+                    Rate Worker Service
+                  </h3>
+                  <span className="text-[10px] text-gray-400">Cooperative Review</span>
+                </div>
+                <form onSubmit={handleRatingSubmit} className="space-y-2.5">
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setRatingStars(s)}
+                        className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                      >
+                        <Star className={`w-5 h-5 ${s <= ratingStars ? 'text-[#e6aa3b] fill-current' : 'text-gray-300'}`} />
+                      </button>
+                    ))}
+                    <span className="text-xs font-bold text-gray-700 ml-2">{ratingStars} / 5 Stars</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Leave verified feedback for cooperative..."
+                    value={ratingReviewText}
+                    onChange={(e) => setRatingReviewText(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#e6aa3b]"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isSubmittingRating}
+                    className="w-full bg-[#e6aa3b] hover:bg-[#d96f4d] text-white font-bold text-xs h-8 rounded-xl cursor-pointer"
+                  >
+                    {isSubmittingRating ? 'Submitting Rating...' : 'Submit Rating'}
+                  </Button>
+                </form>
+              </div>
+            )}
 
             {/* Digital Invoice / Transparent Price Card */}
             <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3.5 text-xs">

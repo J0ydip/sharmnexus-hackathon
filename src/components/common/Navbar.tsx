@@ -41,6 +41,7 @@ export function Navbar() {
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [liveBookings, setLiveBookings] = useState<any[]>([]);
   const bookings = useBookingStore((state) => state.bookings);
   const activeBookings = bookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled');
 
@@ -49,13 +50,13 @@ export function Navbar() {
     try {
       const isRead = localStorage.getItem('shramnexus_notifications_read');
       if (!isRead) {
-        setUnreadCount(2);
+        setUnreadCount(1);
       } else {
         setUnreadCount(0);
       }
     } catch (e) {}
 
-    // 2. Load authenticated user immediately
+    // 2. Load authenticated user and their recent bookings immediately
     async function getUser() {
       try {
         const localAuth = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
@@ -73,6 +74,15 @@ export function Navbar() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           setUser(session.user);
+          const { data: bList } = await supabase
+            .from('bookings')
+            .select('id, status, scheduled_at, service_categories(name), worker:worker_id(full_name)')
+            .eq('customer_id', session.user.id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (bList && bList.length > 0) {
+            setLiveBookings(bList);
+          }
         } else if (!initialUser) {
           setUser(null);
         }
@@ -326,26 +336,44 @@ export function Navbar() {
                 </button>
               </div>
               <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
-                <div className="p-3 hover:bg-gray-50 text-xs transition-colors flex items-start gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-[#fbf7ef] text-[#e6aa3b] mt-0.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                {liveBookings.length === 0 && bookings.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-500">
+                    No active notifications. Service and booking updates will appear here.
                   </div>
-                  <div>
-                    <strong className="text-gray-900 block text-[11px]">Worker Rajesh Kumar Assigned</strong>
-                    <p className="text-gray-500 text-[11px] mt-0.5">Local Labour Society assigned plumber for booking SN-2026-8941.</p>
-                    <span className="text-[10px] text-gray-400 mt-1 block">10 mins ago</span>
-                  </div>
-                </div>
-                <div className="p-3 hover:bg-gray-50 text-xs transition-colors flex items-start gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700 mt-0.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <strong className="text-gray-900 block text-[11px]">Cooperative Welfare Guarantee</strong>
-                    <p className="text-gray-500 text-[11px] mt-0.5">Your booking directly funds worker health insurance and fair wages.</p>
-                    <span className="text-[10px] text-gray-400 mt-1 block">2 hours ago</span>
-                  </div>
-                </div>
+                ) : (
+                  (liveBookings.length > 0 ? liveBookings : bookings).map((b: any) => {
+                    const srvName = b.service_categories?.name || b.service_name || 'Service';
+                    const workerName = b.worker?.full_name || (b.worker as any)?.name;
+                    const isDone = b.status === 'completed';
+                    const isCancelled = b.status === 'cancelled';
+                    return (
+                      <Link
+                        key={b.id}
+                        href={`/track/${b.id}`}
+                        className="p-3 hover:bg-gray-50 text-xs transition-colors flex items-start gap-2.5 block"
+                      >
+                        <div className={`p-1.5 rounded-lg mt-0.5 ${isDone ? 'bg-emerald-100 text-emerald-700' : isCancelled ? 'bg-red-100 text-red-700' : 'bg-[#fbf7ef] text-[#e6aa3b]'}`}>
+                          {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : isCancelled ? <Clock className="w-3.5 h-3.5 text-red-500" /> : <Clock className="w-3.5 h-3.5" />}
+                        </div>
+                        <div>
+                          <strong className="text-gray-900 block text-[11px]">
+                            {isDone ? `✓ Completed: ${srvName}` : isCancelled ? `Cancelled: ${srvName}` : `${srvName} (${b.status})`}
+                          </strong>
+                          <p className="text-gray-500 text-[11px] mt-0.5">
+                            {isDone
+                              ? 'Job completed! Click to view receipt or rate worker.'
+                              : isCancelled
+                              ? 'This booking has been cancelled.'
+                              : workerName
+                              ? `${workerName} assigned from cooperative.`
+                              : 'Dispatch network matching verified tradesperson.'}
+                          </p>
+                          <span className="text-[10px] text-gray-400 mt-1 block">#{b.id.slice(0, 8)}</span>
+                        </div>
+                      </Link>
+                    );
+                  })
+                )}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>

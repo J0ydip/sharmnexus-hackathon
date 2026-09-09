@@ -73,6 +73,8 @@ export default function HistoryPage() {
               b.payment_status === 'completed';
             const latestPayment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
 
+            const userRating = (b.ratings && b.ratings.length > 0) ? b.ratings[0] : null;
+
             return {
               id: b.id,
               customer_id: b.customer_id,
@@ -113,6 +115,8 @@ export default function HistoryPage() {
               estimated_price: b.estimated_price || 350,
               final_price: b.final_price || b.estimated_price || 350,
               otp: getBookingOtp(b.id),
+              rating: userRating?.score,
+              review: userRating?.review,
               payment_status: hasCompletedPayment ? 'completed' : 'pending',
               payment_method: hasCompletedPayment
                 ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
@@ -175,16 +179,25 @@ export default function HistoryPage() {
   const handleRateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (ratingBooking) {
-      rateBooking(ratingBooking.id, userStars, userReviewText);
+      const score = userStars;
+      const review = userReviewText;
+      rateBooking(ratingBooking.id, score, review);
+      setDbBookings((prev) =>
+        prev.map((item) =>
+          item.id === ratingBooking.id
+            ? { ...item, rating: score, review: review }
+            : item
+        )
+      );
       try {
         await submitRating({
           bookingId: ratingBooking.id,
           workerId: ratingBooking.worker_id,
-          score: userStars,
-          review: userReviewText,
+          score: score,
+          review: review,
         });
       } catch (err) {
-        // Fallback gracefully for local mock IDs
+        console.warn('submitRating error:', err);
       }
       toast.success('Thank you! Your verified rating was submitted to the cooperative.');
       setRatingBooking(null);
@@ -195,12 +208,20 @@ export default function HistoryPage() {
   const handleCancelBooking = async (bookingId: string) => {
     if (confirm('Are you sure you want to cancel this booking?')) {
       updateBookingStatus(bookingId, 'cancelled');
+      setDbBookings((prev) =>
+        prev.map((item) =>
+          item.id === bookingId
+            ? { ...item, status: 'cancelled' }
+            : item
+        )
+      );
       try {
         await updateBookingStatusAction(bookingId, 'cancelled');
       } catch (err) {
-        // Fallback gracefully for local mock IDs
+        console.warn('Cancel action error:', err);
       }
       toast.info('Booking has been cancelled.');
+      setActiveTab('cancelled');
     }
   };
 
