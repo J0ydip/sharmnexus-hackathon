@@ -322,12 +322,17 @@ export function WorkerDashboardClient() {
     const newVal = e.target.checked;
     setIsAvailable(newVal);
     try {
-      const auth = JSON.parse(localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth') || '{}');
-      if (auth?.id) {
-        await updateWorkerAvailability(auth.id, newVal);
+      const res = await updateWorkerAvailability(newVal);
+      if (res?.error) {
+        setIsAvailable(!newVal);
+        showToast(`❌ Could not update availability: ${res.error}`);
+        return;
       }
-    } catch (err) {}
-    showToast(newVal ? 'You are now Online & Available' : 'You are now Offline');
+      showToast(newVal ? 'You are now Online & Available' : 'You are now Offline');
+    } catch (err: any) {
+      setIsAvailable(!newVal);
+      showToast(`❌ Error: ${err?.message || 'Failed to update'}`);
+    }
   };
 
   const handleAcceptRequest = async (id: string) => {

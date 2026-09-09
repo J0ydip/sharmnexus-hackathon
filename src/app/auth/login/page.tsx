@@ -274,6 +274,7 @@ export default function AuthPage() {
 
       try {
         const authPayload = JSON.stringify({
+          id: user.id,
           isLoggedIn: true,
           role: actualRole,
           name: workerFullName || user.user_metadata?.full_name || loginEmail.split('@')[0],
