@@ -648,19 +648,14 @@ export function WorkerDashboardClient() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }} className="mt-4">
-              <h2 className="worker-page-title" style={{ fontSize: '1.3rem', margin: 0 }}>
-                Recent Incoming Requests
-              </h2>
-              <span style={{ fontSize: '0.72rem', fontWeight: 600, background: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: '6px', border: '1px solid #fde68a' }}>
-                🎯 Filtered for {workerSkill}
-              </span>
-            </div>
+            <h2 className="worker-page-title mt-4" style={{ fontSize: '1.4rem' }}>
+              Recent Incoming Requests
+            </h2>
             <div className="worker-requests-grid mt-2">
               {isLoadingJobs && jobRequests.length === 0 ? (
                 <p className="text-muted">Connecting to cooperative dispatch network...</p>
               ) : jobRequests.length === 0 ? (
-                <p className="text-muted">No pending {workerSkill} requests right now. You are ready to accept new work in your trade.</p>
+                <p className="text-muted">No pending job requests right now. You are ready to accept new work.</p>
               ) : (
                 jobRequests.map((req, idx) => (
                   <div key={`${req.id}-${idx}`} className="worker-req-card">
@@ -700,20 +695,13 @@ export function WorkerDashboardClient() {
         {/* ================= 2. VIEW: JOB REQUESTS ================= */}
         {activeView === 'view-requests' && (
           <div className="worker-dashboard-view active">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-              <div>
-                <h1 className="worker-page-title" style={{ margin: 0 }}>Incoming Job Requests</h1>
-                <p className="worker-page-subtitle">Review, accept, and schedule requests from your district cooperative cluster.</p>
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, background: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '6px', border: '1px solid #fde68a' }}>
-                🎯 Filtered for {workerSkill}
-              </span>
-            </div>
+            <h1 className="worker-page-title">Incoming Job Requests</h1>
+            <p className="worker-page-subtitle">Review, accept, and schedule requests from your district cooperative cluster.</p>
             <div className="worker-requests-grid mt-4">
               {isLoadingJobs && jobRequests.length === 0 ? (
-                <p className="text-muted">Loading incoming {workerSkill} requests from cooperative dispatch...</p>
+                <p className="text-muted">Loading incoming job requests from cooperative dispatch...</p>
               ) : jobRequests.length === 0 ? (
-                <p className="text-muted">No new {workerSkill} requests at the moment. New requests matching your profession will appear here automatically.</p>
+                <p className="text-muted">No new requests at the moment.</p>
               ) : (
                 jobRequests.map((req, idx) => (
                   <div key={`${req.id}-${idx}`} className="worker-req-card">
