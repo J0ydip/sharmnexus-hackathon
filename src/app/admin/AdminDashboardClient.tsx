@@ -31,6 +31,11 @@ import {
   getAdminAuditLogs,
   AdminAuditLogItem,
 } from '@/app/actions/admin';
+import {
+  getAdminSupportTickets,
+  resolveSupportTicketAction,
+  SupportTicketItem,
+} from '@/app/actions/support';
 import { createClient } from '@/lib/supabase/client';
 import './admin.css';
 
@@ -42,7 +47,8 @@ type AdminTab =
   | 'view-earnings'
   | 'view-reviews'
   | 'view-coops'
-  | 'view-audit';
+  | 'view-audit'
+  | 'view-support';
 
 const INITIAL_CUSTOMERS: AdminCustomerItem[] = [
   { id: 'sc-1', name: 'Priya Sharma', email: 'priya.s@example.com', bookings: 12, spent: '₹ 5,400', status: 'Active', date: 'Jan 12, 2024' },
@@ -168,6 +174,13 @@ export function AdminDashboardClient() {
     date: string;
   } | null>(null);
 
+  // Support Tickets State
+  const [supportTickets, setSupportTickets] = useState<SupportTicketItem[]>([]);
+  const [supportSearch, setSupportSearch] = useState('');
+  const [supportFilter, setSupportFilter] = useState<'ALL' | 'OPEN' | 'RESOLVED'>('ALL');
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicketItem | null>(null);
+  const [isResolving, setIsResolving] = useState(false);
+
   // Disciplinary removal / audit modal
   const [pendingAction, setPendingAction] = useState<{
     type: 'worker' | 'coop';
@@ -178,7 +191,7 @@ export function AdminDashboardClient() {
 
   const fetchAllData = async () => {
     try {
-      const [s, w, c, b, r, e, coops, logs] = await Promise.all([
+      const [s, w, c, b, r, e, coops, logs, tickets] = await Promise.all([
         getAdminOverview(),
         getAdminWorkers(),
         getAdminCustomers(),
@@ -187,15 +200,98 @@ export function AdminDashboardClient() {
         getAdminEarnings(),
         getAdminCooperatives(),
         getAdminAuditLogs(),
+        getAdminSupportTickets(),
       ]);
       if (s) setStats(s);
       if (w) setWorkers(w);
       if (c) setCustomers(c);
-      if (b) setBookings(b);
+      if (b) {
+        let mergedBookings = [...b];
+        try {
+          const storeStr = localStorage.getItem('shramnexus-customer-store-v3');
+          if (storeStr) {
+            const store = JSON.parse(storeStr);
+            const clientBookings = store?.state?.bookings || [];
+            clientBookings.forEach((cb: any) => {
+              const formattedId = cb.id?.startsWith('#') ? cb.id : `#${cb.id}`;
+              const exists = mergedBookings.some(
+                (item) =>
+                  item.id.toLowerCase() === formattedId.toLowerCase() ||
+                  (cb.id && item.id.includes(cb.id.substring(0, 6)))
+              );
+              if (!exists) {
+                let st: 'Ongoing' | 'Pending' | 'Completed' | 'Cancelled' = 'Pending';
+                let bc = 'badge-pending';
+                if (cb.status === 'in_progress' || cb.status === 'accepted' || cb.status === 'assigned') {
+                  st = 'Ongoing';
+                  bc = 'badge-ongoing';
+                } else if (cb.status === 'completed') {
+                  st = 'Completed';
+                  bc = 'badge-success';
+                } else if (cb.status === 'cancelled') {
+                  st = 'Cancelled';
+                  bc = 'badge-cancelled';
+                }
+                mergedBookings.unshift({
+                  id: formattedId,
+                  c: cb.customer_name || 'Customer',
+                  w: cb.worker?.full_name || 'Assigned Worker',
+                  s: cb.service_name || 'Home Service',
+                  d: 'Today',
+                  a: `₹ ${cb.final_price || cb.estimated_price || 450}`,
+                  st,
+                  bc,
+                });
+              }
+            });
+          }
+        } catch (err) {}
+        setBookings(mergedBookings);
+      }
       if (r) setReviews(r);
-      if (e) setEarningsData(e);
+      if (e) {
+        let mergedEarnings = { ...e };
+        try {
+          const storeStr = localStorage.getItem('shramnexus-customer-store-v3');
+          if (storeStr) {
+            const store = JSON.parse(storeStr);
+            const clientBookings = store?.state?.bookings || [];
+            clientBookings.forEach((cb: any) => {
+              if (cb.status === 'completed' || cb.payment_status === 'completed') {
+                const formattedId = cb.id?.startsWith('#') ? cb.id : `#${cb.id}`;
+                const exists = mergedEarnings.transactions.some(
+                  (tx) => tx.bookingId.toLowerCase() === formattedId.toLowerCase()
+                );
+                if (!exists) {
+                  const gross = Number(cb.final_price) || Number(cb.estimated_price) || 450;
+                  const workerPayout = Math.round(gross * 0.85);
+                  const welfareShare = Math.round(gross * 0.05);
+                  const platformFee = Math.round(gross * 0.10);
+                  mergedEarnings.transactions.unshift({
+                    id: `pay_${(cb.id || '').replace(/[^a-zA-Z0-9]/g, '')}`,
+                    bookingId: formattedId,
+                    customerName: cb.customer_name || 'Customer',
+                    workerName: cb.worker?.full_name || 'Assigned Worker',
+                    serviceName: cb.service_name || 'Home Service',
+                    societyName: cb.worker?.society_name || 'Patna District Labour Society',
+                    grossAmount: gross,
+                    workerPayout,
+                    welfareShare,
+                    platformFee,
+                    status: 'Completed',
+                    method: cb.payment_method || 'Online Razorpay / UPI',
+                    paidAt: 'Just Now',
+                  });
+                }
+              }
+            });
+          }
+        } catch (err) {}
+        setEarningsData(mergedEarnings);
+      }
       if (coops) setCooperatives(coops);
       if (logs) setAuditLogs(logs);
+      if (tickets) setSupportTickets(tickets);
       setLastSynced(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
     } catch (err) {
       console.error('Failed to fetch admin data:', err);
@@ -216,6 +312,27 @@ export function AdminDashboardClient() {
       return `₹ ${(amount / 100000).toFixed(2)} Lakh`;
     }
     return `₹ ${amount.toLocaleString('en-IN')}`;
+  };
+
+  const handleResolveSupportTicket = async (ticketId: string) => {
+    setIsResolving(true);
+    try {
+      const res = await resolveSupportTicketAction(ticketId);
+      if (res.success) {
+        setSupportTickets((prev) =>
+          prev.map((t) => (t.id === ticketId ? { ...t, status: 'Resolved' } : t))
+        );
+        if (selectedTicket && selectedTicket.id === ticketId) {
+          setSelectedTicket({ ...selectedTicket, status: 'Resolved' });
+        }
+        showToast(`✓ Ticket #${ticketId} marked as Resolved.`);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to resolve ticket');
+    } finally {
+      setIsResolving(false);
+    }
   };
 
   const handleExportCsv = () => {
@@ -502,6 +619,28 @@ export function AdminDashboardClient() {
             className={`nav-item ${activeTab === 'view-audit' ? 'active' : ''}`}
           >
             📜 Audit Trail
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('view-support')}
+            className={`nav-item ${activeTab === 'view-support' ? 'active' : ''}`}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <span>💬 Support Queries</span>
+            {supportTickets.filter((t) => t.status !== 'Resolved').length > 0 && (
+              <span
+                style={{
+                  background: '#d96f4d',
+                  color: '#fff',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                }}
+              >
+                {supportTickets.filter((t) => t.status !== 'Resolved').length}
+              </span>
+            )}
           </button>
 
           <button
@@ -1997,6 +2136,250 @@ export function AdminDashboardClient() {
               </div>
             </div>
           )}
+
+          {/* ================= 9. VIEW: HELP & SUPPORT QUERIES ================= */}
+          {activeTab === 'view-support' && (
+            <div className="admin-view active">
+              <div className="view-header">
+                <div>
+                  <h2 className="view-title font-serif">💬 Help &amp; Support Grievances</h2>
+                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+                    Live incoming queries submitted by customers, workers, and cooperative societies via the landing support desk.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={fetchAllData}
+                    className="btn btn-outline"
+                    style={{ fontSize: '0.82rem', padding: '0.45rem 0.9rem' }}
+                  >
+                    ↻ Refresh Tickets
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter and Search Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  margin: '1rem 0 1.25rem 0',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {(['ALL', 'OPEN', 'RESOLVED'] as const).map((filter) => {
+                    const count =
+                      filter === 'ALL'
+                        ? supportTickets.length
+                        : filter === 'OPEN'
+                        ? supportTickets.filter((t) => t.status !== 'Resolved').length
+                        : supportTickets.filter((t) => t.status === 'Resolved').length;
+
+                    return (
+                      <button
+                        key={filter}
+                        type="button"
+                        onClick={() => setSupportFilter(filter)}
+                        className={`btn ${supportFilter === filter ? 'btn-dark' : 'btn-outline'}`}
+                        style={{
+                          fontSize: '0.78rem',
+                          padding: '0.4rem 0.85rem',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <span>{filter === 'ALL' ? 'All Tickets' : filter === 'OPEN' ? 'Pending Review' : 'Resolved'}</span>
+                        <span
+                          style={{
+                            background: supportFilter === filter ? '#e6aa3b' : '#eee',
+                            color: supportFilter === filter ? '#24172f' : '#555',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '1px 6px',
+                            borderRadius: '10px',
+                          }}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ position: 'relative', minWidth: '260px', flex: 1, maxWidth: '400px' }}>
+                  <input
+                    type="text"
+                    placeholder="Search queries by name, email, subject, ticket ID..."
+                    value={supportSearch}
+                    onChange={(e) => setSupportSearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem 0.85rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border)',
+                      fontSize: '0.85rem',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Tickets Table */}
+              <div className="table-responsive">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Ticket ID</th>
+                      <th>Submitted By</th>
+                      <th>Role</th>
+                      <th>Subject / Category</th>
+                      <th>Message Preview</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const filtered = supportTickets.filter((t) => {
+                        const matchFilter =
+                          supportFilter === 'ALL'
+                            ? true
+                            : supportFilter === 'OPEN'
+                            ? t.status !== 'Resolved'
+                            : t.status === 'Resolved';
+
+                        const q = supportSearch.toLowerCase().trim();
+                        const matchSearch =
+                          !q ||
+                          t.id.toLowerCase().includes(q) ||
+                          t.name.toLowerCase().includes(q) ||
+                          t.email.toLowerCase().includes(q) ||
+                          t.subject.toLowerCase().includes(q) ||
+                          t.message.toLowerCase().includes(q);
+
+                        return matchFilter && matchSearch;
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted)' }}>
+                              No support queries found matching this filter.
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return filtered.map((ticket) => (
+                        <tr key={ticket.id}>
+                          <td>
+                            <strong><code>#{ticket.id}</code></strong>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px' }}>
+                              {new Date(ticket.createdAt).toLocaleDateString('en-IN', {
+                                month: 'short',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                          </td>
+                          <td>
+                            <strong>{ticket.name}</strong>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                              {ticket.email || ticket.phone || 'No direct contact'}
+                            </div>
+                          </td>
+                          <td>
+                            <span
+                              className={`badge ${
+                                ticket.role === 'Customer'
+                                  ? 'badge-ongoing'
+                                  : ticket.role === 'Worker'
+                                  ? 'badge-pending'
+                                  : 'badge-success'
+                              }`}
+                              style={{ fontSize: '0.72rem' }}
+                            >
+                              {ticket.role}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--ink)' }}>
+                              {ticket.subject}
+                            </span>
+                            {ticket.bookingId && (
+                              <div style={{ fontSize: '0.72rem', color: 'var(--terracotta, #d96f4d)' }}>
+                                Booking: {ticket.bookingId}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ maxWidth: '300px' }}>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: '0.82rem',
+                                color: 'var(--text)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {ticket.message}
+                            </p>
+                          </td>
+                          <td>
+                            <span
+                              className={`badge ${
+                                ticket.status === 'Resolved' ? 'badge-success' : 'badge-pending'
+                              }`}
+                              style={{ fontSize: '0.72rem' }}
+                            >
+                              {ticket.status === 'Resolved' ? '✓ Resolved' : 'Pending Review'}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', gap: '6px' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedTicket(ticket)}
+                                className="btn btn-outline"
+                                style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}
+                              >
+                                View Details
+                              </button>
+                              {ticket.status !== 'Resolved' && (
+                                <button
+                                  type="button"
+                                  disabled={isResolving}
+                                  onClick={() => handleResolveSupportTicket(ticket.id)}
+                                  className="btn btn-dark"
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    padding: '0.3rem 0.65rem',
+                                    background: 'var(--green)',
+                                    borderColor: 'var(--green)',
+                                    color: '#fff',
+                                  }}
+                                >
+                                  ✓ Resolve
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -2261,6 +2644,138 @@ export function AdminDashboardClient() {
           </div>
         </div>
       )}
+
+      {/* Support Ticket Details Modal */}
+      {selectedTicket && (
+        <div
+          className="admin-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(36, 23, 47, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            zIndex: 10002,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            className="admin-modal-content"
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              maxWidth: '540px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div>
+                <span className="badge badge-ongoing" style={{ fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                  Ticket #{selectedTicket.id}
+                </span>
+                <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.35rem', margin: '0.35rem 0 0 0', color: 'var(--ink)' }}>
+                  {selectedTicket.subject}
+                </h2>
+              </div>
+              <span
+                className={`badge ${selectedTicket.status === 'Resolved' ? 'badge-success' : 'badge-pending'}`}
+                style={{ fontSize: '0.72rem' }}
+              >
+                {selectedTicket.status === 'Resolved' ? '✓ Resolved' : 'Pending Review'}
+              </span>
+            </div>
+
+            {/* Sender details */}
+            <div style={{ background: '#f8f7fa', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.85rem 1rem', marginBottom: '1.25rem', fontSize: '0.82rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span className="text-muted">Submitted By:</span>
+                <strong>{selectedTicket.name} ({selectedTicket.role})</strong>
+              </div>
+              {selectedTicket.email && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span className="text-muted">Email:</span>
+                  <span>{selectedTicket.email}</span>
+                </div>
+              )}
+              {selectedTicket.phone && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span className="text-muted">Phone:</span>
+                  <span>{selectedTicket.phone}</span>
+                </div>
+              )}
+              {selectedTicket.bookingId && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span className="text-muted">Related Booking:</span>
+                  <strong style={{ color: 'var(--terracotta, #d96f4d)' }}>{selectedTicket.bookingId}</strong>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-muted">Submitted At:</span>
+                <span>{new Date(selectedTicket.createdAt).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+
+            {/* Message Body */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                Query / Grievance Details
+              </label>
+              <div
+                style={{
+                  background: '#fff',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  padding: '1rem',
+                  fontSize: '0.85rem',
+                  lineHeight: 1.6,
+                  color: 'var(--text)',
+                  maxHeight: '180px',
+                  overflowY: 'auto',
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {selectedTicket.message}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ padding: '0.6rem 1.25rem' }}
+                onClick={() => setSelectedTicket(null)}
+              >
+                Close
+              </button>
+              {selectedTicket.status !== 'Resolved' && (
+                <button
+                  type="button"
+                  disabled={isResolving}
+                  className="btn btn-dark"
+                  style={{
+                    padding: '0.6rem 1.25rem',
+                    background: 'var(--green)',
+                    borderColor: 'var(--green)',
+                    color: '#fff',
+                  }}
+                  onClick={async () => {
+                    await handleResolveSupportTicket(selectedTicket.id);
+                  }}
+                >
+                  {isResolving ? 'Resolving...' : '✓ Mark as Resolved'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {toastMsg && (
         <div
           style={{

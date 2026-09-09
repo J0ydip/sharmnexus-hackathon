@@ -332,6 +332,86 @@ export function WorkerDashboardClient() {
         }
       })
       .catch(() => {});
+
+    // Sync any bookings created locally in browser session
+    try {
+      const storeStr = localStorage.getItem('shramnexus-customer-store-v3');
+      if (storeStr) {
+        const store = JSON.parse(storeStr);
+        const clientBookings = store?.state?.bookings || [];
+        const extraReqs: JobRequest[] = [];
+        const extraActive: ActiveJob[] = [];
+        const extraCompleted: CompletedJob[] = [];
+
+        clientBookings.forEach((cb: any) => {
+          if (cb.status === 'requested') {
+            extraReqs.push({
+              id: cb.id,
+              name: cb.customer_name || 'Household Customer',
+              service: cb.service_name || 'Home Service',
+              date: cb.scheduled_at || 'Today',
+              price: `₹ ${cb.estimated_price || 450}`,
+              dist: '1.2 km',
+              desc: cb.description || 'Verified job request through cooperative portal.',
+              address: cb.address || 'Address provided via dispatch',
+              otp: cb.otp,
+            });
+          } else if (cb.status === 'assigned' || cb.status === 'in_progress') {
+            extraActive.push({
+              id: cb.id,
+              name: cb.customer_name || 'Household Customer',
+              service: cb.service_name || 'Home Service',
+              date: cb.scheduled_at || 'Today',
+              price: `₹ ${cb.final_price || cb.estimated_price || 450}`,
+              address: cb.address || 'Address provided via dispatch',
+              otp: cb.otp,
+            });
+          } else if (cb.status === 'completed') {
+            extraCompleted.push({
+              id: cb.id,
+              name: cb.customer_name || 'Household Customer',
+              service: cb.service_name || 'Home Service',
+              date: 'Today',
+              price: `₹ ${cb.final_price || cb.estimated_price || 450}`,
+            });
+          }
+        });
+
+        if (extraReqs.length > 0) {
+          setJobRequests((prev) => {
+            const combined = [...extraReqs, ...prev];
+            const seen = new Set<string>();
+            return combined.filter((r) => {
+              if (!r.id || seen.has(r.id)) return false;
+              seen.add(r.id);
+              return true;
+            });
+          });
+        }
+        if (extraActive.length > 0) {
+          setActiveJobs((prev) => {
+            const combined = [...extraActive, ...prev];
+            const seen = new Set<string>();
+            return combined.filter((j) => {
+              if (!j.id || seen.has(j.id)) return false;
+              seen.add(j.id);
+              return true;
+            });
+          });
+        }
+        if (extraCompleted.length > 0) {
+          setCompletedJobs((prev) => {
+            const combined = [...extraCompleted, ...prev];
+            const seen = new Set<string>();
+            return combined.filter((c) => {
+              if (!c.id || seen.has(c.id)) return false;
+              seen.add(c.id);
+              return true;
+            });
+          });
+        }
+      }
+    } catch (e) {}
   }, []);
 
   const showToast = (msg: string) => {
@@ -373,12 +453,16 @@ export function WorkerDashboardClient() {
           date: found.date,
           price: found.price,
           address: found.address || 'Address provided via cooperative dispatch',
+          otp: found.otp,
         },
       ]);
       try {
-        if (!id.startsWith('REQ')) {
+        if (!id.startsWith('REQ') && !id.startsWith('SN-')) {
           await updateBookingStatus(id, 'assigned');
         }
+      } catch (err) {}
+      try {
+        useBookingStore.getState().updateBookingStatus(id, 'assigned');
       } catch (err) {}
       showToast('Job Accepted successfully!');
     }

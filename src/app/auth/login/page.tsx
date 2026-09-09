@@ -99,6 +99,7 @@ export default function AuthPage() {
     }
 
     const trimmedEmail = loginEmail.trim().toLowerCase();
+    const trimmedPassword = loginPassword.trim();
 
     // 🚨 SUPER ADMIN CREDENTIALS BYPASS 🚨
     const isAdminEmail =
@@ -107,7 +108,7 @@ export default function AuthPage() {
       trimmedEmail === 'admin@sharmnexus' ||
       trimmedEmail === 'admin@sharmnexus.com';
 
-    if (isAdminEmail && loginPassword === 'admin123') {
+    if (isAdminEmail && (trimmedPassword === 'admin123' || loginPassword === 'admin123')) {
       setIsLoading(true);
       try {
         await setAdminSession();
@@ -142,9 +143,11 @@ export default function AuthPage() {
       trimmedEmail === 'coop@shramnexus.com' ||
       trimmedEmail === 'coop@sharmnexus' ||
       trimmedEmail === 'coop@sharmnexus.com' ||
-      trimmedEmail === 'society@shramnexus.com';
+      trimmedEmail === 'society@shramnexus.com' ||
+      trimmedEmail === 'coop' ||
+      trimmedEmail.startsWith('coop@');
 
-    if ((isCoopEmail || selectedRole === 'cooperative') && loginPassword === 'coop123') {
+    if (isCoopEmail && (trimmedPassword === 'coop123' || loginPassword === 'coop123')) {
       setIsLoading(true);
       try {
         localStorage.setItem('shramnexus-coop-auth', 'true');
@@ -170,9 +173,11 @@ export default function AuthPage() {
     const isWorkerEmail =
       trimmedEmail === 'worker@shramnexus' ||
       trimmedEmail === 'worker@shramnexus.com' ||
-      trimmedEmail === 'worker@sharmnexus.com';
+      trimmedEmail === 'worker@sharmnexus.com' ||
+      trimmedEmail === 'worker' ||
+      trimmedEmail.startsWith('worker@');
 
-    if ((isWorkerEmail || selectedRole === 'worker') && loginPassword === 'worker123') {
+    if (isWorkerEmail && (trimmedPassword === 'worker123' || loginPassword === 'worker123')) {
       setIsLoading(true);
       try {
         const workerData = JSON.stringify({
@@ -198,9 +203,13 @@ export default function AuthPage() {
     const isCustomerEmail =
       trimmedEmail === 'customer@shramnexus' ||
       trimmedEmail === 'customer@shramnexus.com' ||
-      trimmedEmail === 'user@shramnexus.com';
+      trimmedEmail === 'customer@sharmnexus.com' ||
+      trimmedEmail === 'user@shramnexus.com' ||
+      trimmedEmail === 'customer' ||
+      trimmedEmail.startsWith('customer@') ||
+      trimmedEmail.startsWith('demo@');
 
-    if ((isCustomerEmail || selectedRole === 'customer') && loginPassword === 'customer123') {
+    if (isCustomerEmail && (trimmedPassword === 'customer123' || loginPassword === 'customer123')) {
       setIsLoading(true);
       try {
         const customerData = JSON.stringify({
@@ -590,29 +599,65 @@ export default function AuthPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '8px'
+                  gap: '8px',
+                  flexWrap: 'wrap'
                 }}>
                   <span>👤 <strong>Demo Customer</strong> (<code>customer@shramnexus.com</code> / <code>customer123</code>)</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail('customer@shramnexus.com');
-                      setLoginPassword('customer123');
-                    }}
-                    style={{
-                      background: '#2563eb',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '4px 10px',
-                      fontSize: '0.72rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Auto-Fill
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('customer@shramnexus.com');
+                        setLoginPassword('customer123');
+                        toast.success('Credentials filled! Click "Sign in" below.');
+                      }}
+                      style={{
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      Auto-Fill
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('customer@shramnexus.com');
+                        setLoginPassword('customer123');
+                        const customerData = JSON.stringify({
+                          isLoggedIn: true,
+                          role: 'customer',
+                          name: 'Pooja Verma',
+                          email: 'customer@shramnexus.com',
+                        });
+                        localStorage.setItem('shramnexus-auth', customerData);
+                        localStorage.setItem('sharmnexus-auth', customerData);
+                        toast.success('Welcome back, Pooja! Ready to book trusted services.');
+                        setTimeout(() => {
+                          window.location.href = getRedirectTarget('/');
+                        }, 300);
+                      }}
+                      style={{
+                        background: '#1d4ed8',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      1-Click Sign In ↗
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -629,29 +674,65 @@ export default function AuthPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '8px'
+                  gap: '8px',
+                  flexWrap: 'wrap'
                 }}>
                   <span>🛠️ <strong>Demo Worker</strong> (<code>worker@shramnexus.com</code> / <code>worker123</code>)</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail('worker@shramnexus.com');
-                      setLoginPassword('worker123');
-                    }}
-                    style={{
-                      background: 'var(--terracotta)',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '4px 10px',
-                      fontSize: '0.72rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Auto-Fill
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('worker@shramnexus.com');
+                        setLoginPassword('worker123');
+                        toast.success('Credentials filled! Click "Sign in" below.');
+                      }}
+                      style={{
+                        background: 'var(--terracotta)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      Auto-Fill
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('worker@shramnexus.com');
+                        setLoginPassword('worker123');
+                        const workerData = JSON.stringify({
+                          isLoggedIn: true,
+                          role: 'worker',
+                          name: 'Rajesh Sharma (Electrician)',
+                          email: 'worker@shramnexus.com',
+                        });
+                        localStorage.setItem('shramnexus-auth', workerData);
+                        localStorage.setItem('sharmnexus-auth', workerData);
+                        toast.success('Welcome back, Rajesh! Loading Worker Dashboard...');
+                        setTimeout(() => {
+                          window.location.href = getRedirectTarget('/worker-dashboard');
+                        }, 300);
+                      }}
+                      style={{
+                        background: '#b85435',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      1-Click Sign In ↗
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -668,29 +749,66 @@ export default function AuthPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '8px'
+                  gap: '8px',
+                  flexWrap: 'wrap'
                 }}>
                   <span>🏢 <strong>Cooperative Society Admin</strong> (<code>coop@shramnexus.com</code> / <code>coop123</code>)</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail('coop@shramnexus.com');
-                      setLoginPassword('coop123');
-                    }}
-                    style={{
-                      background: '#059669',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '4px 10px',
-                      fontSize: '0.72rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Auto-Fill
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('coop@shramnexus.com');
+                        setLoginPassword('coop123');
+                        toast.success('Credentials filled! Click "Sign in" below.');
+                      }}
+                      style={{
+                        background: '#059669',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      Auto-Fill
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('coop@shramnexus.com');
+                        setLoginPassword('coop123');
+                        localStorage.setItem('shramnexus-coop-auth', 'true');
+                        const coopData = JSON.stringify({
+                          isLoggedIn: true,
+                          role: 'cooperative',
+                          name: 'Shakti Labour Coop Admin',
+                          email: 'coop@shramnexus.com',
+                        });
+                        localStorage.setItem('shramnexus-auth', coopData);
+                        localStorage.setItem('sharmnexus-auth', coopData);
+                        toast.success('Welcome, Cooperative Society Administrator! Loading Portal...');
+                        setTimeout(() => {
+                          window.location.href = '/cooperative';
+                        }, 300);
+                      }}
+                      style={{
+                        background: '#047857',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      1-Click Sign In ↗
+                    </button>
+                  </div>
                 </div>
               )}
 

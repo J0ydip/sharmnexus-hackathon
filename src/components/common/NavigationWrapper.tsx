@@ -12,12 +12,35 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   useEffect(() => {
+    const checkLocal = () => {
+      try {
+        const localAuth = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
+        if (localAuth) {
+          const parsed = JSON.parse(localAuth);
+          if (parsed.isLoggedIn) return true;
+        }
+      } catch (e) {}
+      return false;
+    };
+
+    if (checkLocal()) {
+      setHasSession(true);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setHasSession(!!session?.user);
+      if (session?.user) {
+        setHasSession(true);
+      } else if (!checkLocal()) {
+        setHasSession(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setHasSession(!!session?.user);
+      if (session?.user) {
+        setHasSession(true);
+      } else if (!checkLocal()) {
+        setHasSession(false);
+      }
     });
 
     return () => {

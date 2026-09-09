@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/lib/store/bookingStore';
 import { useCustomerI18n } from '@/lib/i18n/customerTranslations';
+import { HelpSupportSection } from '@/components/common/HelpSupportSection';
 import {
   Search,
   Zap,
@@ -263,9 +264,17 @@ export function CustomerDashboard() {
         </div>
       </main>
 
+      {/* HELP & SUPPORT SECTION */}
+      <HelpSupportSection />
+
       {/* FOOTER */}
       <footer className="bg-[#24172f] border-t border-[#3d2b48] py-6 text-center text-xs text-[#c8bacb]">
-        {t?.footerText || 'ShramNexus © 2026. Built for SIH Problem Statement 26089 (Cooperative Gig Services Platform).'}
+        <div className="flex items-center justify-center gap-4 mb-2">
+          <a href="#support" className="text-[#e6aa3b] hover:underline font-semibold">
+            Need Help? Contact Support ↗
+          </a>
+        </div>
+        <span>{t?.footerText || 'ShramNexus © 2026. Built for SIH Problem Statement 26089 (Cooperative Gig Services Platform).'}</span>
       </footer>
     </div>
   );

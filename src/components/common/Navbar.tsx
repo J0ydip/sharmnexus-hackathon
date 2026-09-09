@@ -18,6 +18,7 @@ import {
   Sparkles,
   CheckCircle2,
   Clock,
+  HelpCircle,
 } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -130,6 +131,7 @@ export function Navbar() {
       badge: activeBookings.length > 0 ? activeBookings.length : undefined,
     },
     { href: '/#cooperatives', label: 'Cooperative', icon: Building2 },
+    { href: '/#support', label: 'Help & Support', icon: HelpCircle },
     {
       href: '/emergency',
       label: 'Emergency SOS',
@@ -137,6 +139,18 @@ export function Navbar() {
       isEmergency: true,
     },
   ];
+
+  const handleNavScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('/#') && pathname === '/') {
+      e.preventDefault();
+      const targetId = href.replace('/#', '');
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.history.pushState(null, '', href);
+      }
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200/80 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-2xs">
@@ -171,6 +185,7 @@ export function Navbar() {
                     <Link
                       key={link.href}
                       href={link.href}
+                      onClick={(e) => handleNavScroll(e, link.href)}
                       className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                         link.isEmergency
                           ? 'bg-red-50 text-red-700 hover:bg-red-100 font-bold'
@@ -270,6 +285,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={(e) => handleNavScroll(e, link.href)}
                 className={`relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   isActive
                     ? 'bg-[#fbf7ef] text-[#24172f] font-bold'

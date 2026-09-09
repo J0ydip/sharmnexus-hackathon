@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { createClient } from '@/lib/supabase/client';
 import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
+import { HelpSupportSection } from '@/components/common/HelpSupportSection';
 import './landing.css';
 
 export default function LandingPage() {
@@ -16,10 +17,21 @@ export default function LandingPage() {
     async function checkAuth() {
       try {
         const localAuth = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
-        if (!localAuth) {
-          setIsAuthenticated(false);
-          return;
+        if (localAuth) {
+          try {
+            const parsed = JSON.parse(localAuth);
+            if (parsed.isLoggedIn) {
+              setIsAuthenticated(true);
+              const type = parsed.role || 'customer';
+              setUserType(type);
+              if (type === 'worker') {
+                window.location.href = '/worker-dashboard';
+              }
+              return;
+            }
+          } catch (e) {}
         }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           setIsAuthenticated(true);
@@ -69,6 +81,7 @@ export default function LandingPage() {
         <a href="#services" data-i18n="nav_services">Services</a>
         <a href="#communities" data-i18n="nav_communities">For communities</a>
         <a href="#cooperatives" data-i18n="nav_cooperatives">For cooperatives</a>
+        <a href="#support" data-i18n="nav_support">Help &amp; Support</a>
       </div>
       <div className="nav-actions">
         <select id="nav-language-select" aria-label="Choose language" defaultValue="en">
@@ -291,6 +304,8 @@ export default function LandingPage() {
             </div></section>
 
         <section className="final-cta"><div className="cta-sun"></div><div className="section-kicker" data-i18n="final_kicker">READY WHEN YOU ARE</div><h2 data-i18n-html="final_h2">Your next service is just<br /><em>a few clicks away.</em></h2><p data-i18n="final_p">Find trusted professionals. Support skilled workers. Strengthen local cooperatives.</p><div className="hero-actions"><a className="button button-dark" href="/auth/login"><span data-i18n="hero_cta_find">Find a service</span> <span>↗</span></a><a className="button button-outline-dark" href="/auth/login"><span data-i18n="hero_cta_join">Join as a worker</span> <span>↗</span></a></div></section>
+
+        <HelpSupportSection />
     </main>
 
     <footer className="footer">
@@ -339,7 +354,7 @@ export default function LandingPage() {
             <a href="/auth/login">Customer Login</a>
             <a href="/auth/worker-register">Join as Worker</a>
             <a href="/auth/login">Get Started</a>
-            <a href="mailto:support@shramnexus.com">Contact Support</a>
+            <a href="#support">Contact Support</a>
           </div>
         </div>
       </div>

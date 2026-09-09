@@ -19,7 +19,7 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
   // Authorization: fetch the booking to verify ownership / eligibility
   const { data: existingBooking } = await supabase
     .from('bookings')
-    .select('id, customer_id, worker_id, status')
+    .select('id, customer_id, worker_id, status, estimated_price, final_price')
     .eq('id', bookingId)
     .maybeSingle();
 
@@ -66,18 +66,50 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
     throw new Error('Failed to update booking status: ' + error.message);
   }
 
-  // If completed and caller is worker, increment completed count
-  if (newStatus === 'completed' && worker) {
-    await supabase
-      .from('workers')
-      .update({ total_jobs_completed: (worker.total_jobs_completed || 0) + 1 })
-      .eq('id', user.id);
+  // If completed and caller is worker, increment completed count and ensure payment record exists for admin
+  if (newStatus === 'completed') {
+    if (worker) {
+      await supabase
+        .from('workers')
+        .update({ total_jobs_completed: (worker.total_jobs_completed || 0) + 1 })
+        .eq('id', user.id);
+    }
+
+    // Check if payment already recorded (e.g. via online Razorpay)
+    const { data: existingPayment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('booking_id', bookingId)
+      .maybeSingle();
+
+    if (!existingPayment) {
+      const gross = Number(existingBooking.final_price) || Number(existingBooking.estimated_price) || 450;
+      const workerPayout = Math.round(gross * 0.85);
+      const cooperativeShare = Math.round(gross * 0.05);
+      const platformFee = Math.round(gross * 0.10);
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId);
+      if (isUuid) {
+        await supabase.from('payments').insert({
+          booking_id: bookingId,
+          amount: gross,
+          platform_fee: platformFee,
+          worker_payout: workerPayout,
+          cooperative_share: cooperativeShare,
+          status: 'completed',
+          method: 'pin_verified',
+          paid_at: new Date().toISOString(),
+          razorpay_payment_id: `pin_verified_${bookingId.substring(0, 8)}`,
+        });
+      }
+    }
   }
 
   revalidatePath('/jobs');
   revalidatePath('/worker-dashboard');
   revalidatePath('/earnings');
   revalidatePath('/history');
+  revalidatePath('/admin');
 }
 
 export async function getWorkerDashboardData() {
