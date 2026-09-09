@@ -169,73 +169,35 @@ export default function AuthPage() {
         return;
       }
     }
-    // 🛠️ WORKER DEMO CREDENTIALS BYPASS 🛠️
-    const isWorkerEmail =
-      trimmedEmail === 'worker@shramnexus' ||
-      trimmedEmail === 'worker@shramnexus.com' ||
-      trimmedEmail === 'worker@sharmnexus.com' ||
-      trimmedEmail === 'worker' ||
-      trimmedEmail.startsWith('worker@');
+    let effectiveEmail = loginEmail.trim();
+    let effectivePassword = loginPassword.trim();
 
-    if (isWorkerEmail && (trimmedPassword === 'worker123' || loginPassword === 'worker123')) {
-      setIsLoading(true);
-      try {
-        const workerData = JSON.stringify({
-          isLoggedIn: true,
-          role: 'worker',
-          name: 'Rajesh Sharma (Electrician)',
-          email: trimmedEmail || 'worker@shramnexus.com',
-        });
-        localStorage.setItem('shramnexus-auth', workerData);
-        localStorage.setItem('sharmnexus-auth', workerData);
-        toast.success('Welcome back, Rajesh! Loading Worker Dashboard...');
-        setTimeout(() => {
-          window.location.href = getRedirectTarget('/worker-dashboard');
-        }, 400);
-        return;
-      } catch (err) {
-        window.location.href = '/worker-dashboard';
-        return;
-      }
+    // Map worker shortcut to real Supabase worker account
+    const isWorkerShortcut =
+      trimmedEmail === 'worker' ||
+      trimmedEmail === 'worker@shramnexus' ||
+      trimmedEmail === 'worker@sharmnexus.com';
+    if (isWorkerShortcut && (effectivePassword === 'worker123' || effectivePassword === 'password123')) {
+      effectiveEmail = 'worker@shramnexus.com';
+      effectivePassword = 'worker123';
     }
 
-    // 👤 CUSTOMER DEMO CREDENTIALS BYPASS 👤
-    const isCustomerEmail =
-      trimmedEmail === 'customer@shramnexus' ||
-      trimmedEmail === 'customer@shramnexus.com' ||
-      trimmedEmail === 'customer@sharmnexus.com' ||
-      trimmedEmail === 'user@shramnexus.com' ||
+    // Map customer shortcut to real Supabase customer account
+    const isCustomerShortcut =
       trimmedEmail === 'customer' ||
-      trimmedEmail.startsWith('customer@') ||
-      trimmedEmail.startsWith('demo@');
-
-    if (isCustomerEmail && (trimmedPassword === 'customer123' || loginPassword === 'customer123')) {
-      setIsLoading(true);
-      try {
-        const customerData = JSON.stringify({
-          isLoggedIn: true,
-          role: 'customer',
-          name: 'Pooja Verma',
-          email: trimmedEmail || 'customer@shramnexus.com',
-        });
-        localStorage.setItem('shramnexus-auth', customerData);
-        localStorage.setItem('sharmnexus-auth', customerData);
-        toast.success('Welcome back, Pooja! Ready to book trusted services.');
-        setTimeout(() => {
-          window.location.href = getRedirectTarget('/');
-        }, 400);
-        return;
-      } catch (err) {
-        window.location.href = '/';
-        return;
-      }
+      trimmedEmail === 'customer@shramnexus' ||
+      trimmedEmail === 'customer@sharmnexus.com' ||
+      trimmedEmail === 'user@shramnexus.com';
+    if (isCustomerShortcut && (effectivePassword === 'customer123' || effectivePassword === 'password123')) {
+      effectiveEmail = 'customer@shramnexus.com';
+      effectivePassword = 'customer123';
     }
 
     setIsLoading(true);
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({ 
-        email: loginEmail, 
-        password: loginPassword 
+        email: effectiveEmail, 
+        password: effectivePassword 
       });
       if (error) {
         toast.error(error.message);

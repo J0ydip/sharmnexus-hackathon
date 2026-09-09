@@ -159,12 +159,9 @@ export default function EmergencyBookingPage() {
       selectedWorker: worker,
     });
 
-    const newBooking = createBookingFromDraft();
-    toast.success(`Emergency SOS dispatched! Booking ${newBooking.id} created.`);
-
-    // Sync emergency booking to Supabase
+    let realBookingId: string | null = null;
     try {
-      createBooking({
+      const res = await createBooking({
         worker_id: worker.id,
         service_category_id: selectedCategory.id,
         service_category_name: selectedCategory.name,
@@ -173,12 +170,26 @@ export default function EmergencyBookingPage() {
         booking_type: 'emergency',
         estimated_price: Math.round(selectedCategory.base_price * emergencyMultiplier),
         scheduled_at: new Date().toISOString(),
-      }).catch(err => console.warn('Supabase emergency sync error:', err));
+      });
+      if (res?.data?.id) {
+        realBookingId = res.data.id;
+      }
     } catch (err) {
       console.warn('Emergency booking sync warning:', err);
     }
 
-    router.push(`/track/${newBooking.id}`);
+    const newBooking = createBookingFromDraft();
+    if (realBookingId) {
+      newBooking.id = realBookingId;
+      try {
+        useBookingStore.setState((state) => ({
+          bookings: [newBooking, ...state.bookings.filter((b) => b.id !== newBooking.id)],
+        }));
+      } catch (e) {}
+    }
+
+    toast.success(`Emergency SOS dispatched! Worker assigned.`);
+    router.push(`/track/${realBookingId || newBooking.id}`);
   };
 
   return (

@@ -155,48 +155,12 @@ export function WorkerDashboardClient() {
   const [workerSociety, setWorkerSociety] = useState('Labour Welfare Cooperative Society');
   const [workerLanguages, setWorkerLanguages] = useState('Hindi, English');
 
-  // Job data
-  const [jobRequests, setJobRequests] = useState<JobRequest[]>([
-    {
-      id: 'REQ001',
-      name: 'Sanjay Verma',
-      service: 'Leaking Pipe Repair',
-      date: 'Today, 2:00 PM',
-      price: '₹ 450',
-      dist: '1.2 km',
-      desc: 'Kitchen sink main pipe is leaking heavily and needs urgent joint replacement.',
-    },
-    {
-      id: 'REQ002',
-      name: 'Anjali Desai',
-      service: 'Geyser Installation & Check',
-      date: 'Tomorrow, 10:00 AM',
-      price: '₹ 800',
-      dist: '3.5 km',
-      desc: 'Need a new 15L geyser safely installed and connected in the master bathroom.',
-    },
-  ]);
-
-  const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([
-    {
-      id: 'JOB099',
-      name: 'Karan Singh',
-      service: 'Bathroom Tap Replacement',
-      date: 'Today, 5:00 PM',
-      price: '₹ 300',
-      address: 'Flat 302, Bailey Road, Patna',
-    },
-  ]);
-
-  const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([
-    {
-      id: 'JOB098',
-      name: 'Priya Sharma',
-      service: 'Kitchen Water Line Seal',
-      date: 'Yesterday',
-      price: '₹ 450',
-    },
-  ]);
+  // Job data - 100% Real Database Driven
+  const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
+  const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
+  const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [isAcceptingId, setIsAcceptingId] = useState<string | null>(null);
 
   // Jobs tab state
   const [jobsTab, setJobsTab] = useState<'active' | 'pending' | 'completed'>('active');
@@ -266,9 +230,10 @@ export function WorkerDashboardClient() {
     }
     verifyWorkerAccess();
 
-    // Fetch live backend data if available with deduplication
-    getWorkerDashboardData()
-      .then((res) => {
+    // Fetch live backend data directly from Supabase
+    async function fetchDashboardData() {
+      try {
+        const res = await getWorkerDashboardData();
         if (!res) return;
         if (res.worker) {
           const w = res.worker as any;
@@ -288,47 +253,35 @@ export function WorkerDashboardClient() {
             setWorkerSociety(`${soc.name}${soc.district ? ` (${soc.district})` : ''}`);
           }
         }
-        if (res.requests && res.requests.length > 0) {
+        if (res.requests) {
           const liveRequests: JobRequest[] = res.requests.map((r: any) => ({
             id: r.id,
             name: r.customers?.full_name || 'Household Customer',
+            phone: r.customers?.phone || '',
             service: r.service_categories?.name || 'General Maintenance',
             date: r.scheduled_at ? new Date(r.scheduled_at).toLocaleDateString() : 'Today',
             price: `₹ ${r.final_price || r.estimated_price || 400}`,
-            dist: '1.5 km',
+            dist: '1.2 km',
             desc: r.description || 'Verified job request through cooperative portal.',
             address: r.address || 'Address provided via dispatch',
+            otp: getBookingOtp(r.id),
           }));
-          setJobRequests((prev) => {
-            const combined = [...liveRequests, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((r) => {
-              if (!r.id || seen.has(r.id)) return false;
-              seen.add(r.id);
-              return true;
-            });
-          });
+          setJobRequests(liveRequests);
         }
-        if (res.activeJobs && res.activeJobs.length > 0) {
+        if (res.activeJobs) {
           const liveActive: ActiveJob[] = res.activeJobs.map((j: any) => ({
             id: j.id,
             name: j.customers?.full_name || 'Customer',
+            phone: j.customers?.phone || '',
             service: j.service_categories?.name || 'Cooperative Service',
             date: j.scheduled_at ? new Date(j.scheduled_at).toLocaleDateString() : 'Today',
             price: `₹ ${j.final_price || j.estimated_price || 400}`,
             address: j.address || 'Customer Location',
+            otp: getBookingOtp(j.id),
           }));
-          setActiveJobs((prev) => {
-            const combined = [...liveActive, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((j) => {
-              if (!j.id || seen.has(j.id)) return false;
-              seen.add(j.id);
-              return true;
-            });
-          });
+          setActiveJobs(liveActive);
         }
-        if (res.completedJobs && res.completedJobs.length > 0) {
+        if (res.completedJobs) {
           const liveCompleted: CompletedJob[] = res.completedJobs.map((c: any) => ({
             id: c.id,
             name: c.customers?.full_name || 'Customer',
@@ -336,98 +289,19 @@ export function WorkerDashboardClient() {
             date: c.completed_at ? new Date(c.completed_at).toLocaleDateString() : 'Recent',
             price: `₹ ${c.final_price || c.estimated_price || 400}`,
           }));
-          setCompletedJobs((prev) => {
-            const combined = [...liveCompleted, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((c) => {
-              if (!c.id || seen.has(c.id)) return false;
-              seen.add(c.id);
-              return true;
-            });
-          });
+          setCompletedJobs(liveCompleted);
         }
-      })
-      .catch(() => {});
-
-    // Sync any bookings created locally in browser session
-    try {
-      const storeStr = localStorage.getItem('shramnexus-customer-store-v3');
-      if (storeStr) {
-        const store = JSON.parse(storeStr);
-        const clientBookings = store?.state?.bookings || [];
-        const extraReqs: JobRequest[] = [];
-        const extraActive: ActiveJob[] = [];
-        const extraCompleted: CompletedJob[] = [];
-
-        clientBookings.forEach((cb: any) => {
-          if (cb.status === 'requested') {
-            extraReqs.push({
-              id: cb.id,
-              name: cb.customer_name || 'Household Customer',
-              service: cb.service_name || 'Home Service',
-              date: cb.scheduled_at || 'Today',
-              price: `₹ ${cb.estimated_price || 450}`,
-              dist: '1.2 km',
-              desc: cb.description || 'Verified job request through cooperative portal.',
-              address: cb.address || 'Address provided via dispatch',
-              otp: cb.otp,
-            });
-          } else if (cb.status === 'assigned' || cb.status === 'in_progress') {
-            extraActive.push({
-              id: cb.id,
-              name: cb.customer_name || 'Household Customer',
-              service: cb.service_name || 'Home Service',
-              date: cb.scheduled_at || 'Today',
-              price: `₹ ${cb.final_price || cb.estimated_price || 450}`,
-              address: cb.address || 'Address provided via dispatch',
-              otp: cb.otp,
-            });
-          } else if (cb.status === 'completed') {
-            extraCompleted.push({
-              id: cb.id,
-              name: cb.customer_name || 'Household Customer',
-              service: cb.service_name || 'Home Service',
-              date: 'Today',
-              price: `₹ ${cb.final_price || cb.estimated_price || 450}`,
-            });
-          }
-        });
-
-        if (extraReqs.length > 0) {
-          setJobRequests((prev) => {
-            const combined = [...extraReqs, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((r) => {
-              if (!r.id || seen.has(r.id)) return false;
-              seen.add(r.id);
-              return true;
-            });
-          });
-        }
-        if (extraActive.length > 0) {
-          setActiveJobs((prev) => {
-            const combined = [...extraActive, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((j) => {
-              if (!j.id || seen.has(j.id)) return false;
-              seen.add(j.id);
-              return true;
-            });
-          });
-        }
-        if (extraCompleted.length > 0) {
-          setCompletedJobs((prev) => {
-            const combined = [...extraCompleted, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((c) => {
-              if (!c.id || seen.has(c.id)) return false;
-              seen.add(c.id);
-              return true;
-            });
-          });
-        }
+      } catch (err) {
+        console.error('Error fetching worker dashboard data:', err);
+      } finally {
+        setIsLoadingJobs(false);
       }
-    } catch (e) {}
+    }
+
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const showToast = (msg: string) => {
@@ -457,34 +331,38 @@ export function WorkerDashboardClient() {
   };
 
   const handleAcceptRequest = async (id: string) => {
-    const found = jobRequests.find((r) => r.id === id);
-    if (found) {
-      setJobRequests((prev) => prev.filter((r) => r.id !== id));
-      setActiveJobs((prev) => [
-        ...prev,
-        {
-          id: id.startsWith('REQ') ? `JOB-${id}` : id,
-          name: found.name,
-          service: found.service,
-          date: found.date,
-          price: found.price,
-          address: found.address || 'Address provided via cooperative dispatch',
-          otp: found.otp,
-        },
-      ]);
+    setIsAcceptingId(id);
+    try {
+      await updateBookingStatus(id, 'accepted');
+      const found = jobRequests.find((r) => r.id === id);
+      if (found) {
+        setJobRequests((prev) => prev.filter((r) => r.id !== id));
+        setActiveJobs((prev) => [
+          {
+            id: found.id,
+            name: found.name,
+            service: found.service,
+            date: found.date,
+            price: found.price,
+            address: found.address || 'Address provided via cooperative dispatch',
+            otp: found.otp,
+          },
+          ...prev,
+        ]);
+      }
       try {
-        if (!id.startsWith('REQ') && !id.startsWith('SN-')) {
-          await updateBookingStatus(id, 'assigned');
-        }
+        useBookingStore.getState().updateBookingStatus(id, 'accepted');
       } catch (err) {}
-      try {
-        useBookingStore.getState().updateBookingStatus(id, 'assigned');
-      } catch (err) {}
-      showToast('Job Accepted successfully!');
+      showToast('✅ Job Accepted successfully! Moved to Active Jobs.');
+    } catch (err: any) {
+      console.error('Accept job error:', err);
+      showToast(`❌ Could not accept job: ${err?.message || 'Server error'}`);
+    } finally {
+      setIsAcceptingId(null);
     }
   };
 
-  const handleRejectRequest = (id: string) => {
+  const handleRejectRequest = async (id: string) => {
     setJobRequests((prev) => prev.filter((r) => r.id !== id));
     showToast('Job Request rejected.');
   };
@@ -520,31 +398,32 @@ export function WorkerDashboardClient() {
     const workerEarning = Math.round(numPrice * 0.85);
 
     try {
-      if (!completingJob.id.startsWith('JOB-REQ') && !completingJob.id.startsWith('JOB0')) {
-        await updateBookingStatus(completingJob.id, 'completed');
-      }
-    } catch (err) {}
+      await updateBookingStatus(completingJob.id, 'completed');
+      try {
+        useBookingStore.getState().updateBookingStatus(completingJob.id, 'completed');
+      } catch (err) {}
 
-    try {
-      useBookingStore.getState().updateBookingStatus(completingJob.id, 'completed');
-    } catch (err) {}
+      setActiveJobs((prev) => prev.filter((j) => j.id !== completingJob.id));
+      setCompletedJobs((prev) => [
+        {
+          id: completingJob.id,
+          name: completingJob.name,
+          service: completingJob.service,
+          date: 'Just now',
+          price: completingJob.price,
+        },
+        ...prev,
+      ]);
 
-    setActiveJobs((prev) => prev.filter((j) => j.id !== completingJob.id));
-    setCompletedJobs((prev) => [
-      {
-        id: completingJob.id,
-        name: completingJob.name,
-        service: completingJob.service,
-        date: 'Today',
-        price: completingJob.price,
-      },
-      ...prev,
-    ]);
-
-    setIsSubmittingCompletion(false);
-    setCompletingJob(null);
-    setJobsTab('completed');
-    showToast(`🎉 Verified! Job completed. ₹${workerEarning} credited to your Cooperative Passbook.`);
+      setCompletingJob(null);
+      setJobsTab('completed');
+      showToast(`🎉 Verified! Job completed. ₹${workerEarning} credited to your Cooperative Passbook.`);
+    } catch (err: any) {
+      console.error('Error completing job:', err);
+      showToast(`❌ Could not complete job: ${err?.message || 'Database error'}`);
+    } finally {
+      setIsSubmittingCompletion(false);
+    }
   };
 
   const handleOpenChat = (customerName: string) => {
@@ -773,7 +652,9 @@ export function WorkerDashboardClient() {
               Recent Incoming Requests
             </h2>
             <div className="worker-requests-grid mt-2">
-              {jobRequests.length === 0 ? (
+              {isLoadingJobs && jobRequests.length === 0 ? (
+                <p className="text-muted">Connecting to cooperative dispatch network...</p>
+              ) : jobRequests.length === 0 ? (
                 <p className="text-muted">No pending job requests right now. You are ready to accept new work.</p>
               ) : (
                 jobRequests.map((req, idx) => (
@@ -798,9 +679,10 @@ export function WorkerDashboardClient() {
                       <button
                         type="button"
                         className="worker-btn worker-btn-gold"
+                        disabled={isAcceptingId === req.id}
                         onClick={() => handleAcceptRequest(req.id)}
                       >
-                        Accept Job
+                        {isAcceptingId === req.id ? 'Accepting...' : 'Accept Job'}
                       </button>
                     </div>
                   </div>
@@ -816,7 +698,9 @@ export function WorkerDashboardClient() {
             <h1 className="worker-page-title">Incoming Job Requests</h1>
             <p className="worker-page-subtitle">Review, accept, and schedule requests from your district cooperative cluster.</p>
             <div className="worker-requests-grid mt-4">
-              {jobRequests.length === 0 ? (
+              {isLoadingJobs && jobRequests.length === 0 ? (
+                <p className="text-muted">Loading incoming job requests from cooperative dispatch...</p>
+              ) : jobRequests.length === 0 ? (
                 <p className="text-muted">No new requests at the moment.</p>
               ) : (
                 jobRequests.map((req, idx) => (
@@ -841,9 +725,10 @@ export function WorkerDashboardClient() {
                       <button
                         type="button"
                         className="worker-btn worker-btn-gold"
+                        disabled={isAcceptingId === req.id}
                         onClick={() => handleAcceptRequest(req.id)}
                       >
-                        Accept Job
+                        {isAcceptingId === req.id ? 'Accepting...' : 'Accept Job'}
                       </button>
                     </div>
                   </div>

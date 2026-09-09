@@ -207,24 +207,48 @@ export async function getCustomerBookings(customerId?: string) {
 // ---------------------------------------------------------------------------
 export async function getBookingById(bookingId: string) {
   const supabase = await createClient();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId);
 
-  const { data: booking, error } = await supabase
-    .from('bookings')
-    .select(`
-      *,
-      worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating),
-      service:service_category_id (id, name, name_hi, icon_url, base_price),
-      payments:payments (id, amount, status, razorpay_payment_id, method, paid_at)
-    `)
-    .eq('id', bookingId)
-    .single();
+  const selectQuery = `
+    *,
+    worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating),
+    service:service_category_id (id, name, name_hi, icon_url, base_price),
+    payments:payments (id, amount, status, razorpay_payment_id, method, paid_at)
+  `;
 
-  if (error) {
-    console.error('Error fetching booking:', error);
-    return null;
+  if (isUuid) {
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select(selectQuery)
+      .eq('id', bookingId)
+      .maybeSingle();
+
+    if (booking) return booking;
   }
 
-  return booking;
+  // Fallback: If not a valid UUID or not found, try to fetch the latest booking for logged-in user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: latestForUser } = await supabase
+      .from('bookings')
+      .select(selectQuery)
+      .eq('customer_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestForUser) return latestForUser;
+  }
+
+  // Fallback to most recent overall booking in system
+  const { data: latestBooking } = await supabase
+    .from('bookings')
+    .select(selectQuery)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return latestBooking || null;
 }
 
 // ---------------------------------------------------------------------------

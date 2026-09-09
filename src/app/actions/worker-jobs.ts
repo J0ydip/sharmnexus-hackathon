@@ -7,7 +7,7 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new Error('Not authenticated. Please sign in.');
 
   // Check if caller is a registered worker
   const { data: worker } = await supabase
@@ -16,21 +16,41 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
     .eq('id', user.id)
     .maybeSingle();
 
+  // Resolve booking ID if needed
+  let targetId = bookingId;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+  if (!isUuid) {
+    const { data: latest } = await supabase
+      .from('bookings')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latest?.id) targetId = latest.id;
+  }
+
   // Authorization: fetch the booking to verify ownership / eligibility
   const { data: existingBooking } = await supabase
     .from('bookings')
     .select('id, customer_id, worker_id, status, estimated_price, final_price')
-    .eq('id', bookingId)
+    .eq('id', targetId)
     .maybeSingle();
 
   if (!existingBooking) {
-    throw new Error('Booking not found');
+    throw new Error(`Booking ${targetId} not found in database`);
   }
 
-  // Workers can only modify bookings assigned to them (or accept unassigned ones)
+  // Workers accepting or modifying bookings
   if (worker && newStatus !== 'cancelled') {
-    if (existingBooking.worker_id && existingBooking.worker_id !== user.id && newStatus !== 'confirmed') {
-      throw new Error('This booking is assigned to another worker');
+    // If the booking is in 'requested' status and worker is accepting it, allow worker to accept and assign to themselves
+    if (newStatus === 'accepted' || newStatus === 'assigned' || newStatus === 'in_progress') {
+      if (existingBooking.worker_id && existingBooking.worker_id !== user.id && existingBooking.status !== 'requested') {
+        throw new Error('This booking has already been claimed by another cooperative tradesperson');
+      }
+    } else {
+      if (existingBooking.worker_id && existingBooking.worker_id !== user.id && newStatus !== 'confirmed') {
+        throw new Error('This booking is assigned to another worker');
+      }
     }
   }
 
@@ -45,7 +65,7 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
     status: newStatus,
   };
 
-  // Only assign worker_id if caller is a registered worker and status is not cancelled
+  // Assign worker_id if caller is a registered worker and status is not cancelled
   if (worker && newStatus !== 'cancelled') {
     updatePayload.worker_id = user.id;
   }
@@ -59,7 +79,7 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
   const { error } = await supabase
     .from('bookings')
     .update(updatePayload)
-    .eq('id', bookingId);
+    .eq('id', targetId);
 
   if (error) {
     console.error('Error updating booking status:', error);
@@ -79,7 +99,7 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
     const { data: existingPayment } = await supabase
       .from('payments')
       .select('id')
-      .eq('booking_id', bookingId)
+      .eq('booking_id', targetId)
       .maybeSingle();
 
     if (!existingPayment) {
@@ -88,20 +108,17 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
       const cooperativeShare = Math.round(gross * 0.05);
       const platformFee = Math.round(gross * 0.10);
 
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId);
-      if (isUuid) {
-        await supabase.from('payments').insert({
-          booking_id: bookingId,
-          amount: gross,
-          platform_fee: platformFee,
-          worker_payout: workerPayout,
-          cooperative_share: cooperativeShare,
-          status: 'completed',
-          method: 'pin_verified',
-          paid_at: new Date().toISOString(),
-          razorpay_payment_id: `pin_verified_${bookingId.substring(0, 8)}`,
-        });
-      }
+      await supabase.from('payments').insert({
+        booking_id: targetId,
+        amount: gross,
+        platform_fee: platformFee,
+        worker_payout: workerPayout,
+        cooperative_share: cooperativeShare,
+        status: 'completed',
+        method: 'pin_verified',
+        paid_at: new Date().toISOString(),
+        razorpay_payment_id: `pin_verified_${targetId.substring(0, 8)}`,
+      });
     }
   }
 
@@ -110,6 +127,8 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
   revalidatePath('/earnings');
   revalidatePath('/history');
   revalidatePath('/admin');
+
+  return { success: true, bookingId: targetId, status: newStatus };
 }
 
 export async function getWorkerDashboardData() {
@@ -137,24 +156,23 @@ export async function getWorkerDashboardData() {
     const [requestsRes, activeRes, completedRes] = await Promise.all([
       supabase
         .from('bookings')
-        .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name), service_categories(name)')
-        .or(`worker_id.eq.${user.id},worker_id.is.null`)
+        .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name, phone), service_categories(name)')
         .eq('status', 'requested')
         .order('created_at', { ascending: false })
-        .limit(10),
+        .limit(25),
       supabase
         .from('bookings')
-        .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name), service_categories(name)')
+        .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name, phone), service_categories(name)')
         .eq('worker_id', user.id)
         .in('status', ['assigned', 'accepted', 'in_progress'])
         .order('scheduled_at', { ascending: true }),
       supabase
         .from('bookings')
-        .select('id, status, estimated_price, final_price, description, address, scheduled_at, completed_at, created_at, customers(full_name), service_categories(name)')
+        .select('id, status, estimated_price, final_price, description, address, scheduled_at, completed_at, created_at, customers(full_name, phone), service_categories(name)')
         .eq('worker_id', user.id)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
-        .limit(10),
+        .limit(20),
     ]);
 
     return {

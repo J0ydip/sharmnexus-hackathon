@@ -256,6 +256,8 @@ function BookingFlowContent({ params }: PageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleConfirmBooking = async () => {
     const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
     const { data: { session } } = await supabase.auth.getSession();
@@ -266,15 +268,13 @@ function BookingFlowContent({ params }: PageProps) {
       return;
     }
 
-    const newBooking = createBookingFromDraft();
-    setCreatedBooking(newBooking);
-    setStep('success');
-    toast.success(`Booking ${newBooking.id} created successfully!`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsSubmitting(true);
+    let realBookingId: string | null = null;
 
-    // Persist booking to Supabase
+    // Persist booking directly to Supabase first
     try {
-      await createBooking({
+      const res = await createBooking({
+        customer_id: session?.user?.id,
         worker_id: draft.selectedWorkerId || 'worker-rajesh-kumar',
         worker_name: draft.selectedWorker?.full_name || selectedWorker?.full_name,
         service_category_id: draft.serviceCategoryId,
@@ -287,9 +287,30 @@ function BookingFlowContent({ params }: PageProps) {
         latitude: draft.lat,
         longitude: draft.lng,
       });
+
+      if (res?.data?.id) {
+        realBookingId = res.data.id;
+      }
     } catch (err) {
       console.warn('Could not sync booking to Supabase:', err);
     }
+
+    const newBooking = createBookingFromDraft();
+    if (realBookingId) {
+      newBooking.id = realBookingId;
+      // Update in store with real ID
+      try {
+        useBookingStore.setState((state) => ({
+          bookings: [newBooking, ...state.bookings.filter((b) => b.id !== newBooking.id)],
+        }));
+      } catch (e) {}
+    }
+
+    setCreatedBooking(newBooking);
+    setStep('success');
+    toast.success(`Booking ${newBooking.id.substring(0, 8)} created successfully!`);
+    setIsSubmitting(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (

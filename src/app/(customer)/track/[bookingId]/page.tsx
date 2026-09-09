@@ -52,69 +52,75 @@ export default function BookingTrackingPage({ params }: PageProps) {
 
   useEffect(() => {
     setMounted(true);
+    let isMounted = true;
+
     async function loadDb() {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId);
-      if (isUuid) {
-        try {
-          const b = await getBookingByIdAction(bookingId);
-          if (b) {
-            const hasPaid = (b.payments && b.payments.some((p: any) => p.status === 'completed')) || b.status === 'completed';
-            const latestPayment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
-            setDbBooking({
-              id: b.id,
-              customer_id: b.customer_id,
-              customer_name: 'Customer',
-              customer_phone: '',
-              worker_id: b.worker_id || 'unassigned',
-              worker: b.worker ? {
-                id: b.worker.id,
-                full_name: b.worker.full_name,
-                phone: b.worker.phone || '',
-                society_name: 'Cooperative Society',
-                profile_photo_url: b.worker.profile_photo_url || '',
-                profession: b.service?.name || 'Service Professional',
-                avg_rating: b.worker.avg_rating || 4.8,
-                approx_distance_km: 2.5,
-                hourly_rate: 300,
-                is_verified: true,
-                verification_status: 'verified',
-                cooperative_member_id: 'MEM-001',
-                total_jobs_completed: 12,
-                skills: [b.service?.name || 'General'],
-                badges: ['Verified'],
-                availability: 'Immediate (within 45 mins)',
-                experience_years: 4,
-                rating_count: 15,
-              } : (workers[0] || ({} as any)),
-              service_category_id: b.service_category_id || '',
-              service_name: b.service?.name || 'Service',
-              service_icon: b.service?.icon_url || 'Droplet',
-              booking_type: b.booking_type || 'scheduled',
-              status: b.status || 'requested',
-              urgency: 'normal',
-              description: b.description || '',
-              address: b.address || '',
-              city: b.city || 'Kolkata',
-              lat: b.latitude || 22.5726,
-              lng: b.longitude || 88.3639,
-              scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
-              time_slot: 'Scheduled',
-              estimated_price: b.estimated_price || 350,
-              final_price: b.final_price || b.estimated_price || 350,
-              otp: getBookingOtp(b.id),
-              payment_status: hasPaid ? 'completed' : 'pending',
-              payment_method: hasPaid
-                ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
-                : (b.payment_method || 'Pay after service'),
-              created_at: b.created_at,
-            } as any);
-          }
-        } catch (err) {
-          console.warn('Could not fetch Supabase booking:', err);
+      try {
+        const b = await getBookingByIdAction(bookingId);
+        if (b && isMounted) {
+          const hasPaid = (b.payments && b.payments.some((p: any) => p.status === 'completed')) || b.status === 'completed';
+          const latestPayment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
+          setDbBooking({
+            id: b.id,
+            customer_id: b.customer_id,
+            customer_name: b.customers?.full_name || 'Customer',
+            customer_phone: b.customers?.phone || '',
+            worker_id: b.worker_id || 'unassigned',
+            worker: b.worker ? {
+              id: b.worker.id,
+              full_name: b.worker.full_name,
+              phone: b.worker.phone || '',
+              society_name: 'Cooperative Society',
+              profile_photo_url: b.worker.profile_photo_url || '',
+              profession: b.service?.name || 'Service Professional',
+              avg_rating: b.worker.avg_rating || 4.8,
+              approx_distance_km: 2.5,
+              hourly_rate: 300,
+              is_verified: true,
+              verification_status: 'verified',
+              cooperative_member_id: 'MEM-001',
+              total_jobs_completed: 12,
+              skills: [b.service?.name || 'General'],
+              badges: ['Verified'],
+              availability: 'Immediate (within 45 mins)',
+              experience_years: 4,
+              rating_count: 15,
+            } : (workers[0] || ({} as any)),
+            service_category_id: b.service_category_id || '',
+            service_name: b.service?.name || 'Service',
+            service_icon: b.service?.icon_url || 'Droplet',
+            booking_type: b.booking_type || 'scheduled',
+            status: b.status || 'requested',
+            urgency: 'normal',
+            description: b.description || '',
+            address: b.address || '',
+            city: b.city || 'Kolkata',
+            lat: b.latitude || 22.5726,
+            lng: b.longitude || 88.3639,
+            scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
+            time_slot: 'Scheduled',
+            estimated_price: b.estimated_price || 350,
+            final_price: b.final_price || b.estimated_price || 350,
+            otp: getBookingOtp(b.id),
+            payment_status: hasPaid ? 'completed' : 'pending',
+            payment_method: hasPaid
+              ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
+              : (b.payment_method || 'Pay after service'),
+            created_at: b.created_at,
+          } as any);
         }
+      } catch (err) {
+        console.warn('Could not fetch Supabase booking:', err);
       }
     }
+
     loadDb();
+    const interval = setInterval(loadDb, 2500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [bookingId, workers]);
 
   const booking =
