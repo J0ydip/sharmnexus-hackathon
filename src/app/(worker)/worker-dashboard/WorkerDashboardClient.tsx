@@ -9,108 +9,7 @@ import { useBookingStore } from '@/lib/store/bookingStore';
 import { createClient } from '@/lib/supabase/client';
 import './worker.css';
 
-export interface WorkerPersona {
-  id: string;
-  name: string;
-  skill: string;
-  phone: string;
-  exp: string;
-  price: string;
-  loc: string;
-  bio: string;
-  society: string;
-}
 
-export const WORKER_PERSONAS: WorkerPersona[] = [
-  {
-    id: 'worker-manoj-verma',
-    name: 'Manoj Verma',
-    skill: 'Certified AC & Smart Appliance Technician',
-    phone: '+91 98765 43217',
-    exp: '8',
-    price: '450',
-    loc: 'Saket, New Delhi',
-    bio: 'Certified AC, inverter & appliance specialist with 8 years of residential technical troubleshooting. Member of Delhi Labour Welfare Federation.',
-    society: 'Delhi Labour Welfare Federation (DLWF-DL-05)',
-  },
-  {
-    id: 'worker-rajesh-kumar',
-    name: 'Rajesh Kumar',
-    skill: 'Master Plumber & Pipe Specialist',
-    phone: '+91 98765 43210',
-    exp: '8',
-    price: '300',
-    loc: 'Kankarbagh, Patna, Bihar',
-    bio: 'Certified master plumber with 8 years of residential leak repairs and society plumbing. Affiliated with Patna District Labour Society.',
-    society: 'Patna District Labour Society (PDLS-BR-01)',
-  },
-  {
-    id: 'worker-sunita-sharma',
-    name: 'Sunita Sharma',
-    skill: 'Professional Deep Cleaner',
-    phone: '+91 98765 43211',
-    exp: '6',
-    price: '250',
-    loc: 'Shivaji Nagar, Pune, Maharashtra',
-    bio: 'Expert deep cleaning and sanitization professional specialized in kitchen, bathroom, and post-renovation cleaning.',
-    society: 'Pune Gig Workers Cooperative (PGWC-MH-12)',
-  },
-  {
-    id: 'worker-meena-devi',
-    name: 'Meena Devi',
-    skill: 'Master Electrician & Wireman',
-    phone: '+91 98765 43215',
-    exp: '10',
-    price: '350',
-    loc: 'Hadapsar, Pune, Maharashtra',
-    bio: 'Licensed electrician with 10 years experience in three-phase wiring, circuit repairs, and smart home switchboards.',
-    society: 'Pune Gig Workers Cooperative (PGWC-MH-12)',
-  },
-  {
-    id: 'worker-amit-singh',
-    name: 'Amit Singh',
-    skill: 'Residential Electrician & Appliance Tech',
-    phone: '+91 98765 43212',
-    exp: '5',
-    price: '350',
-    loc: 'Frazer Road, Patna, Bihar',
-    bio: 'Certified home electrician with fast response times for fuse repair, MCB replacement, and wiring inspections.',
-    society: 'Patna District Labour Society (PDLS-BR-01)',
-  },
-  {
-    id: 'worker-vikram-yadav',
-    name: 'Vikram Yadav',
-    skill: 'Commercial & Personal Driver',
-    phone: '+91 98765 43214',
-    exp: '9',
-    price: '400',
-    loc: 'Bailey Road, Patna, Bihar',
-    bio: 'Professional commercial driver with zero-incident record for city transit and highway driving.',
-    society: 'Patna District Labour Society (PDLS-BR-01)',
-  },
-  {
-    id: 'worker-suresh-kumar',
-    name: 'Suresh Kumar',
-    skill: 'Master Carpenter & Woodworker',
-    phone: '+91 98765 43216',
-    exp: '12',
-    price: '400',
-    loc: 'Boring Road, Patna, Bihar',
-    bio: 'Master craftsman in wooden cabinetry, door alignment, lock repair, and custom furniture repairs.',
-    society: 'Patna District Labour Society (PDLS-BR-01)',
-  },
-  {
-    id: 'worker-deepak-verma',
-    name: 'Deepak Verma',
-    skill: 'Interior & Exterior Painter',
-    phone: '+91 98765 43221',
-    exp: '7',
-    price: '500',
-    loc: 'Wakad, Pune, Maharashtra',
-    bio: 'Professional painter with experience in waterproof priming, wall textures, and chemical-safe interior coating.',
-    society: 'Pune Gig Workers Cooperative (PGWC-MH-12)',
-  },
-];
 
 type WorkerView =
   | 'view-dashboard'
@@ -245,64 +144,16 @@ export function WorkerDashboardClient() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Worker state
-  const [selectedPersonaId, setSelectedPersonaId] = useState<string>('worker-manoj-verma');
-  const [workerName, setWorkerName] = useState('Manoj Verma');
-  const [workerPhone, setWorkerPhone] = useState('+91 98765 43217');
-  const [workerSkill, setWorkerSkill] = useState('Certified AC & Smart Appliance Technician');
-  const [workerExp, setWorkerExp] = useState('8');
-  const [workerPrice, setWorkerPrice] = useState('450');
-  const [workerLoc, setWorkerLoc] = useState('Saket, New Delhi');
-  const [workerBio, setWorkerBio] = useState('Certified AC, inverter & appliance specialist with 8 years of residential technical troubleshooting. Member of Delhi Labour Welfare Federation.');
-  const [workerSociety, setWorkerSociety] = useState('Delhi Labour Welfare Federation (DLWF-DL-05)');
-  const [workerLanguages, setWorkerLanguages] = useState('Hindi, Bhojpuri, English');
-
-  const switchWorkerPersona = (personaIdOrName: string) => {
-    if (!personaIdOrName) return;
-    const clean = personaIdOrName.toLowerCase().trim();
-    const matched =
-      WORKER_PERSONAS.find((p) => p.id.toLowerCase() === clean) ||
-      WORKER_PERSONAS.find((p) => p.name.toLowerCase().includes(clean) || clean.includes(p.name.toLowerCase())) ||
-      WORKER_PERSONAS.find((p) => p.skill.toLowerCase().includes(clean) || clean.includes(p.skill.toLowerCase()));
-
-    if (matched) {
-      setSelectedPersonaId(matched.id);
-      setWorkerName(matched.name);
-      setWorkerPhone(matched.phone);
-      setWorkerSkill(matched.skill);
-      setWorkerExp(matched.exp);
-      setWorkerPrice(matched.price);
-      setWorkerLoc(matched.loc);
-      setWorkerBio(matched.bio);
-      setWorkerSociety(matched.society);
-
-      try {
-        const authPayload = JSON.stringify({
-          isLoggedIn: true,
-          role: 'worker',
-          name: matched.name,
-          phone: matched.phone,
-          skills: [matched.skill],
-          location: matched.loc,
-          personaId: matched.id,
-        });
-        localStorage.setItem('shramnexus-auth', authPayload);
-        localStorage.setItem('sharmnexus-auth', authPayload);
-      } catch (e) {}
-
-      showToast(`Switched active worker to ${matched.name} (${matched.skill.split('&')[0].trim()})`);
-    }
-  };
-
-  useEffect(() => {
-    const paramId = searchParams?.get('workerId');
-    const paramName = searchParams?.get('workerName') || searchParams?.get('worker');
-    if (paramId) {
-      switchWorkerPersona(paramId);
-    } else if (paramName) {
-      switchWorkerPersona(paramName);
-    }
-  }, [searchParams]);
+  // Authenticated Worker state
+  const [workerName, setWorkerName] = useState('Worker');
+  const [workerPhone, setWorkerPhone] = useState('+91 98765 43210');
+  const [workerSkill, setWorkerSkill] = useState('Trade Professional');
+  const [workerExp, setWorkerExp] = useState('5');
+  const [workerPrice, setWorkerPrice] = useState('350');
+  const [workerLoc, setWorkerLoc] = useState('New Delhi');
+  const [workerBio, setWorkerBio] = useState('Certified cooperative tradesperson dedicated to reliable community service.');
+  const [workerSociety, setWorkerSociety] = useState('Labour Welfare Cooperative Society');
+  const [workerLanguages, setWorkerLanguages] = useState('Hindi, English');
 
   // Job data
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([
@@ -420,10 +271,22 @@ export function WorkerDashboardClient() {
       .then((res) => {
         if (!res) return;
         if (res.worker) {
-          if (res.worker.full_name) setWorkerName(res.worker.full_name);
-          if (res.worker.phone) setWorkerPhone(res.worker.phone);
-          if (res.worker.address) setWorkerLoc(res.worker.address);
-          if (res.worker.is_available !== undefined) setIsAvailable(res.worker.is_available);
+          const w = res.worker as any;
+          if (w.full_name) setWorkerName(w.full_name);
+          if (w.phone) setWorkerPhone(w.phone);
+          if (w.address) setWorkerLoc(w.address);
+          if (w.is_available !== undefined) setIsAvailable(w.is_available);
+          if (w.skills && w.skills.length > 0) {
+            const firstSkill = w.skills[0];
+            const cat = Array.isArray(firstSkill?.category) ? firstSkill.category[0] : firstSkill?.category;
+            const skillTitle = cat?.name || firstSkill?.certification_name;
+            if (skillTitle) setWorkerSkill(skillTitle);
+            if (firstSkill?.years_experience) setWorkerExp(String(firstSkill.years_experience));
+          }
+          const soc = Array.isArray(w.society) ? w.society[0] : w.society;
+          if (soc?.name) {
+            setWorkerSociety(`${soc.name}${soc.district ? ` (${soc.district})` : ''}`);
+          }
         }
         if (res.requests && res.requests.length > 0) {
           const liveRequests: JobRequest[] = res.requests.map((r: any) => ({
@@ -820,33 +683,19 @@ export function WorkerDashboardClient() {
           </button>
 
           <div className="worker-topbar-right">
-            {/* Active Worker Persona Switcher */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-                👤 Worker:
-              </span>
-              <select
-                value={selectedPersonaId}
-                onChange={(e) => switchWorkerPersona(e.target.value)}
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: '8px',
-                  border: '1.5px solid #d1d5db',
-                  fontSize: '0.76rem',
-                  fontWeight: 700,
-                  backgroundColor: '#ffffff',
-                  color: '#1f2937',
-                  cursor: 'pointer',
-                  maxWidth: '190px'
-                }}
-                aria-label="Switch Worker Member"
-              >
-                {WORKER_PERSONAS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.skill.split('&')[0].trim()})
-                  </option>
-                ))}
-              </select>
+            {/* Authenticated Worker Profile Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#b85435', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem' }}>
+                {workerName ? workerName.charAt(0).toUpperCase() : 'W'}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>
+                  {workerName}
+                </span>
+                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                  {workerSkill.split('&')[0].trim()}
+                </span>
+              </div>
             </div>
 
             {/* Language Selector */}

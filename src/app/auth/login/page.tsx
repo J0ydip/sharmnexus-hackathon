@@ -298,11 +298,23 @@ export default function AuthPage() {
       // 4. Successful authenticated session matching selected role
       toast.success(`Successfully logged in as ${actualRole.toUpperCase()}!`);
 
+      let workerFullName = '';
+      if (actualRole === 'worker') {
+        const { data: wRec } = await supabase
+          .from('workers')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (wRec?.full_name) {
+          workerFullName = wRec.full_name;
+        }
+      }
+
       try {
         const authPayload = JSON.stringify({
           isLoggedIn: true,
           role: actualRole,
-          name: user.user_metadata?.full_name || loginEmail.split('@')[0],
+          name: workerFullName || user.user_metadata?.full_name || loginEmail.split('@')[0],
           email: loginEmail,
         });
         localStorage.setItem('shramnexus-auth', authPayload);
@@ -661,7 +673,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* Worker Quick Demo Access Banner */}
+              {/* Worker Portal Login Helper */}
               {selectedRole === 'worker' && (
                 <div style={{
                   padding: '10px 14px',
@@ -677,98 +689,28 @@ export default function AuthPage() {
                   gap: '8px',
                   flexWrap: 'wrap'
                 }}>
-                  <span>🛠️ <strong>Demo Worker</strong> (<code>worker@shramnexus.com</code> / <code>worker123</code>)</span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoginEmail('worker@shramnexus.com');
-                        setLoginPassword('worker123');
-                        toast.success('Credentials filled! Click "Sign in" below.');
-                      }}
-                      style={{
-                        background: 'var(--terracotta)',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '5px 10px',
-                        fontSize: '0.72rem',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      Auto-Fill
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoginEmail('worker@shramnexus.com');
-                        setLoginPassword('worker123');
-                        const workerData = JSON.stringify({
-                          isLoggedIn: true,
-                          role: 'worker',
-                          name: 'Rajesh Kumar (Plumber)',
-                          email: 'worker@shramnexus.com',
-                          personaId: 'worker-rajesh-kumar',
-                        });
-                        localStorage.setItem('shramnexus-auth', workerData);
-                        localStorage.setItem('sharmnexus-auth', workerData);
-                        toast.success('Welcome back, Rajesh! Loading Worker Dashboard...');
-                        setTimeout(() => {
-                          window.location.href = getRedirectTarget('/worker-dashboard?workerId=worker-rajesh-kumar');
-                        }, 300);
-                      }}
-                      style={{
-                        background: '#b85435',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '5px 10px',
-                        fontSize: '0.72rem',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      Rajesh (Plumber) ↗
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoginEmail('manoj.verma@shramnexus.coop');
-                        setLoginPassword('worker123');
-                        const workerData = JSON.stringify({
-                          isLoggedIn: true,
-                          role: 'worker',
-                          name: 'Manoj Verma',
-                          email: 'manoj.verma@shramnexus.coop',
-                          skills: ['Certified AC & Smart Appliance Technician'],
-                          location: 'Saket, New Delhi',
-                          personaId: 'worker-manoj-verma',
-                        });
-                        localStorage.setItem('shramnexus-auth', workerData);
-                        localStorage.setItem('sharmnexus-auth', workerData);
-                        toast.success('Welcome back, Manoj! Loading Technician Dashboard...');
-                        setTimeout(() => {
-                          window.location.href = getRedirectTarget('/worker-dashboard?workerId=worker-manoj-verma');
-                        }, 300);
-                      }}
-                      style={{
-                        background: '#0d9488',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '5px 10px',
-                        fontSize: '0.72rem',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      Manoj (Tech) ↗
-                    </button>
-                  </div>
+                  <span>🛠️ <strong>Worker Portal</strong>: Sign in with your registered trade account</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginEmail('manoj.verma@shramnexus.coop');
+                      setLoginPassword('worker123');
+                      toast.success('Filled credentials for Manoj Verma (Technician)! Click "Sign in" below.');
+                    }}
+                    style={{
+                      background: 'var(--terracotta)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '5px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Auto-Fill (Manoj Verma)
+                  </button>
                 </div>
               )}
 

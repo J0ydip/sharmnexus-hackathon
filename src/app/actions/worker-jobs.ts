@@ -123,7 +123,14 @@ export async function getWorkerDashboardData() {
   try {
     const { data: worker } = await supabase
       .from('workers')
-      .select('id, full_name, phone, email, is_verified, is_available, verification_status, avg_rating, total_jobs_completed, address')
+      .select(`
+        id, full_name, phone, email, is_verified, is_available, verification_status, avg_rating, total_jobs_completed, address,
+        skills:worker_skills (
+          id, service_category_id, years_experience, certification_name, is_verified,
+          category:service_category_id (id, name)
+        ),
+        society:society_id (id, name, district, state)
+      `)
       .eq('id', user.id)
       .maybeSingle();
 
@@ -131,6 +138,7 @@ export async function getWorkerDashboardData() {
       supabase
         .from('bookings')
         .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name), service_categories(name)')
+        .or(`worker_id.eq.${user.id},worker_id.is.null`)
         .eq('status', 'requested')
         .order('created_at', { ascending: false })
         .limit(10),
