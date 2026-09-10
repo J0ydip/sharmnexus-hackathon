@@ -137,11 +137,12 @@ export async function updateBookingStatus(bookingId: string, newStatus: string) 
   return { success: true, bookingId: targetId, status: newStatus };
 }
 
-export async function getWorkerDashboardData() {
+export async function getWorkerDashboardData(workerIdOverride?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
+  const targetWorkerId = user?.id || workerIdOverride;
+  if (!targetWorkerId) {
     return null;
   }
 
@@ -156,7 +157,7 @@ export async function getWorkerDashboardData() {
         ),
         society:society_id (id, name, district, state)
       `)
-      .eq('id', user.id)
+      .eq('id', targetWorkerId)
       .maybeSingle();
 
     const workerSkillCategoryIds: string[] = (worker?.skills || [])
@@ -173,7 +174,7 @@ export async function getWorkerDashboardData() {
       supabase
         .from('bookings')
         .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name, phone), service_categories(name)')
-        .eq('worker_id', user.id)
+        .eq('worker_id', targetWorkerId)
         .in('status', ['accepted', 'in_progress'])
         .order('scheduled_at', { ascending: true }),
       supabase
@@ -184,7 +185,7 @@ export async function getWorkerDashboardData() {
           service_categories(name),
           payments(id, amount, status, method, paid_at, worker_payout, cooperative_share)
         `)
-        .eq('worker_id', user.id)
+        .eq('worker_id', targetWorkerId)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
         .limit(20),
@@ -195,7 +196,7 @@ export async function getWorkerDashboardData() {
           customer:customer_id (id, full_name),
           booking:booking_id (id, service_categories (name))
         `)
-        .eq('worker_id', user.id)
+        .eq('worker_id', targetWorkerId)
         .order('created_at', { ascending: false }),
     ]);
 
@@ -205,11 +206,11 @@ export async function getWorkerDashboardData() {
 
     const relevantRequests = (requestsRes.data || []).filter((r: any) => {
       // Specifically assigned to or requested for this worker
-      if (r.worker_id === user.id) {
+      if (r.worker_id === targetWorkerId) {
         return r.status === 'requested' || r.status === 'assigned';
       }
       // If assigned to a different worker, do not show
-      if (r.worker_id && r.worker_id !== user.id) {
+      if (r.worker_id && r.worker_id !== targetWorkerId) {
         return false;
       }
       // Open pool requests matching worker's trade

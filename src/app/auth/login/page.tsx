@@ -177,13 +177,13 @@ export default function AuthPage() {
     let effectiveEmail = loginEmail.trim();
     let effectivePassword = loginPassword.trim();
 
-    // Map worker shortcut to real Supabase worker account
+    // Map worker shortcut to real Supabase worker account (defaulting to Rajesh Kumar Plumber)
     const isWorkerShortcut =
       trimmedEmail === 'worker' ||
       trimmedEmail === 'worker@shramnexus' ||
       trimmedEmail === 'worker@sharmnexus.com';
     if (isWorkerShortcut && (effectivePassword === 'worker123' || effectivePassword === 'password123')) {
-      effectiveEmail = 'worker@shramnexus.com';
+      effectiveEmail = 'rajesh.kumar@shramnexus.coop';
       effectivePassword = 'worker123';
     }
 
@@ -646,7 +646,7 @@ export default function AuthPage() {
               {/* Worker Portal Login Helper */}
               {selectedRole === 'worker' && (
                 <div style={{
-                  padding: '10px 14px',
+                  padding: '12px 14px',
                   borderRadius: '12px',
                   backgroundColor: 'rgba(217, 111, 77, 0.08)',
                   border: '1px solid rgba(217, 111, 77, 0.25)',
@@ -654,33 +654,80 @@ export default function AuthPage() {
                   color: 'var(--terracotta)',
                   marginBottom: '14px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  flexWrap: 'wrap'
+                  flexDirection: 'column',
+                  gap: '8px'
                 }}>
-                  <span>🛠️ <strong>Worker Portal</strong>: Sign in with your registered trade account</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail('rajesh.kumar@shramnexus.coop');
-                      setLoginPassword('worker123');
-                      toast.success('Demo worker credentials filled! Click "Sign in" below.');
-                    }}
-                    style={{
-                      background: 'var(--terracotta)',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '5px 10px',
-                      fontSize: '0.72rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Auto-Fill Demo Worker
-                  </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>🛠️ <strong>Worker Portal</strong>: Demo trade accounts</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('rajesh.kumar@shramnexus.coop');
+                        setLoginPassword('worker123');
+                        const workerData = JSON.stringify({
+                          id: 'bc3cfe16-144e-466b-bbc5-8db4e9566a64',
+                          isLoggedIn: true,
+                          role: 'worker',
+                          name: 'Rajesh Kumar',
+                          email: 'rajesh.kumar@shramnexus.coop',
+                        });
+                        localStorage.setItem('shramnexus-auth', workerData);
+                        localStorage.setItem('sharmnexus-auth', workerData);
+                        toast.success('Welcome Rajesh! Signing into Plumber Dashboard...');
+                        setTimeout(() => {
+                          window.location.href = getRedirectTarget('/worker-dashboard');
+                        }, 300);
+                      }}
+                      style={{
+                        background: 'var(--terracotta)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      🚰 1-Click: Rajesh Kumar (Plumber)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginEmail('worker@shramnexus.com');
+                        setLoginPassword('worker123');
+                        const workerData = JSON.stringify({
+                          id: 'f0afe1ab-ba35-4fa9-b18b-a8424fb7838a',
+                          isLoggedIn: true,
+                          role: 'worker',
+                          name: 'Rajesh Kumar (Electrician)',
+                          email: 'worker@shramnexus.com',
+                        });
+                        localStorage.setItem('shramnexus-auth', workerData);
+                        localStorage.setItem('sharmnexus-auth', workerData);
+                        toast.success('Welcome Rajesh! Signing into Electrician Dashboard...');
+                        setTimeout(() => {
+                          window.location.href = getRedirectTarget('/worker-dashboard');
+                        }, 300);
+                      }}
+                      style={{
+                        background: '#b45309',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      ⚡ 1-Click: Rajesh (Electrician)
+                    </button>
+                  </div>
                 </div>
               )}
 

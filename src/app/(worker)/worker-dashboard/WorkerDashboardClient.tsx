@@ -249,7 +249,13 @@ export function WorkerDashboardClient() {
     // Fetch live backend data directly from Supabase
     async function fetchDashboardData() {
       try {
-        const res = await getWorkerDashboardData();
+        let authWorkerId: string | undefined = undefined;
+        try {
+          const auth = JSON.parse(localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth') || '{}');
+          if (auth && auth.id) authWorkerId = auth.id;
+        } catch (e) {}
+
+        const res = await getWorkerDashboardData(authWorkerId);
         if (!res) return;
         if (res.worker) {
           const w = res.worker as any;
