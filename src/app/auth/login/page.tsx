@@ -177,14 +177,17 @@ export default function AuthPage() {
     let effectiveEmail = loginEmail.trim();
     let effectivePassword = loginPassword.trim();
 
-    // Map worker shortcut to real Supabase worker account (defaulting to Rajesh Kumar Plumber)
+    // Map worker shortcut to real Supabase worker account
     const isWorkerShortcut =
       trimmedEmail === 'worker' ||
       trimmedEmail === 'worker@shramnexus' ||
-      trimmedEmail === 'worker@sharmnexus.com';
-    if (isWorkerShortcut && (effectivePassword === 'worker123' || effectivePassword === 'password123')) {
-      effectiveEmail = 'rajesh.kumar@shramnexus.coop';
-      effectivePassword = 'worker123';
+      trimmedEmail === 'worker@sharmnexus.com' ||
+      trimmedEmail === 'rajesh.test@sharmnexus.com' ||
+      trimmedEmail === 'rajesh.test@shramnexus.com' ||
+      trimmedEmail === 'rajesh.test@sharamnexus.com';
+    if (isWorkerShortcut && (effectivePassword === 'password123' || effectivePassword === 'worker123')) {
+      effectiveEmail = 'rajesh.test@sharmnexus.com';
+      effectivePassword = 'password123';
     }
 
     // Map customer shortcut to real Supabase customer account
@@ -646,7 +649,7 @@ export default function AuthPage() {
               {/* Worker Portal Login Helper */}
               {selectedRole === 'worker' && (
                 <div style={{
-                  padding: '12px 14px',
+                  padding: '10px 14px',
                   borderRadius: '12px',
                   backgroundColor: 'rgba(217, 111, 77, 0.08)',
                   border: '1px solid rgba(217, 111, 77, 0.25)',
@@ -654,61 +657,49 @@ export default function AuthPage() {
                   color: 'var(--terracotta)',
                   marginBottom: '14px',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px'
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  flexWrap: 'wrap'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>🛠️ <strong>Worker Portal</strong>: Demo trade accounts</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <span>🛠️ <strong>Worker Portal</strong>: Sign in with your registered trade account</span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
                     <button
                       type="button"
                       onClick={() => {
-                        setLoginEmail('rajesh.kumar@shramnexus.coop');
-                        setLoginPassword('worker123');
-                        const workerData = JSON.stringify({
-                          id: 'bc3cfe16-144e-466b-bbc5-8db4e9566a64',
-                          isLoggedIn: true,
-                          role: 'worker',
-                          name: 'Rajesh Kumar',
-                          email: 'rajesh.kumar@shramnexus.coop',
-                        });
-                        localStorage.setItem('shramnexus-auth', workerData);
-                        localStorage.setItem('sharmnexus-auth', workerData);
-                        toast.success('Welcome Rajesh! Signing into Plumber Dashboard...');
-                        setTimeout(() => {
-                          window.location.href = getRedirectTarget('/worker-dashboard');
-                        }, 300);
+                        setLoginEmail('rajesh.test@sharmnexus.com');
+                        setLoginPassword('password123');
+                        toast.success('Demo worker credentials filled! Click "Sign in" below.');
                       }}
                       style={{
                         background: 'var(--terracotta)',
                         color: '#ffffff',
                         border: 'none',
                         borderRadius: '6px',
-                        padding: '6px 12px',
-                        fontSize: '0.75rem',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
                         fontWeight: 'bold',
                         cursor: 'pointer',
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      🚰 1-Click: Rajesh Kumar (Plumber)
+                      Auto-Fill Demo Worker
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        setLoginEmail('worker@shramnexus.com');
-                        setLoginPassword('worker123');
+                        setLoginEmail('rajesh.test@sharmnexus.com');
+                        setLoginPassword('password123');
                         const workerData = JSON.stringify({
-                          id: 'f0afe1ab-ba35-4fa9-b18b-a8424fb7838a',
+                          id: 'ded8c5f8-465c-412e-be09-2f4d6e1302e2',
                           isLoggedIn: true,
                           role: 'worker',
-                          name: 'Rajesh Kumar (Electrician)',
-                          email: 'worker@shramnexus.com',
+                          name: 'Rajesh Plumber',
+                          email: 'rajesh.test@sharmnexus.com',
                         });
                         localStorage.setItem('shramnexus-auth', workerData);
                         localStorage.setItem('sharmnexus-auth', workerData);
-                        toast.success('Welcome Rajesh! Signing into Electrician Dashboard...');
+                        toast.success('Welcome back, Rajesh! Opening worker operations...');
                         setTimeout(() => {
                           window.location.href = getRedirectTarget('/worker-dashboard');
                         }, 300);
@@ -718,14 +709,14 @@ export default function AuthPage() {
                         color: '#ffffff',
                         border: 'none',
                         borderRadius: '6px',
-                        padding: '6px 12px',
-                        fontSize: '0.75rem',
+                        padding: '5px 10px',
+                        fontSize: '0.72rem',
                         fontWeight: 'bold',
                         cursor: 'pointer',
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      ⚡ 1-Click: Rajesh (Electrician)
+                      1-Click Sign In ↗
                     </button>
                   </div>
                 </div>
