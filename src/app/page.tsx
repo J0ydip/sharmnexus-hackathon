@@ -288,7 +288,70 @@ export default function LandingPage() {
 
         <section className="worker-opportunities section-pad" id="worker-opportunities"><div className="worker-opportunities-heading"><div className="section-kicker" data-i18n="worker_kicker">FOR SKILLED WORKERS</div><h2 data-i18n-html="worker_h2">Your skills deserve more<br /><em>opportunities.</em></h2><p data-i18n="worker_p">Build your professional identity, discover jobs, grow your reputation, and access cooperative welfare benefits — all from one platform.</p></div><div className="worker-platform"><div className="worker-profile-card"><div className="profile-top"><div className="profile-avatar">RK</div><div><h3>Raj Kumar</h3><p>✓ Verified Plumber</p><strong>★ 4.8 Rating</strong></div></div><div className="profile-divider"></div><div className="profile-stats"><div><strong>3</strong><span>Today’s Jobs</span></div><div><strong>₹18,450</strong><span>This Month</span></div><div><strong>327</strong><span>Completed</span></div></div><a className="profile-link" href="/auth/login">View professional profile <span>↗</span></a></div><div className="worker-benefits"><a href="/auth/login"><span>▤</span>Digital skill profile<i>↗</i></a><a href="/auth/login"><span>✓</span>Certification verification<i>↗</i></a><a href="/auth/login"><span>▣</span>Job opportunities<i>↗</i></a><a href="/auth/login"><span>₹</span>Earnings tracking<i>↗</i></a><a href="/auth/login"><span>▥</span>Work history<i>↗</i></a><a href="/auth/login"><span>★</span>Ratings &amp; reputation<i>↗</i></a><a href="/auth/login"><span>♧</span>Welfare benefits<i>↗</i></a><a href="/auth/login"><span>✦</span>Skills growth<i>↗</i></a></div></div></section>
 
-        <section className="how section-pad" id="how-it-works"><div className="section-kicker" data-i18n="how_kicker">SIMPLE BY DESIGN</div><h2 data-i18n-html="how_h2">From “I need help”<br /><em>to “all sorted.”</em></h2><div className="steps"><div className="step"><span>01</span><div><h3 data-i18n="step1_t">Tell us what you need</h3><p data-i18n="step1_d">Describe a service in your own words, in your own language.</p></div></div><div className="step"><span>02</span><div><h3 data-i18n="step2_t">Get intelligently matched</h3><p data-i18n="step2_d">We find verified nearby workers by skill, rating, location, and availability.</p></div></div><div className="step"><span>03</span><div><h3 data-i18n="step3_t">Book with confidence</h3><p data-i18n="step3_d">Choose a time, track the service, pay securely, and leave a rating.</p></div></div><div className="step"><span>04</span><div><h3 data-i18n="step4_t">Help the network grow</h3><p data-i18n="step4_d">Every booking supports local workers and strengthens the cooperative behind them.</p></div></div></div></section>
+        <section className="how section-pad" id="how-it-works">
+          <div className="section-kicker" data-i18n="how_kicker">SIMPLE BY DESIGN</div>
+          <h2 data-i18n-html="how_h2">From “I need help”<br /><em>to “all sorted.”</em></h2>
+          <p className="how-subtitle">
+            A transparent 4-step workflow connecting household requests directly to certified cooperative craftsmen — fast, dignified, and guaranteed.
+          </p>
+          <div className="steps">
+            <div className="step">
+              <div className="step-header">
+                <span>01</span>
+                <span className="step-tag">Step 1</span>
+              </div>
+              <div className="step-body">
+                <h3 data-i18n="step1_t">Tell us what you need</h3>
+                <p data-i18n="step1_d">Describe a service in your own words, in your own language, via search or voice.</p>
+              </div>
+              <div className="step-footer">
+                <span className="step-pill">🎙️ Voice &amp; Multilingual</span>
+              </div>
+            </div>
+
+            <div className="step">
+              <div className="step-header">
+                <span>02</span>
+                <span className="step-tag">Step 2</span>
+              </div>
+              <div className="step-body">
+                <h3 data-i18n="step2_t">Get intelligently matched</h3>
+                <p data-i18n="step2_d">We find verified nearby workers by skill, rating, location, and cooperative availability.</p>
+              </div>
+              <div className="step-footer">
+                <span className="step-pill">⚡ FairWork Engine™</span>
+              </div>
+            </div>
+
+            <div className="step">
+              <div className="step-header">
+                <span>03</span>
+                <span className="step-tag">Step 3</span>
+              </div>
+              <div className="step-body">
+                <h3 data-i18n="step3_t">Book with confidence</h3>
+                <p data-i18n="step3_d">Choose a time, track the service live, verify with a security PIN, and pay securely.</p>
+              </div>
+              <div className="step-footer">
+                <span className="step-pill">🛡️ Secure PIN &amp; Warranty</span>
+              </div>
+            </div>
+
+            <div className="step">
+              <div className="step-header">
+                <span>04</span>
+                <span className="step-tag">Step 4</span>
+              </div>
+              <div className="step-body">
+                <h3 data-i18n="step4_t">Help the network grow</h3>
+                <p data-i18n="step4_d">Every booking supports local workers with 85% payouts and strengthens their welfare fund.</p>
+              </div>
+              <div className="step-footer">
+                <span className="step-pill">🤝 Cooperative Fair-Share</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="communities section-pad" id="communities"><div className="section-kicker" data-i18n="communities_kicker">ONE PLATFORM. THREE COMMUNITIES.</div><h2 data-i18n-html="communities_h2">Shared prosperity,<br /><em>designed into every booking.</em></h2><div className="community-grid"><article className="community-card customer"><div className="community-number" data-i18n="comm1_num">01 / FOR HOUSEHOLDS</div><div className="community-icon">⌕</div><h3 data-i18n="comm1_h3">Find trusted help nearby.</h3><p data-i18n="comm1_p">Book skilled professionals you can trust, with transparent ratings, secure payments, and support when you need it most.</p><a href="/services"><span data-i18n="comm1_link">Find a service</span> <span>↗</span></a></article><article className="community-card worker"><div className="community-number" data-i18n="comm2_num">02 / FOR WORKERS</div><div className="community-icon">✦</div><h3 data-i18n="comm2_h3">Turn your skills into opportunity.</h3><p data-i18n="comm2_p">Build a professional identity, discover better jobs, grow your reputation, and access cooperative welfare benefits.</p><a href="/auth/worker-register"><span data-i18n="comm2_link">Join as a worker</span> <span>↗</span></a></article><article className="community-card cooperative" id="cooperatives"><div className="community-number" data-i18n="comm3_num">03 / FOR COOPERATIVES</div><div className="community-icon">◒</div><h3 data-i18n="comm3_h3">Coordinate with intelligence.</h3><p data-i18n="comm3_p">Manage your workforce, anticipate demand, allocate jobs, and measure impact from one cooperative-owned platform.</p><a href="/auth/login?redirect=/cooperative"><span data-i18n="comm3_link">Explore cooperatives</span> <span>↗</span></a></article></div></section>
 

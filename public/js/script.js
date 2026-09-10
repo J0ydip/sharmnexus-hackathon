@@ -20,6 +20,7 @@ const initScript = () => {
   if (cursorDot && window.matchMedia('(pointer: fine)').matches) {
     document.body.classList.add('has-custom-cursor');
     window.addEventListener('mousemove', (e) => {
+      cursorDot.style.opacity = '1';
       cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
     });
     document.addEventListener('mouseleave', () => { cursorDot.style.opacity = '0'; });
