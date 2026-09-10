@@ -23,6 +23,25 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
       return false;
     };
 
+    const syncUser = (user: any) => {
+      try {
+        const local = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
+        if (!local) {
+          const role = user.user_metadata?.user_type || 'customer';
+          const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+          const payload = JSON.stringify({
+            id: user.id,
+            isLoggedIn: true,
+            role,
+            name,
+            email: user.email,
+          });
+          localStorage.setItem('shramnexus-auth', payload);
+          localStorage.setItem('sharmnexus-auth', payload);
+        }
+      } catch (e) {}
+    };
+
     if (checkLocal()) {
       setHasSession(true);
     }
@@ -30,6 +49,7 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setHasSession(true);
+        syncUser(session.user);
       } else if (!checkLocal()) {
         setHasSession(false);
       }
@@ -38,6 +58,7 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setHasSession(true);
+        syncUser(session.user);
       } else if (!checkLocal()) {
         setHasSession(false);
       }
