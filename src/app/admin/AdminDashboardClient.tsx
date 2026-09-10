@@ -258,6 +258,39 @@ export function AdminDashboardClient() {
     }
   }, [router]);
 
+  // Live dynamic synchronization (every 3 seconds and on Supabase changes)
+  useEffect(() => {
+    if (!isAuthorized) return;
+
+    const interval = setInterval(() => {
+      fetchAllData();
+    }, 3000);
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel('admin-live-realtime-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => {
+          fetchAllData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments' },
+        () => {
+          fetchAllData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthorized]);
+
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
     await fetchAllData();

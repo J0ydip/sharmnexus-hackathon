@@ -18,8 +18,10 @@ import { recordCashPayment as recordCashPaymentAction } from '@/app/actions/paym
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
 import { CancelBookingModal } from '@/components/customer/CancelBookingModal';
 import { getBookingOtp } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 import {
   ArrowLeft,
+  ArrowRight,
   Phone,
   MessageSquare,
   ShieldCheck,
@@ -36,6 +38,7 @@ import {
   Wrench,
   Award,
   Star,
+  XCircle,
 } from 'lucide-react';
 
 interface PageProps {
@@ -121,6 +124,10 @@ export default function BookingTrackingPage({ params }: PageProps) {
               : (b.payment_method || 'Pay after service (Pending)'),
             created_at: b.created_at,
           } as any);
+
+          if (b.status) {
+            useBookingStore.getState().updateBookingStatus(b.id, b.status as any);
+          }
         }
       } catch (err) {
         console.warn('Could not fetch Supabase booking:', err);
@@ -130,9 +137,22 @@ export default function BookingTrackingPage({ params }: PageProps) {
     loadDb();
     const interval = setInterval(loadDb, 2500);
 
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`booking-live-${bookingId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings', filter: `id=eq.${bookingId}` },
+        () => {
+          loadDb();
+        }
+      )
+      .subscribe();
+
     return () => {
       isMounted = false;
       clearInterval(interval);
+      supabase.removeChannel(channel);
     };
   }, [bookingId, workers]);
 
@@ -403,7 +423,48 @@ export default function BookingTrackingPage({ params }: PageProps) {
 
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 pt-6 space-y-6">
         {/* OTP Security Verification Strip */}
-        {booking.status === 'completed' ? (
+        {/* Status Verification Strip / Rejection Alert */}
+        {booking.status === 'cancelled' ? (
+          <div className="bg-gradient-to-r from-[#2b1111] via-[#451818] to-[#2b1111] text-white rounded-2xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-5 border border-red-500/40 animate-in fade-in duration-300">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30">
+                <XCircle className="w-7 h-7 text-red-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-red-300">
+                    Request Declined by Tradesperson
+                  </span>
+                  <span className="text-[10px] font-bold bg-red-900/60 text-red-200 px-2 py-0.5 rounded-full border border-red-500/30">
+                    CANCELLED
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                  Tradesperson was unavailable for this booking
+                </h3>
+                <p className="text-xs text-red-200/90 mt-0.5 max-w-xl leading-relaxed">
+                  The cooperative tradesperson declined this service request. <strong>No payment was deducted from your account.</strong> You can request another verified cooperative artisan immediately.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+              <Link
+                href="/services"
+                className="bg-[#e6aa3b] hover:bg-[#d96f4d] text-[#24172f] hover:text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all text-center flex items-center justify-center gap-2"
+              >
+                <span>Find Another Tradesperson</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/history"
+                className="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-3 rounded-xl border border-white/20 transition-all text-center"
+              >
+                View Bookings
+              </Link>
+            </div>
+          </div>
+        ) : booking.status === 'completed' ? (
           <div className="bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] text-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#e6aa3b]/30">
             <div className="flex items-start sm:items-center gap-3.5">
               <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0 text-[#f5dfad]">
@@ -475,6 +536,16 @@ export default function BookingTrackingPage({ params }: PageProps) {
                   SIH 26089 Workflow
                 </span>
               </div>
+
+              {booking.status === 'cancelled' && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <div>
+                    <strong className="font-bold block text-red-900">Service Discontinued</strong>
+                    This service request was declined by the tradesperson. Dispatch and execution have been concluded.
+                  </div>
+                </div>
+              )}
 
               <div className="relative pl-6 space-y-6 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200">
                 {TIMELINE_STEPS.map((stepItem, idx) => {

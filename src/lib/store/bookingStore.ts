@@ -11,6 +11,8 @@ import {
 import { calculateFairMatchScore } from '@/lib/data/matchingAlgorithm';
 import { getBookingOtp } from '@/lib/utils';
 
+export type { Booking, ServiceCategory, WorkerProfile };
+
 export interface BookingDraft {
   serviceCategoryId: string;
   serviceCategoryName: string;

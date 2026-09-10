@@ -179,28 +179,42 @@ export async function getCustomerBookings(customerId?: string) {
     const { data: { user } } = await supabase.auth.getUser();
     resolvedId = user?.id;
   }
+
+  const selectQuery = `
+    *,
+    worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating, total_jobs_completed, society:society_id(name, district)),
+    service:service_category_id (id, name, name_hi, icon_url, base_price),
+    payments:payments (id, amount, status, razorpay_payment_id, method, paid_at),
+    ratings:ratings (id, score, review, created_at)
+  `;
+
   if (!resolvedId) {
-    return { error: 'Authentication required', data: null };
+    // Guest or unauthenticated demo mode: fetch recent bookings
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select(selectQuery)
+      .order('created_at', { ascending: false })
+      .limit(25);
+
+    if (error) {
+      console.error('Error fetching fallback customer bookings:', error);
+      return { error: error.message, data: null };
+    }
+    return { data: bookings || [], error: null };
   }
 
   const { data: bookings, error } = await supabase
     .from('bookings')
-    .select(`
-      *,
-      worker:worker_id (id, full_name, phone, profile_photo_url, avg_rating, total_jobs_completed, society:society_id(name, district)),
-      service:service_category_id (id, name, name_hi, icon_url, base_price),
-      payments:payments (id, amount, status, razorpay_payment_id, method, paid_at),
-      ratings:ratings (id, score, review, created_at)
-    `)
+    .select(selectQuery)
     .eq('customer_id', resolvedId)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching bookings:', error);
+    console.error('Error fetching customer bookings:', error);
     return { error: error.message, data: null };
   }
 
-  return { data: bookings, error: null };
+  return { data: bookings || [], error: null };
 }
 
 // ---------------------------------------------------------------------------

@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useBookingStore } from '@/lib/store/bookingStore';
+import { useBookingStore, Booking } from '@/lib/store/bookingStore';
 import { useCustomerI18n } from '@/lib/i18n/customerTranslations';
 import { HelpSupportSection } from '@/components/common/HelpSupportSection';
+import { getCustomerBookings } from '@/app/actions/bookings';
+import { createClient } from '@/lib/supabase/client';
 import {
   Search,
   Zap,
@@ -29,6 +31,9 @@ import {
   Heart,
   Home,
   Check,
+  XCircle,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
@@ -47,12 +52,112 @@ const ICON_MAP: Record<string, any> = {
 export function CustomerDashboard() {
   const router = useRouter();
   const { lang, t, categoriesData, workersData } = useCustomerI18n();
-  const { categories, workers, bookings, selectServiceForBooking, selectWorkerForBooking, setDraft } = useBookingStore();
+  const { categories, workers, bookings, updateBookingStatus } = useBookingStore();
 
   const [homeSearch, setHomeSearch] = useState('');
+  const [dbBookings, setDbBookings] = useState<Booking[]>([]);
+  const [dismissedDeclinedId, setDismissedDeclinedId] = useState<string | null>(null);
 
-  // Check if there is an active booking
-  const activeBooking = bookings.find((b) => b.status !== 'completed' && b.status !== 'cancelled');
+  // Load bookings from Supabase, poll every 3 seconds, and subscribe to Realtime updates
+  useEffect(() => {
+    const supabase = createClient();
+    let isMounted = true;
+
+    async function loadBookings() {
+      try {
+        const { data } = await getCustomerBookings();
+        if (data && data.length > 0 && isMounted) {
+          const mapped: Booking[] = data.map((b: any) => ({
+            id: b.id,
+            customer_id: b.customer_id,
+            customer_name: 'Customer',
+            customer_phone: '',
+            worker_id: b.worker_id || 'unassigned',
+            worker: b.worker ? {
+              id: b.worker.id,
+              full_name: b.worker.full_name,
+              phone: b.worker.phone || '',
+              society_name: b.worker.society?.name || 'Cooperative Society',
+              profile_photo_url: b.worker.profile_photo_url || '',
+              profession: b.service?.name || 'Service Professional',
+              avg_rating: b.worker.avg_rating || 4.8,
+              approx_distance_km: 2.5,
+              hourly_rate: 300,
+              is_verified: true,
+              verification_status: 'verified',
+              cooperative_member_id: `MEM-${(b.worker.id || '').slice(0, 4).toUpperCase()}`,
+              total_jobs_completed: b.worker.total_jobs_completed || 12,
+              skills: [b.service?.name || 'General'],
+              badges: ['Verified'],
+              availability: 'Immediate (within 45 mins)',
+              experience_years: 4,
+              rating_count: 15,
+            } as any : undefined,
+            service_category_id: b.service_category_id || '',
+            service_name: b.service?.name || 'Home Service',
+            service_icon: b.service?.icon_url || 'Droplet',
+            booking_type: b.booking_type || 'scheduled',
+            status: b.status || 'requested',
+            urgency: 'normal',
+            description: b.description || '',
+            address: b.address || '',
+            city: b.city || 'Kolkata',
+            scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
+            time_slot: 'Scheduled',
+            estimated_price: b.estimated_price || 350,
+            final_price: b.final_price || b.estimated_price || 350,
+            created_at: b.created_at,
+          }));
+
+          setDbBookings(mapped);
+
+          // Synchronize each booking status with global store
+          mapped.forEach((b) => {
+            updateBookingStatus(b.id, b.status as any);
+          });
+        }
+      } catch (err) {
+        console.warn('CustomerDashboard fetch bookings error:', err);
+      }
+    }
+
+    loadBookings();
+    const interval = setInterval(loadBookings, 3000);
+
+    // Supabase Realtime channel for instant push updates
+    const channel = supabase
+      .channel('customer-dashboard-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => {
+          loadBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [updateBookingStatus]);
+
+  // Combine DB bookings with store bookings (DB takes precedence)
+  const allMergedBookings = [
+    ...dbBookings,
+    ...bookings.filter((b) => !dbBookings.some((db) => db.id === b.id)),
+  ];
+
+  // Check if there is an active ongoing booking
+  const activeBooking = allMergedBookings.find(
+    (b) => b.status !== 'completed' && b.status !== 'cancelled'
+  );
+
+  // Check if the most recent booking was rejected / cancelled
+  const latestCancelledBooking = allMergedBookings.find(
+    (b) => b.status === 'cancelled' && b.id !== dismissedDeclinedId
+  );
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,9 +242,9 @@ export function CustomerDashboard() {
 
         {/* 10 Categories Grid & Recommended Workers */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 space-y-8 relative z-20">
-          {/* Active Request Banner - Only shown when user has an active ongoing booking */}
+          {/* Active Request Banner - Shown when user has an active ongoing booking */}
           {activeBooking && (
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e6dcd0] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e6dcd0] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-[#e2eee4] text-[#8ba58b] flex items-center justify-center font-bold shrink-0">
                   <CalendarClock className="w-5 h-5" />
@@ -154,7 +259,7 @@ export function CustomerDashboard() {
                     </span>
                   </div>
                   <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
-                    {activeBooking.service_name} • Booking {activeBooking.id}
+                    {activeBooking.service_name} • Booking #{activeBooking.id.slice(0, 8)}
                   </h4>
                   <p className="text-xs text-[#776e79]">
                     {activeBooking.worker
@@ -169,6 +274,57 @@ export function CustomerDashboard() {
               >
                 <span>{t?.activeTrack || 'Track Live Status →'}</span>
               </Link>
+            </div>
+          )}
+
+          {/* Dynamic Rejection / Declined Alert Banner - Shown immediately when tradesperson declines */}
+          {latestCancelledBooking && !activeBooking && (
+            <div className="bg-gradient-to-r from-[#fff5f5] via-[#fef2f2] to-[#fff5f5] rounded-2xl p-4 sm:p-5 border-2 border-red-200/90 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold shrink-0 border border-red-200">
+                  <XCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-red-600">
+                      Request Declined by Tradesperson
+                    </span>
+                    <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">
+                      UNAVAILABLE / CANCELLED
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
+                    {latestCancelledBooking.service_name} • Booking #{latestCancelledBooking.id.slice(0, 8)}
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-0.5 max-w-xl">
+                    The requested cooperative artisan was unavailable and declined this booking. <strong>No payment has been deducted.</strong> You can request another verified artisan immediately.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                <Link
+                  href="/services"
+                  className="bg-[#d96f4d] hover:bg-[#b85435] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-[1.02]"
+                >
+                  <span>Find Another Worker</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  href="/history"
+                  className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-xs font-semibold px-3 py-2.5 rounded-xl transition-colors"
+                >
+                  History
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setDismissedDeclinedId(latestCancelledBooking.id)}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                  title="Dismiss alert"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
 

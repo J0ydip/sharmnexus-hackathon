@@ -64,10 +64,12 @@ export default function HistoryPage() {
 
   useEffect(() => {
     setMounted(true);
+    let isMounted = true;
+
     async function loadDbBookings() {
       try {
         const { data } = await getCustomerBookings();
-        if (data && data.length > 0) {
+        if (data && data.length > 0 && isMounted) {
           const mapped: (Booking & { payment_id?: string; payment_record?: any })[] = data.map((b: any) => {
             const hasCompletedPayment =
               (b.payments && b.payments.some((p: any) => p.status === 'completed')) ||
@@ -127,14 +129,39 @@ export default function HistoryPage() {
               created_at: b.created_at,
             };
           });
+
           setDbBookings(mapped);
+
+          // Synchronize each booking status to store
+          mapped.forEach((b) => {
+            updateBookingStatus(b.id, b.status as any);
+          });
         }
       } catch (err) {
         console.warn('Could not fetch Supabase bookings:', err);
       }
     }
+
     loadDbBookings();
-  }, []);
+    const interval = setInterval(loadDbBookings, 3000);
+
+    const channel = supabase
+      .channel('customer-history-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => {
+          loadDbBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, updateBookingStatus, bookings]);
 
   function formatSchedule(str: string) {
     if (!str) return 'Scheduled Soon';
@@ -610,13 +637,22 @@ export default function HistoryPage() {
                   )}
 
                   {booking.status === 'cancelled' && (
-                    <Link
-                      href={`/booking/${booking.service_category_id}`}
-                      className="bg-[#24172f] hover:bg-[#3d2b48] text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Rebook</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/track/${booking.id}`}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs h-9 px-3 rounded-xl flex items-center gap-1 transition-colors"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-gray-500" />
+                        <span>Timeline</span>
+                      </Link>
+                      <Link
+                        href="/services"
+                        className="bg-[#d96f4d] hover:bg-[#b85435] text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Book Another Worker</span>
+                      </Link>
+                    </div>
                   )}
                 </div>
               </div>
