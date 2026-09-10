@@ -133,11 +133,10 @@ const initScript = () => {
     });
 
     // Interactive Demand Zone Focus
-    document.querySelectorAll('.dzc-focus-btn').forEach(button => {
-      button.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const lat = parseFloat(button.dataset.lat);
-        const lng = parseFloat(button.dataset.lng);
+    document.querySelectorAll('.demand-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const lat = parseFloat(card.dataset.lat);
+        const lng = parseFloat(card.dataset.lng);
         if (!isNaN(lat) && !isNaN(lng)) {
           map.flyTo([lat, lng], 14, { duration: 1.2 });
           const target = markers.find(m => {

@@ -304,190 +304,51 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Live Demand & Dispatch Intelligence Hub */}
-          <div className="demand-intel-hub">
-            <div className="demand-hub-header">
-              <div className="demand-hub-title-group">
-                <div className="demand-pulse-badge">
-                  <span className="pulse-dot"></span>
-                  <span>LIVE COOPERATIVE DISPATCH PULSE</span>
-                </div>
-                <h3 className="demand-hub-title">Real-Time Demand &amp; Workforce Heatmap</h3>
-                <p className="demand-hub-subtitle">
-                  Live surge balancing across Jaipur neighborhoods. When demand peaks, cooperative members receive 100% of fair surge payouts with zero predatory platform markups.
-                </p>
-              </div>
-              <div className="demand-hub-quick-stats">
-                <div className="hub-stat-item">
-                  <span className="hub-stat-num">42</span>
-                  <span className="hub-stat-lbl">Active Pros</span>
-                </div>
-                <div className="hub-stat-divider"></div>
-                <div className="hub-stat-item">
-                  <span className="hub-stat-num">12m</span>
-                  <span className="hub-stat-lbl">Avg Response</span>
-                </div>
-                <div className="hub-stat-divider"></div>
-                <div className="hub-stat-item">
-                  <span className="hub-stat-num">99.4%</span>
-                  <span className="hub-stat-lbl">Dispatch Rate</span>
-                </div>
-              </div>
+          {/* Streamlined Live Demand Zones */}
+          <div className="demand-zones-wrap">
+            <div className="demand-zones-header">
+              <span className="live-pill">
+                <span className="pulse-dot"></span>
+                <span>Live Demand Zones</span>
+              </span>
+              <span className="demand-zones-note">Click a zone to view on map</span>
             </div>
 
-            <div className="demand-cards-grid">
-              {/* Zone A Card */}
-              <div className="demand-zone-card" data-zone="Zone A" data-lat="26.9120" data-lng="75.7700">
-                <div className="dzc-top">
-                  <span className="dzc-badge dzc-badge-high">
-                    <span className="dzc-dot red"></span>
-                    HIGH DEMAND (+23%)
-                  </span>
-                  <span className="dzc-loc">📍 Central Jaipur</span>
+            <div className="demand-zones-grid">
+              <div className="demand-card" data-lat="26.9120" data-lng="75.7700" role="button" tabIndex={0}>
+                <div className="demand-card-header">
+                  <span className="zone-tag">📍 Zone A · Central</span>
+                  <span className="surge-tag high">+23% demand</span>
                 </div>
-                <div className="dzc-main">
-                  <h4 className="dzc-name">Zone A · Vaishali &amp; Civil Lines</h4>
-                  <p className="dzc-service">Top In-Demand: <b>Plumbing &amp; Leak Repair</b></p>
-                </div>
-                <div className="dzc-metrics">
-                  <div className="dzc-metric">
-                    <span className="metric-val">8</span>
-                    <span className="metric-key">Available Pros</span>
-                  </div>
-                  <div className="dzc-metric">
-                    <span className="metric-val">~11 min</span>
-                    <span className="metric-key">ETA</span>
-                  </div>
-                  <div className="dzc-metric">
-                    <span className="metric-val">₹350/hr</span>
-                    <span className="metric-key">Fair Base Rate</span>
-                  </div>
-                </div>
-                <div className="dzc-meter-bar">
-                  <div className="dzc-meter-label">
-                    <span>Demand Velocity</span>
-                    <b>High (88%)</b>
-                  </div>
-                  <div className="dzc-progress-track">
-                    <div className="dzc-progress-fill red" style={{ width: '88%' }}></div>
-                  </div>
-                </div>
-                <div className="dzc-footer">
-                  <button type="button" className="dzc-focus-btn" data-lat="26.9120" data-lng="75.7700">
-                    Focus on Map ↗
-                  </button>
-                  <a href="/services?q=Plumber" className="dzc-action-btn">
-                    Book Plumber
-                  </a>
+                <div className="demand-card-service">Plumbing &amp; Repairs</div>
+                <div className="demand-card-footer">
+                  <span><b>8</b> verified workers</span>
+                  <span className="arrow-icon">↗</span>
                 </div>
               </div>
 
-              {/* Zone B Card */}
-              <div className="demand-zone-card" data-zone="Zone B" data-lat="26.8850" data-lng="75.7750">
-                <div className="dzc-top">
-                  <span className="dzc-badge dzc-badge-peak">
-                    <span className="dzc-dot amber"></span>
-                    PEAK DEMAND (+17%)
-                  </span>
-                  <span className="dzc-loc">📍 South Jaipur</span>
+              <div className="demand-card" data-lat="26.8850" data-lng="75.7750" role="button" tabIndex={0}>
+                <div className="demand-card-header">
+                  <span className="zone-tag">📍 Zone B · South</span>
+                  <span className="surge-tag peak">+17% demand</span>
                 </div>
-                <div className="dzc-main">
-                  <h4 className="dzc-name">Zone B · Mansarovar &amp; Gopalpura</h4>
-                  <p className="dzc-service">Top In-Demand: <b>Electrical &amp; Inverter Setup</b></p>
-                </div>
-                <div className="dzc-metrics">
-                  <div className="dzc-metric">
-                    <span className="metric-val">6</span>
-                    <span className="metric-key">Available Pros</span>
-                  </div>
-                  <div className="dzc-metric">
-                    <span className="metric-val">~14 min</span>
-                    <span className="metric-key">ETA</span>
-                  </div>
-                  <div className="dzc-metric">
-                    <span className="metric-val">₹400/hr</span>
-                    <span className="metric-key">Fair Base Rate</span>
-                  </div>
-                </div>
-                <div className="dzc-meter-bar">
-                  <div className="dzc-meter-label">
-                    <span>Demand Velocity</span>
-                    <b>Moderate (72%)</b>
-                  </div>
-                  <div className="dzc-progress-track">
-                    <div className="dzc-progress-fill amber" style={{ width: '72%' }}></div>
-                  </div>
-                </div>
-                <div className="dzc-footer">
-                  <button type="button" className="dzc-focus-btn" data-lat="26.8850" data-lng="75.7750">
-                    Focus on Map ↗
-                  </button>
-                  <a href="/services?q=Electrician" className="dzc-action-btn">
-                    Book Electrician
-                  </a>
+                <div className="demand-card-service">Electrical &amp; Wiring</div>
+                <div className="demand-card-footer">
+                  <span><b>6</b> verified workers</span>
+                  <span className="arrow-icon">↗</span>
                 </div>
               </div>
 
-              {/* Zone C Card */}
-              <div className="demand-zone-card" data-zone="Zone C" data-lat="26.9450" data-lng="75.8420">
-                <div className="dzc-top">
-                  <span className="dzc-badge dzc-badge-rising">
-                    <span className="dzc-dot green"></span>
-                    RISING DEMAND (+19%)
-                  </span>
-                  <span className="dzc-loc">📍 North Jaipur</span>
+              <div className="demand-card" data-lat="26.9450" data-lng="75.8420" role="button" tabIndex={0}>
+                <div className="demand-card-header">
+                  <span className="zone-tag">📍 Zone C · North</span>
+                  <span className="surge-tag rising">+19% demand</span>
                 </div>
-                <div className="dzc-main">
-                  <h4 className="dzc-name">Zone C · Malviya Nagar &amp; Jagatpura</h4>
-                  <p className="dzc-service">Top In-Demand: <b>Home Deep Cleaning &amp; Sanitization</b></p>
+                <div className="demand-card-service">Home Deep Cleaning</div>
+                <div className="demand-card-footer">
+                  <span><b>9</b> verified workers</span>
+                  <span className="arrow-icon">↗</span>
                 </div>
-                <div className="dzc-metrics">
-                  <div className="dzc-metric">
-                    <span className="metric-val">9</span>
-                    <span className="metric-key">Available Pros</span>
-                  </div>
-                  <div className="dzc-metric">
-                    <span className="metric-val">~16 min</span>
-                    <span className="metric-key">ETA</span>
-                  </div>
-                  <div className="dzc-metric">
-                    <span className="metric-val">₹499 base</span>
-                    <span className="metric-key">Fair Base Rate</span>
-                  </div>
-                </div>
-                <div className="dzc-meter-bar">
-                  <div className="dzc-meter-label">
-                    <span>Demand Velocity</span>
-                    <b>Rising (79%)</b>
-                  </div>
-                  <div className="dzc-progress-track">
-                    <div className="dzc-progress-fill green" style={{ width: '79%' }}></div>
-                  </div>
-                </div>
-                <div className="dzc-footer">
-                  <button type="button" className="dzc-focus-btn" data-lat="26.9450" data-lng="75.8420">
-                    Focus on Map ↗
-                  </button>
-                  <a href="/services?q=Cleaner" className="dzc-action-btn">
-                    Book Cleaning
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            {/* Cooperative Fair Allocation Guarantee Footer */}
-            <div className="demand-hub-footer">
-              <div className="dhf-left">
-                <div className="dhf-icon">🛡️</div>
-                <div>
-                  <strong>Cooperative Fair-Dispatch Guarantee</strong>
-                  <p>Transparent surge distribution · 100% direct member compensation · Zero algorithmic exploitation.</p>
-                </div>
-              </div>
-              <div className="dhf-right">
-                <a href="/auth/worker-register" className="dhf-link">
-                  Are you a skilled worker? Join Cooperative →
-                </a>
               </div>
             </div>
           </div>
