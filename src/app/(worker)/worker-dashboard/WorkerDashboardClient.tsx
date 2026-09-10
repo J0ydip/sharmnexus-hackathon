@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { updateWorkerAvailability } from '@/app/actions/workers';
-import { updateBookingStatus, getWorkerDashboardData } from '@/app/actions/worker-jobs';
+import { updateBookingStatus, getWorkerDashboardData, rejectJobRequest } from '@/app/actions/worker-jobs';
 import { getBookingOtp } from '@/lib/utils';
 import { useBookingStore } from '@/lib/store/bookingStore';
 import { createClient } from '@/lib/supabase/client';
@@ -176,6 +176,7 @@ export function WorkerDashboardClient() {
   const [workerReviews, setWorkerReviews] = useState<WorkerReview[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [isAcceptingId, setIsAcceptingId] = useState<string | null>(null);
+  const [isRejectingId, setIsRejectingId] = useState<string | null>(null);
 
   // Jobs tab state
   const [jobsTab, setJobsTab] = useState<'active' | 'pending' | 'completed'>('active');
@@ -268,33 +269,43 @@ export function WorkerDashboardClient() {
             setWorkerSociety(`${soc.name}${soc.district ? ` (${soc.district})` : ''}`);
           }
         }
+        let rejectedIds: string[] = [];
+        try {
+          rejectedIds = JSON.parse(localStorage.getItem('shramnexus-rejected-requests') || '[]');
+        } catch (e) {}
+        const rejectedSet = new Set(rejectedIds);
+
         if (res.requests) {
-          const liveRequests: JobRequest[] = res.requests.map((r: any) => ({
-            id: r.id,
-            name: r.customers?.full_name || 'Household Customer',
-            phone: r.customers?.phone || '',
-            service: r.service_categories?.name || 'General Maintenance',
-            date: r.scheduled_at ? new Date(r.scheduled_at).toLocaleDateString() : 'Today',
-            price: `₹ ${r.final_price || r.estimated_price || 400}`,
-            dist: '1.2 km',
-            desc: r.description || 'Verified job request through cooperative portal.',
-            address: r.address || 'Address provided via dispatch',
-            otp: getBookingOtp(r.id),
-          }));
+          const liveRequests: JobRequest[] = res.requests
+            .filter((r: any) => !rejectedSet.has(r.id) && r.status !== 'cancelled')
+            .map((r: any) => ({
+              id: r.id,
+              name: r.customers?.full_name || 'Household Customer',
+              phone: r.customers?.phone || '',
+              service: r.service_categories?.name || 'General Maintenance',
+              date: r.scheduled_at ? new Date(r.scheduled_at).toLocaleDateString() : 'Today',
+              price: `₹ ${r.final_price || r.estimated_price || 400}`,
+              dist: '1.2 km',
+              desc: r.description || 'Verified job request through cooperative portal.',
+              address: r.address || 'Address provided via dispatch',
+              otp: getBookingOtp(r.id),
+            }));
           setJobRequests(liveRequests);
         }
         if (res.activeJobs) {
-          const liveActive: ActiveJob[] = res.activeJobs.map((j: any) => ({
-            id: j.id,
-            name: j.customers?.full_name || 'Customer',
-            phone: j.customers?.phone || '',
-            service: j.service_categories?.name || 'Cooperative Service',
-            date: j.scheduled_at ? new Date(j.scheduled_at).toLocaleDateString() : 'Today',
-            price: `₹ ${j.final_price || j.estimated_price || 400}`,
-            address: j.address || 'Customer Location',
-            status: j.status || 'accepted',
-            otp: getBookingOtp(j.id),
-          }));
+          const liveActive: ActiveJob[] = res.activeJobs
+            .filter((j: any) => !rejectedSet.has(j.id) && j.status !== 'cancelled')
+            .map((j: any) => ({
+              id: j.id,
+              name: j.customers?.full_name || 'Customer',
+              phone: j.customers?.phone || '',
+              service: j.service_categories?.name || 'Cooperative Service',
+              date: j.scheduled_at ? new Date(j.scheduled_at).toLocaleDateString() : 'Today',
+              price: `₹ ${j.final_price || j.estimated_price || 400}`,
+              address: j.address || 'Customer Location',
+              status: j.status || 'accepted',
+              otp: getBookingOtp(j.id),
+            }));
           setActiveJobs(liveActive);
         }
         if (res.completedJobs) {
@@ -435,8 +446,35 @@ export function WorkerDashboardClient() {
   };
 
   const handleRejectRequest = async (id: string) => {
+    setIsRejectingId(id);
+    // 1. Immediately remove from local state
     setJobRequests((prev) => prev.filter((r) => r.id !== id));
-    showToast('Job Request rejected.');
+    setActiveJobs((prev) => prev.filter((j) => j.id !== id));
+
+    // 2. Persist in localStorage so polling or refresh never restores it
+    try {
+      const stored: string[] = JSON.parse(localStorage.getItem('shramnexus-rejected-requests') || '[]');
+      if (!stored.includes(id)) {
+        stored.push(id);
+        localStorage.setItem('shramnexus-rejected-requests', JSON.stringify(stored));
+      }
+    } catch (e) {}
+
+    // 3. Update Zustand bookingStore
+    try {
+      useBookingStore.getState().updateBookingStatus(id, 'cancelled');
+    } catch (err) {}
+
+    // 4. Update Supabase backend
+    try {
+      await rejectJobRequest(id);
+      showToast('❌ Job Request rejected.');
+    } catch (err: any) {
+      console.error('Error rejecting job request:', err);
+      showToast('Job Request rejected.');
+    } finally {
+      setIsRejectingId(null);
+    }
   };
 
   const handleInitiateCompleteJob = (job: ActiveJob) => {
@@ -761,9 +799,10 @@ export function WorkerDashboardClient() {
                       <button
                         type="button"
                         className="worker-btn worker-btn-outline"
+                        disabled={isRejectingId === req.id || isAcceptingId === req.id}
                         onClick={() => handleRejectRequest(req.id)}
                       >
-                        Reject
+                        {isRejectingId === req.id ? 'Rejecting...' : 'Reject'}
                       </button>
                       <button
                         type="button"
@@ -900,9 +939,10 @@ export function WorkerDashboardClient() {
                       <button
                         type="button"
                         className="worker-btn worker-btn-outline"
+                        disabled={isRejectingId === req.id || isAcceptingId === req.id}
                         onClick={() => handleRejectRequest(req.id)}
                       >
-                        Reject
+                        {isRejectingId === req.id ? 'Rejecting...' : 'Reject'}
                       </button>
                       <button
                         type="button"
@@ -937,7 +977,7 @@ export function WorkerDashboardClient() {
                 className={`worker-tab-btn ${jobsTab === 'pending' ? 'active' : ''}`}
                 onClick={() => setJobsTab('pending')}
               >
-                Pending (0)
+                Pending ({jobRequests.length})
               </button>
               <button
                 type="button"
@@ -1041,7 +1081,43 @@ export function WorkerDashboardClient() {
             )}
 
             {jobsTab === 'pending' && (
-              <p className="text-muted">No pending jobs awaiting confirmation.</p>
+              <div className="worker-requests-grid">
+                {jobRequests.length === 0 ? (
+                  <p className="text-muted">No pending jobs awaiting confirmation.</p>
+                ) : (
+                  jobRequests.map((req, idx) => (
+                    <div key={`pending-tab-${req.id}-${idx}`} className="worker-req-card">
+                      <div className="worker-req-head">
+                        <div>
+                          <h3>{req.service}</h3>
+                          <span>{req.name} • ⌖ {req.dist}</span>
+                        </div>
+                        <span className="badge">{req.date}</span>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>{req.desc}</p>
+                      <div className="worker-req-price">{req.price}</div>
+                      <div className="worker-req-actions">
+                        <button
+                          type="button"
+                          className="worker-btn worker-btn-outline"
+                          disabled={isRejectingId === req.id || isAcceptingId === req.id}
+                          onClick={() => handleRejectRequest(req.id)}
+                        >
+                          {isRejectingId === req.id ? 'Rejecting...' : 'Reject'}
+                        </button>
+                        <button
+                          type="button"
+                          className="worker-btn worker-btn-gold"
+                          disabled={isAcceptingId === req.id}
+                          onClick={() => handleAcceptRequest(req.id)}
+                        >
+                          {isAcceptingId === req.id ? 'Accepting...' : 'Accept Job'}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             )}
 
             {jobsTab === 'completed' && (

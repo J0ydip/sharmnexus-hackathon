@@ -153,7 +153,7 @@ export async function getWorkerDashboardData() {
         .from('bookings')
         .select('id, status, estimated_price, final_price, description, address, scheduled_at, created_at, customers(full_name, phone), service_categories(name)')
         .eq('worker_id', user.id)
-        .in('status', ['assigned', 'accepted', 'in_progress'])
+        .in('status', ['accepted', 'in_progress'])
         .order('scheduled_at', { ascending: true }),
       supabase
         .from('bookings')
@@ -214,3 +214,8 @@ export async function getWorkerDashboardData() {
     return null;
   }
 }
+
+export async function rejectJobRequest(bookingId: string) {
+  return updateBookingStatus(bookingId, 'cancelled');
+}
+

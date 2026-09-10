@@ -31,7 +31,16 @@ export default function WorkerJobsPage() {
     try {
       await updateBookingStatus(id, status);
       setJobs(jobs.map(j => j.id === id ? { ...j, status } : j));
-      toast.success(`Job ${status} successfully`);
+      if (status === 'cancelled') {
+        try {
+          const stored: string[] = JSON.parse(localStorage.getItem('shramnexus-rejected-requests') || '[]');
+          if (!stored.includes(id)) {
+            stored.push(id);
+            localStorage.setItem('shramnexus-rejected-requests', JSON.stringify(stored));
+          }
+        } catch (e) {}
+      }
+      toast.success(`Job ${status === 'cancelled' ? 'declined' : status} successfully`);
     } catch (err) {
       toast.error('Failed to update job status');
     }
