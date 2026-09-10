@@ -291,63 +291,36 @@ export default function LandingPage() {
         <section className="how section-pad" id="how-it-works">
           <div className="section-kicker" data-i18n="how_kicker">SIMPLE BY DESIGN</div>
           <h2 data-i18n-html="how_h2">From “I need help”<br /><em>to “all sorted.”</em></h2>
-          <p className="how-subtitle">
-            A transparent 4-step workflow connecting household requests directly to certified cooperative craftsmen — fast, dignified, and guaranteed.
-          </p>
           <div className="steps">
             <div className="step">
-              <div className="step-header">
-                <span>01</span>
-                <span className="step-tag">Step 1</span>
-              </div>
-              <div className="step-body">
+              <span>01</span>
+              <div>
                 <h3 data-i18n="step1_t">Tell us what you need</h3>
-                <p data-i18n="step1_d">Describe a service in your own words, in your own language, via search or voice.</p>
-              </div>
-              <div className="step-footer">
-                <span className="step-pill">🎙️ Voice &amp; Multilingual</span>
+                <p data-i18n="step1_d">Describe a service in your own words, in your own language.</p>
               </div>
             </div>
 
             <div className="step">
-              <div className="step-header">
-                <span>02</span>
-                <span className="step-tag">Step 2</span>
-              </div>
-              <div className="step-body">
+              <span>02</span>
+              <div>
                 <h3 data-i18n="step2_t">Get intelligently matched</h3>
-                <p data-i18n="step2_d">We find verified nearby workers by skill, rating, location, and cooperative availability.</p>
-              </div>
-              <div className="step-footer">
-                <span className="step-pill">⚡ FairWork Engine™</span>
+                <p data-i18n="step2_d">We find verified nearby workers by skill, rating, location, and availability.</p>
               </div>
             </div>
 
             <div className="step">
-              <div className="step-header">
-                <span>03</span>
-                <span className="step-tag">Step 3</span>
-              </div>
-              <div className="step-body">
+              <span>03</span>
+              <div>
                 <h3 data-i18n="step3_t">Book with confidence</h3>
-                <p data-i18n="step3_d">Choose a time, track the service live, verify with a security PIN, and pay securely.</p>
-              </div>
-              <div className="step-footer">
-                <span className="step-pill">🛡️ Secure PIN &amp; Warranty</span>
+                <p data-i18n="step3_d">Choose a time, track the service, pay securely, and leave a rating.</p>
               </div>
             </div>
 
             <div className="step">
-              <div className="step-header">
-                <span>04</span>
-                <span className="step-tag">Step 4</span>
-              </div>
-              <div className="step-body">
+              <span>04</span>
+              <div>
                 <h3 data-i18n="step4_t">Help the network grow</h3>
-                <p data-i18n="step4_d">Every booking supports local workers with 85% payouts and strengthens their welfare fund.</p>
-              </div>
-              <div className="step-footer">
-                <span className="step-pill">🤝 Cooperative Fair-Share</span>
+                <p data-i18n="step4_d">Every booking supports local workers and strengthens the cooperative behind them.</p>
               </div>
             </div>
           </div>

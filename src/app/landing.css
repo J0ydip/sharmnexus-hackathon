@@ -1231,102 +1231,61 @@ body:has(.hero) .how h2 em,
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
-  margin-top: 4rem;
+  margin-top: 3.5rem;
   position: relative;
   z-index: 1;
-}
-
-@media (min-width: 1024px) {
-  .steps::before {
-    content: "";
-    position: absolute;
-    top: 48px;
-    left: 8%;
-    right: 8%;
-    height: 2px;
-    background: linear-gradient(90deg, 
-      rgba(230, 170, 59, 0.2) 0%, 
-      rgba(230, 170, 59, 0.6) 25%, 
-      rgba(217, 111, 77, 0.6) 50%, 
-      rgba(124, 92, 240, 0.6) 75%, 
-      rgba(124, 92, 240, 0.2) 100%
-    );
-    z-index: 0;
-    pointer-events: none;
-  }
 }
 
 .step {
   position: relative;
   z-index: 1;
-  padding: 2.2rem 1.6rem 1.8rem;
-  border-radius: 24px;
+  padding: 2.2rem 1.8rem;
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 290px;
   transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .step:hover {
-  transform: translateY(-8px);
+  transform: translateY(-6px);
   background: rgba(255, 255, 255, 0.065);
-  border-color: rgba(230, 170, 59, 0.45);
-  box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.6), 0 0 25px rgba(230, 170, 59, 0.15);
+  border-color: rgba(230, 170, 59, 0.4);
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.55), 0 0 20px rgba(230, 170, 59, 0.12);
 }
 
-.step-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
+.step:after {
+  display: none !important;
 }
 
-.step > span,
-.step-header > span {
-  position: relative;
-  z-index: 2;
+.step > span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(230, 170, 59, 0.25), rgba(217, 111, 77, 0.15));
-  border: 1.5px solid rgba(230, 170, 59, 0.6);
+  background: linear-gradient(135deg, rgba(230, 170, 59, 0.22), rgba(217, 111, 77, 0.12));
+  border: 1.5px solid rgba(230, 170, 59, 0.55);
   color: #f5dfad;
   font-family: var(--sans);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 800;
-  box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.4), 0 0 16px rgba(230, 170, 59, 0.2);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), 0 0 14px rgba(230, 170, 59, 0.18);
   transition: all 0.3s ease;
 }
 
-.step:hover > span,
-.step:hover .step-header > span {
+.step:hover > span {
   transform: scale(1.08);
   border-color: #f5dfad;
   background: linear-gradient(135deg, #e6aa3b, #d96f4d);
   color: #24172f;
-  box-shadow: 0 8px 25px rgba(230, 170, 59, 0.4);
-}
-
-.step-tag {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(200, 186, 203, 0.6);
-  font-family: var(--sans);
-}
-
-.step-body {
-  flex: 1;
+  box-shadow: 0 8px 20px rgba(230, 170, 59, 0.35);
 }
 
 body:has(#home) .step h3,
@@ -1345,29 +1304,10 @@ body:has(#home) .step p,
 body:has(.hero) .step p,
 .step p {
   color: #d6c8d9 !important;
-  font-size: 0.85rem !important;
+  font-size: 0.86rem !important;
   line-height: 1.65 !important;
   max-width: none;
   margin: 0;
-}
-
-.step-footer {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.step-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #f5dfad;
-  background: rgba(230, 170, 59, 0.1);
-  border: 1px solid rgba(230, 170, 59, 0.2);
-  padding: 4px 10px;
-  border-radius: 999px;
 }
 
 @media (max-width: 1024px) {
