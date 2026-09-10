@@ -284,7 +284,7 @@ export const useBookingStore = create<BookingStoreState>()(
       },
     }),
     {
-      name: 'shramnexus-customer-store-v3',
+      name: 'shramnexus-customer-store-v4',
     }
   )
 );
