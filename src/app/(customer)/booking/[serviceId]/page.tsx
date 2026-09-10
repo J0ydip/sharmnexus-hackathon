@@ -133,12 +133,12 @@ function BookingFlowContent({ params }: PageProps) {
       return (b.match_score || 0) - (a.match_score || 0); // Best Match
     });
 
-  // Selected worker for confirm step
+  // Selected worker for confirm step (strictly matched to category)
   const selectedWorker =
     draft.selectedWorker ||
-    workers.find((w) => w.id === draft.selectedWorkerId) ||
+    filteredWorkers.find((w) => w.id === draft.selectedWorkerId) ||
     filteredWorkers[0] ||
-    workers[0];
+    null;
 
   // GPS and Geocoding Detection
   const [isLocating, setIsLocating] = useState(false);
@@ -275,8 +275,8 @@ function BookingFlowContent({ params }: PageProps) {
     try {
       const res = await createBooking({
         customer_id: session?.user?.id,
-        worker_id: draft.selectedWorkerId || 'worker-rajesh-kumar',
-        worker_name: draft.selectedWorker?.full_name || selectedWorker?.full_name,
+        worker_id: selectedWorker?.id || draft.selectedWorkerId,
+        worker_name: selectedWorker?.full_name || draft.selectedWorker?.full_name,
         service_category_id: draft.serviceCategoryId,
         service_category_name: draft.serviceCategoryName,
         description: draft.description,

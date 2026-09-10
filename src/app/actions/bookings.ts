@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 // ---------------------------------------------------------------------------
 export async function createBooking(data: {
   customer_id?: string;
-  worker_id: string;
+  worker_id?: string;
   service_category_id?: string;
   service_category_name?: string;
   service_id?: string;
@@ -80,39 +80,86 @@ export async function createBooking(data: {
     const matched = catRows?.find(c => c.name.toLowerCase().includes(cleanName) || cleanName.includes(c.name.toLowerCase()));
     realCategoryId = matched?.id || catRows?.[0]?.id || null;
   }
-
   let realWorkerId: string | null = null;
-  if (data.worker_id && isUuid(data.worker_id)) {
-    realWorkerId = data.worker_id;
-  } else {
-    // 1. Try to match by explicit worker_name if provided (e.g. "Manoj Verma")
-    if (data.worker_name) {
+
+  // 1. If explicit worker_id provided as UUID, verify their category matches if realCategoryId is present
+    if (data.worker_id && isUuid(data.worker_id)) {
+      if (realCategoryId) {
+        const { data: hasSkill } = await supabase
+          .from('worker_skills')
+          .select('worker_id')
+          .eq('worker_id', data.worker_id)
+          .eq('service_category_id', realCategoryId)
+          .limit(1);
+        if (hasSkill && hasSkill.length > 0) {
+          realWorkerId = data.worker_id;
+        }
+      } else {
+        realWorkerId = data.worker_id;
+      }
+    }
+
+    // 2. Try to match by explicit worker_name if provided and category matches
+    if (!realWorkerId && data.worker_name) {
       const { data: matchedByName } = await supabase
         .from('workers')
         .select('id')
         .ilike('full_name', `%${data.worker_name.trim()}%`)
-        .limit(1)
-        .maybeSingle();
-      if (matchedByName?.id) {
-        realWorkerId = matchedByName.id;
+        .limit(5);
+
+      if (matchedByName && matchedByName.length > 0) {
+        if (realCategoryId) {
+          // Find the one that actually belongs to this category
+          for (const cand of matchedByName) {
+            const { data: hasSkill } = await supabase
+              .from('worker_skills')
+              .select('worker_id')
+              .eq('worker_id', cand.id)
+              .eq('service_category_id', realCategoryId)
+              .limit(1);
+            if (hasSkill && hasSkill.length > 0) {
+              realWorkerId = cand.id;
+              break;
+            }
+          }
+        }
+        if (!realWorkerId && !realCategoryId) {
+          realWorkerId = matchedByName[0].id;
+        }
       }
     }
 
-    // 2. Try to match by specific mock ID pattern if provided
-    if (!realWorkerId && data.worker_id) {
+    // 3. Try to match by specific mock ID pattern if provided (only if category matches)
+    if (!realWorkerId && data.worker_id && !isUuid(data.worker_id)) {
       const cleanTargetName = data.worker_id.replace(/^worker-/, '').replace(/-/g, ' ');
       const { data: matchedByIdSlug } = await supabase
         .from('workers')
         .select('id')
         .ilike('full_name', `%${cleanTargetName}%`)
-        .limit(1)
-        .maybeSingle();
-      if (matchedByIdSlug?.id) {
-        realWorkerId = matchedByIdSlug.id;
+        .limit(5);
+
+      if (matchedByIdSlug && matchedByIdSlug.length > 0) {
+        if (realCategoryId) {
+          for (const cand of matchedByIdSlug) {
+            const { data: hasSkill } = await supabase
+              .from('worker_skills')
+              .select('worker_id')
+              .eq('worker_id', cand.id)
+              .eq('service_category_id', realCategoryId)
+              .limit(1);
+            if (hasSkill && hasSkill.length > 0) {
+              realWorkerId = cand.id;
+              break;
+            }
+          }
+        }
+        if (!realWorkerId && !realCategoryId) {
+          realWorkerId = matchedByIdSlug[0].id;
+        }
       }
     }
 
-    // 3. Try to find a worker for this category or fallback to any verified worker
+    // 4. Strictly find a verified worker matching this category
     if (!realWorkerId && realCategoryId) {
       const { data: skillRows } = await supabase
         .from('worker_skills')
@@ -123,7 +170,6 @@ export async function createBooking(data: {
         realWorkerId = skillRows[0].worker_id;
       }
     }
-  }
 
   const addressStr = data.address || data.address_line1 || '';
   let scheduledAt = data.scheduled_at;

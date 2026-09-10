@@ -165,13 +165,27 @@ export const useBookingStore = create<BookingStoreState>()(
           } catch (e) {}
         }
 
+        const matchedWorker =
+          draft.selectedWorker ||
+          get().workers.find((w) => w.id === draft.selectedWorkerId) ||
+          get().workers.find((w) =>
+            (draft.serviceCategoryName && (
+              w.primary_skill?.toLowerCase().includes(draft.serviceCategoryName.toLowerCase()) ||
+              w.skills?.some((s: any) => s.service_name?.toLowerCase().includes(draft.serviceCategoryName.toLowerCase()))
+            )) ||
+            (draft.serviceCategoryId && (
+              w.skills?.some((s: any) => s.service_category_id === draft.serviceCategoryId)
+            ))
+          ) ||
+          get().workers[0];
+
         const newBooking: Booking = {
           id: newBookingId,
           customer_id: 'customer-auth-user',
           customer_name: customerName,
           customer_phone: customerPhone,
-          worker_id: draft.selectedWorkerId || 'worker-rajesh-kumar',
-          worker: draft.selectedWorker || get().workers.find((w) => w.id === draft.selectedWorkerId) || get().workers[0],
+          worker_id: matchedWorker?.id || draft.selectedWorkerId || 'worker-rajesh-kumar',
+          worker: matchedWorker,
           service_category_id: draft.serviceCategoryId,
           service_name: draft.serviceCategoryName,
           service_icon: draft.serviceIcon,
