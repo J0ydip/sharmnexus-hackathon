@@ -132,6 +132,30 @@ const initScript = () => {
       );
     });
 
+    // Interactive Demand Zone Focus
+    document.querySelectorAll('.dzc-focus-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const lat = parseFloat(button.dataset.lat);
+        const lng = parseFloat(button.dataset.lng);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          map.flyTo([lat, lng], 14, { duration: 1.2 });
+          const target = markers.find(m => {
+            const ll = m.getLatLng();
+            return Math.abs(ll.lat - lat) < 0.005 && Math.abs(ll.lng - lng) < 0.005;
+          });
+          if (target) {
+            if (!map.hasLayer(target)) target.addTo(map);
+            target.openPopup();
+          }
+          const mapCard = document.querySelector('.map-card');
+          if (mapCard) {
+            mapCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      });
+    });
+
     setTimeout(() => map.invalidateSize(true), 200);
     window.addEventListener('resize', () => map.invalidateSize(true));
   }

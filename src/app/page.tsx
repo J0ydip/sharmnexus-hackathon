@@ -261,7 +261,237 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="service-map-section section-pad" id="nearby-services"><div className="map-heading"><div><div className="section-kicker" data-i18n="map_kicker">LIVE LOCAL NETWORK</div><h2 data-i18n="map_h2">Services around you.</h2><p data-i18n="map_p">Explore verified workers, active bookings, and areas with rising demand.</p></div><button className="map-location-button" id="use-location" type="button">⌖ <span data-i18n="map_locbtn">Use my location</span></button></div><div className="map-layout"><div className="map-card"><div id="service-map" aria-label="Interactive map showing ShramNexus services around Jaipur"></div><div className="map-attribution-note">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div></div><div className="map-legend" aria-label="Map filters"><button className="legend-item is-active" data-category="worker" type="button"><i className="legend-dot dot-green"></i><span data-i18n="legend_workers">Available workers</span><b>12</b></button><button className="legend-item is-active" data-category="booking" type="button"><i className="legend-dot dot-terracotta"></i><span data-i18n="legend_bookings">Active bookings</span><b>8</b></button><button className="legend-item is-active" data-category="demand" type="button"><i className="legend-dot dot-red"></i><span data-i18n="legend_demand">High-demand zones</span><b>3</b></button><button className="legend-item is-active" data-category="request" type="button"><i className="legend-dot dot-orange"></i><span data-i18n="legend_requests">Customer requests</span><b>6</b></button></div></div><div className="demand-zone"><span>📍 <b>Zone A</b></span><div><strong>High Demand Zone</strong><small>Plumbing demand +23%</small></div><span>Available workers: <b>8</b></span></div></section>
+        <section className="service-map-section section-pad" id="nearby-services">
+          <div className="map-heading">
+            <div>
+              <div className="section-kicker" data-i18n="map_kicker">LIVE LOCAL NETWORK</div>
+              <h2 data-i18n="map_h2">Services around you.</h2>
+              <p data-i18n="map_p">Explore verified workers, active bookings, and areas with rising demand.</p>
+            </div>
+            <button className="map-location-button" id="use-location" type="button">
+              ⌖ <span data-i18n="map_locbtn">Use my location</span>
+            </button>
+          </div>
+
+          <div className="map-layout">
+            <div className="map-card">
+              <div id="service-map" aria-label="Interactive map showing ShramNexus services around Jaipur"></div>
+              <div className="map-attribution-note">
+                Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors
+              </div>
+            </div>
+            <div className="map-legend" aria-label="Map filters">
+              <button className="legend-item is-active" data-category="worker" type="button">
+                <i className="legend-dot dot-green"></i>
+                <span data-i18n="legend_workers">Available workers</span>
+                <b>12</b>
+              </button>
+              <button className="legend-item is-active" data-category="booking" type="button">
+                <i className="legend-dot dot-terracotta"></i>
+                <span data-i18n="legend_bookings">Active bookings</span>
+                <b>8</b>
+              </button>
+              <button className="legend-item is-active" data-category="demand" type="button">
+                <i className="legend-dot dot-red"></i>
+                <span data-i18n="legend_demand">High-demand zones</span>
+                <b>3</b>
+              </button>
+              <button className="legend-item is-active" data-category="request" type="button">
+                <i className="legend-dot dot-orange"></i>
+                <span data-i18n="legend_requests">Customer requests</span>
+                <b>6</b>
+              </button>
+            </div>
+          </div>
+
+          {/* Live Demand & Dispatch Intelligence Hub */}
+          <div className="demand-intel-hub">
+            <div className="demand-hub-header">
+              <div className="demand-hub-title-group">
+                <div className="demand-pulse-badge">
+                  <span className="pulse-dot"></span>
+                  <span>LIVE COOPERATIVE DISPATCH PULSE</span>
+                </div>
+                <h3 className="demand-hub-title">Real-Time Demand &amp; Workforce Heatmap</h3>
+                <p className="demand-hub-subtitle">
+                  Live surge balancing across Jaipur neighborhoods. When demand peaks, cooperative members receive 100% of fair surge payouts with zero predatory platform markups.
+                </p>
+              </div>
+              <div className="demand-hub-quick-stats">
+                <div className="hub-stat-item">
+                  <span className="hub-stat-num">42</span>
+                  <span className="hub-stat-lbl">Active Pros</span>
+                </div>
+                <div className="hub-stat-divider"></div>
+                <div className="hub-stat-item">
+                  <span className="hub-stat-num">12m</span>
+                  <span className="hub-stat-lbl">Avg Response</span>
+                </div>
+                <div className="hub-stat-divider"></div>
+                <div className="hub-stat-item">
+                  <span className="hub-stat-num">99.4%</span>
+                  <span className="hub-stat-lbl">Dispatch Rate</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="demand-cards-grid">
+              {/* Zone A Card */}
+              <div className="demand-zone-card" data-zone="Zone A" data-lat="26.9120" data-lng="75.7700">
+                <div className="dzc-top">
+                  <span className="dzc-badge dzc-badge-high">
+                    <span className="dzc-dot red"></span>
+                    HIGH DEMAND (+23%)
+                  </span>
+                  <span className="dzc-loc">📍 Central Jaipur</span>
+                </div>
+                <div className="dzc-main">
+                  <h4 className="dzc-name">Zone A · Vaishali &amp; Civil Lines</h4>
+                  <p className="dzc-service">Top In-Demand: <b>Plumbing &amp; Leak Repair</b></p>
+                </div>
+                <div className="dzc-metrics">
+                  <div className="dzc-metric">
+                    <span className="metric-val">8</span>
+                    <span className="metric-key">Available Pros</span>
+                  </div>
+                  <div className="dzc-metric">
+                    <span className="metric-val">~11 min</span>
+                    <span className="metric-key">ETA</span>
+                  </div>
+                  <div className="dzc-metric">
+                    <span className="metric-val">₹350/hr</span>
+                    <span className="metric-key">Fair Base Rate</span>
+                  </div>
+                </div>
+                <div className="dzc-meter-bar">
+                  <div className="dzc-meter-label">
+                    <span>Demand Velocity</span>
+                    <b>High (88%)</b>
+                  </div>
+                  <div className="dzc-progress-track">
+                    <div className="dzc-progress-fill red" style={{ width: '88%' }}></div>
+                  </div>
+                </div>
+                <div className="dzc-footer">
+                  <button type="button" className="dzc-focus-btn" data-lat="26.9120" data-lng="75.7700">
+                    Focus on Map ↗
+                  </button>
+                  <a href="/services?q=Plumber" className="dzc-action-btn">
+                    Book Plumber
+                  </a>
+                </div>
+              </div>
+
+              {/* Zone B Card */}
+              <div className="demand-zone-card" data-zone="Zone B" data-lat="26.8850" data-lng="75.7750">
+                <div className="dzc-top">
+                  <span className="dzc-badge dzc-badge-peak">
+                    <span className="dzc-dot amber"></span>
+                    PEAK DEMAND (+17%)
+                  </span>
+                  <span className="dzc-loc">📍 South Jaipur</span>
+                </div>
+                <div className="dzc-main">
+                  <h4 className="dzc-name">Zone B · Mansarovar &amp; Gopalpura</h4>
+                  <p className="dzc-service">Top In-Demand: <b>Electrical &amp; Inverter Setup</b></p>
+                </div>
+                <div className="dzc-metrics">
+                  <div className="dzc-metric">
+                    <span className="metric-val">6</span>
+                    <span className="metric-key">Available Pros</span>
+                  </div>
+                  <div className="dzc-metric">
+                    <span className="metric-val">~14 min</span>
+                    <span className="metric-key">ETA</span>
+                  </div>
+                  <div className="dzc-metric">
+                    <span className="metric-val">₹400/hr</span>
+                    <span className="metric-key">Fair Base Rate</span>
+                  </div>
+                </div>
+                <div className="dzc-meter-bar">
+                  <div className="dzc-meter-label">
+                    <span>Demand Velocity</span>
+                    <b>Moderate (72%)</b>
+                  </div>
+                  <div className="dzc-progress-track">
+                    <div className="dzc-progress-fill amber" style={{ width: '72%' }}></div>
+                  </div>
+                </div>
+                <div className="dzc-footer">
+                  <button type="button" className="dzc-focus-btn" data-lat="26.8850" data-lng="75.7750">
+                    Focus on Map ↗
+                  </button>
+                  <a href="/services?q=Electrician" className="dzc-action-btn">
+                    Book Electrician
+                  </a>
+                </div>
+              </div>
+
+              {/* Zone C Card */}
+              <div className="demand-zone-card" data-zone="Zone C" data-lat="26.9450" data-lng="75.8420">
+                <div className="dzc-top">
+                  <span className="dzc-badge dzc-badge-rising">
+                    <span className="dzc-dot green"></span>
+                    RISING DEMAND (+19%)
+                  </span>
+                  <span className="dzc-loc">📍 North Jaipur</span>
+                </div>
+                <div className="dzc-main">
+                  <h4 className="dzc-name">Zone C · Malviya Nagar &amp; Jagatpura</h4>
+                  <p className="dzc-service">Top In-Demand: <b>Home Deep Cleaning &amp; Sanitization</b></p>
+                </div>
+                <div className="dzc-metrics">
+                  <div className="dzc-metric">
+                    <span className="metric-val">9</span>
+                    <span className="metric-key">Available Pros</span>
+                  </div>
+                  <div className="dzc-metric">
+                    <span className="metric-val">~16 min</span>
+                    <span className="metric-key">ETA</span>
+                  </div>
+                  <div className="dzc-metric">
+                    <span className="metric-val">₹499 base</span>
+                    <span className="metric-key">Fair Base Rate</span>
+                  </div>
+                </div>
+                <div className="dzc-meter-bar">
+                  <div className="dzc-meter-label">
+                    <span>Demand Velocity</span>
+                    <b>Rising (79%)</b>
+                  </div>
+                  <div className="dzc-progress-track">
+                    <div className="dzc-progress-fill green" style={{ width: '79%' }}></div>
+                  </div>
+                </div>
+                <div className="dzc-footer">
+                  <button type="button" className="dzc-focus-btn" data-lat="26.9450" data-lng="75.8420">
+                    Focus on Map ↗
+                  </button>
+                  <a href="/services?q=Cleaner" className="dzc-action-btn">
+                    Book Cleaning
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Cooperative Fair Allocation Guarantee Footer */}
+            <div className="demand-hub-footer">
+              <div className="dhf-left">
+                <div className="dhf-icon">🛡️</div>
+                <div>
+                  <strong>Cooperative Fair-Dispatch Guarantee</strong>
+                  <p>Transparent surge distribution · 100% direct member compensation · Zero algorithmic exploitation.</p>
+                </div>
+              </div>
+              <div className="dhf-right">
+                <a href="/auth/worker-register" className="dhf-link">
+                  Are you a skilled worker? Join Cooperative →
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="platform-features section-pad" id="platform-features"><div className="section-kicker" data-i18n="features_kicker">THE SHRAMNEXUS DIFFERENCE</div><h2 data-i18n-html="features_h2">Everything you need.<br /><em>One simple platform.</em></h2><div className="feature-grid"><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">⌕</span><h3 data-i18n-html="feat_1">Find verified<br />professionals</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">⌖</span><h3 data-i18n-html="feat_2">Location-based<br />matching</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">▦</span><h3 data-i18n="feat_3">Easy scheduling</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">▣</span><h3 data-i18n-html="feat_4">Secure digital<br />payments</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">▤</span><h3 data-i18n="feat_5">Digital invoices</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">★</span><h3 data-i18n-html="feat_6">Ratings &amp;<br />reviews</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">⌁</span><h3 data-i18n="feat_7">Service tracking</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">!</span><h3 data-i18n-html="feat_8">Emergency<br />booking</h3><span className="feature-arrow">↗</span></a></div></section>
 
