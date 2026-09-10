@@ -56,7 +56,26 @@ export function CustomerDashboard() {
 
   const [homeSearch, setHomeSearch] = useState('');
   const [dbBookings, setDbBookings] = useState<Booking[]>([]);
-  const [dismissedDeclinedId, setDismissedDeclinedId] = useState<string | null>(null);
+  const [dismissedDeclinedIds, setDismissedDeclinedIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return JSON.parse(localStorage.getItem('shramnexus-dismissed-declined-ids') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  const handleDismissDeclined = (bookingId: string) => {
+    setDismissedDeclinedIds((prev) => {
+      const next = Array.from(new Set([...prev, bookingId]));
+      try {
+        localStorage.setItem('shramnexus-dismissed-declined-ids', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
 
   // Load bookings from Supabase, poll every 3 seconds, and subscribe to Realtime updates
   useEffect(() => {
@@ -156,7 +175,7 @@ export function CustomerDashboard() {
 
   // Check if the most recent booking was rejected / cancelled
   const latestCancelledBooking = allMergedBookings.find(
-    (b) => b.status === 'cancelled' && b.id !== dismissedDeclinedId
+    (b) => b.status === 'cancelled' && !dismissedDeclinedIds.includes(b.id)
   );
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -318,7 +337,7 @@ export function CustomerDashboard() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => setDismissedDeclinedId(latestCancelledBooking.id)}
+                  onClick={() => handleDismissDeclined(latestCancelledBooking.id)}
                   className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
                   title="Dismiss alert"
                 >
