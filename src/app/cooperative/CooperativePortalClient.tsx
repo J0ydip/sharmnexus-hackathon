@@ -195,32 +195,50 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       return;
     }
     try {
-      await createWelfareClaimAction({
-        title: welfareClaimForm.title,
-        amount: Number(welfareClaimForm.amount),
-        type: welfareClaimForm.type,
-        workerName: welfareClaimForm.workerName,
-      });
-    } catch (e) {}
+      const res = await createWelfareClaimAction(
+        {
+          title: welfareClaimForm.title,
+          amount: Number(welfareClaimForm.amount),
+          type: welfareClaimForm.type,
+          workerName: welfareClaimForm.workerName,
+        },
+        data.society.id
+      );
 
-    setData((prev) => ({
-      ...prev,
-      society: {
-        ...prev.society,
-        welfareFund: Math.max(0, prev.society.welfareFund - Number(welfareClaimForm.amount)),
-      },
-      welfare: {
-        ...prev.welfare,
-        utilized: prev.welfare.utilized + Number(welfareClaimForm.amount),
-        claims: [
-          { title: welfareClaimForm.title, amount: Number(welfareClaimForm.amount) },
-          ...prev.welfare.claims,
-        ],
-      },
-    }));
-    setShowWelfareClaimModal(false);
-    setWelfareClaimForm({ title: '', amount: 15000, type: 'Healthcare Emergency', workerName: '' });
-    showToast('Welfare disbursement approved and logged into records!');
+      if (res.success && res.claim) {
+        setData((prev) => ({
+          ...prev,
+          society: {
+            ...prev.society,
+            welfareFund: Math.max(0, prev.society.welfareFund - res.claim.amount),
+          },
+          welfare: {
+            ...prev.welfare,
+            utilized: prev.welfare.utilized + res.claim.amount,
+            claims: [
+              { title: res.claim.title, amount: res.claim.amount },
+              ...prev.welfare.claims,
+            ],
+          },
+          activities: [
+            {
+              id: `act-${Date.now()}`,
+              icon: '🛡️',
+              title: `Welfare Claim approved: "${res.claim.title}" (₹${res.claim.amount.toLocaleString('en-IN')}).`,
+              time: 'Just now',
+            },
+            ...prev.activities,
+          ],
+        }));
+        setShowWelfareClaimModal(false);
+        setWelfareClaimForm({ title: '', amount: 15000, type: 'Healthcare Emergency', workerName: '' });
+        showToast('Welfare disbursement approved and logged into records!');
+      } else {
+        showToast(res.error || 'Failed to record welfare claim.');
+      }
+    } catch (e) {
+      showToast('Error recording welfare claim.');
+    }
   };
 
   // Export CSV Roster
@@ -298,31 +316,44 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
   // Worker Approvals
   const handleApproveWorker = async (worker: CooperativeWorkerItem) => {
     try {
-      await approveWorkerMembership(worker.id, data.society.id);
-      setData((prev) => ({
-        ...prev,
-        pendingRequests: prev.pendingRequests.filter((w) => w.id !== worker.id),
-        workers: [
-          {
-            ...worker,
-            id: `WRK-${Math.floor(1000 + Math.random() * 9000)}`,
-            availability: 'Available',
-            jobs: 0,
-            hours: 0,
-            earnings: '₹ 0',
-            fairnessScore: 65,
-            status: 'Under-utilized',
-            statusClass: 'status-gold',
-            isPending: false,
+      const res = await approveWorkerMembership(worker.id, data.society.id);
+      if (res.success) {
+        setData((prev) => ({
+          ...prev,
+          pendingRequests: prev.pendingRequests.filter((w) => w.id !== worker.id),
+          workers: [
+            {
+              ...worker,
+              availability: 'Available',
+              jobs: 0,
+              hours: 0,
+              earnings: '₹ 0',
+              fairnessScore: 65,
+              status: 'Balanced',
+              statusClass: 'status-green',
+              isPending: false,
+            },
+            ...prev.workers,
+          ],
+          society: {
+            ...prev.society,
+            memberCount: prev.society.memberCount + 1,
+            activeMembers: prev.society.activeMembers + 1,
           },
-          ...prev.workers,
-        ],
-        society: {
-          ...prev.society,
-          memberCount: prev.society.memberCount + 1,
-        },
-      }));
-      showToast(`Approved ${worker.name}! Added to Active Society Roster.`);
+          activities: [
+            {
+              id: `act-${Date.now()}`,
+              icon: '🎉',
+              title: `${worker.name} approved and added to active cooperative roster!`,
+              time: 'Just now',
+            },
+            ...prev.activities,
+          ],
+        }));
+        showToast(`Approved ${worker.name}! Added to Active Society Roster.`);
+      } else {
+        showToast('Failed to approve member.');
+      }
     } catch (e: any) {
       showToast('Action completed.');
     }
@@ -366,27 +397,42 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       showToast('Please fill in RWA/Client and Service details.');
       return;
     }
-    const newContract: CommunityContractItem = {
-      id: `cnt-${Date.now()}`,
-      rwa: contractForm.rwa,
-      service: contractForm.service,
-      workersNeeded: Number(contractForm.workersNeeded) || 4,
-      durationDays: Number(contractForm.durationDays) || 14,
-      budget: contractForm.budget.startsWith('₹') ? contractForm.budget : `₹ ${contractForm.budget}`,
-      status: 'Active',
-      badgeClass: 'badge-verified',
-    };
     try {
-      await createCommunityContractAction(newContract, data.society.id);
-    } catch (err) {}
-    setData((prev) => ({
-      ...prev,
-      contracts: [newContract, ...prev.contracts],
-      society: { ...prev.society, contractsCount: prev.society.contractsCount + 1 },
-    }));
-    setShowContractModal(false);
-    setContractForm({ rwa: '', service: '', workersNeeded: 4, durationDays: 14, budget: '₹ 75,000' });
-    showToast(`Created community contract with ${newContract.rwa}!`);
+      const res = await createCommunityContractAction(
+        {
+          rwa: contractForm.rwa,
+          service: contractForm.service,
+          workersNeeded: Number(contractForm.workersNeeded) || 4,
+          durationDays: Number(contractForm.durationDays) || 14,
+          budget: contractForm.budget.startsWith('₹') ? contractForm.budget : `₹ ${contractForm.budget}`,
+        },
+        data.society.id
+      );
+
+      if (res.success && res.contract) {
+        setData((prev) => ({
+          ...prev,
+          contracts: [res.contract, ...prev.contracts],
+          society: { ...prev.society, contractsCount: prev.society.contractsCount + 1 },
+          activities: [
+            {
+              id: `act-${Date.now()}`,
+              icon: '🤝',
+              title: `New Community Contract initialized with ${res.contract.rwa}.`,
+              time: 'Just now',
+            },
+            ...prev.activities,
+          ],
+        }));
+        setShowContractModal(false);
+        setContractForm({ rwa: '', service: '', workersNeeded: 4, durationDays: 14, budget: '₹ 75,000' });
+        showToast(`Created community contract with ${res.contract.rwa}!`);
+      } else {
+        showToast(res.error || 'Failed to create contract.');
+      }
+    } catch (err) {
+      showToast('Error creating contract.');
+    }
   };
 
   // Create Squad
@@ -396,23 +442,39 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       showToast('Please specify Squad Name and Target Contract.');
       return;
     }
-    const newSquad: CooperativeSquadItem = {
-      id: `sq-${Date.now()}`,
-      name: squadForm.name,
-      assignedContract: squadForm.assignedContract,
-      membersSummary: squadForm.membersSummary || '3 Verified Cooperative Workers',
-      status: 'Active',
-    };
     try {
-      await createSquadAction(newSquad, data.society.id);
-    } catch (err) {}
-    setData((prev) => ({
-      ...prev,
-      squads: [newSquad, ...prev.squads],
-    }));
-    setShowSquadModal(false);
-    setSquadForm({ name: '', assignedContract: '', membersSummary: '' });
-    showToast(`Assembled and deployed "${newSquad.name}"!`);
+      const res = await createSquadAction(
+        {
+          name: squadForm.name,
+          assignedContract: squadForm.assignedContract,
+          membersSummary: squadForm.membersSummary || '3 Verified Cooperative Workers',
+        },
+        data.society.id
+      );
+
+      if (res.success && res.squad) {
+        setData((prev) => ({
+          ...prev,
+          squads: [res.squad, ...prev.squads],
+          activities: [
+            {
+              id: `act-${Date.now()}`,
+              icon: '🛡️',
+              title: `Squad "${res.squad.name}" deployed for ${res.squad.assignedContract}.`,
+              time: 'Just now',
+            },
+            ...prev.activities,
+          ],
+        }));
+        setShowSquadModal(false);
+        setSquadForm({ name: '', assignedContract: '', membersSummary: '' });
+        showToast(`Assembled and deployed "${res.squad.name}"!`);
+      } else {
+        showToast(res.error || 'Failed to deploy squad.');
+      }
+    } catch (err) {
+      showToast('Error deploying squad.');
+    }
   };
 
   // Add Tool
@@ -422,23 +484,38 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       showToast('Please provide tool name.');
       return;
     }
-    const newTool: CooperativeToolItem = {
-      id: `TB-${Math.floor(100 + Math.random() * 900)}`,
-      name: toolForm.name,
-      toolCode: toolForm.toolCode || `TB-00${data.tools.length + 1}`,
-      status: 'Available',
-      statusClass: 'status-green',
-    };
     try {
-      await addToolAssetAction(newTool, data.society.id);
-    } catch (err) {}
-    setData((prev) => ({
-      ...prev,
-      tools: [newTool, ...prev.tools],
-    }));
-    setShowToolModal(false);
-    setToolForm({ name: '', toolCode: '' });
-    showToast(`Added ${newTool.name} to Tool Bank!`);
+      const res = await addToolAssetAction(
+        {
+          name: toolForm.name,
+          toolCode: toolForm.toolCode || `TB-00${data.tools.length + 1}`,
+        },
+        data.society.id
+      );
+
+      if (res.success && res.tool) {
+        setData((prev) => ({
+          ...prev,
+          tools: [res.tool, ...prev.tools],
+          activities: [
+            {
+              id: `act-${Date.now()}`,
+              icon: '🧰',
+              title: `Added "${res.tool.name}" (${res.tool.toolCode}) to Tool Bank inventory.`,
+              time: 'Just now',
+            },
+            ...prev.activities,
+          ],
+        }));
+        setShowToolModal(false);
+        setToolForm({ name: '', toolCode: '' });
+        showToast(`Added ${res.tool.name} to Tool Bank!`);
+      } else {
+        showToast(res.error || 'Failed to add tool asset.');
+      }
+    } catch (err) {
+      showToast('Error adding tool.');
+    }
   };
 
   // Tool Reservation Handlers
@@ -537,36 +614,39 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
       showToast('Please enter a proposal title.');
       return;
     }
-    const newProp: AssemblyProposalItem = {
-      id: `prop-${Date.now()}`,
-      number: data.proposals.length + 24,
-      title: proposalForm.title,
-      description: proposalForm.description || 'Democratic proposal submitted for cooperative member voting.',
-      cost: Number(proposalForm.cost) || 20000,
-      yesVotes: 1,
-      noVotes: 0,
-      status: 'Active',
-      badgeClass: 'coop-badge-gold',
-    };
     try {
-      await createAssemblyProposalAction(newProp, data.society.id);
-    } catch (err) {}
-    setData((prev) => ({
-      ...prev,
-      proposals: [newProp, ...prev.proposals],
-      activities: [
+      const res = await createAssemblyProposalAction(
         {
-          id: `act-${Date.now()}`,
-          icon: '🗳️',
-          title: `New Assembly Proposal published: "${newProp.title}".`,
-          time: 'Just now',
+          title: proposalForm.title,
+          description: proposalForm.description || 'Democratic proposal submitted for cooperative member voting.',
+          cost: Number(proposalForm.cost) || 20000,
         },
-        ...prev.activities,
-      ],
-    }));
-    setShowProposalModal(false);
-    setProposalForm({ title: '', description: '', cost: 25000 });
-    showToast('Democratic proposal posted to Member Assembly!');
+        data.society.id
+      );
+
+      if (res.success && res.proposal) {
+        setData((prev) => ({
+          ...prev,
+          proposals: [res.proposal, ...prev.proposals],
+          activities: [
+            {
+              id: `act-${Date.now()}`,
+              icon: '🗳️',
+              title: `New Assembly Proposal published: "${res.proposal.title}".`,
+              time: 'Just now',
+            },
+            ...prev.activities,
+          ],
+        }));
+        setShowProposalModal(false);
+        setProposalForm({ title: '', description: '', cost: 25000 });
+        showToast('Democratic proposal posted to Member Assembly!');
+      } else {
+        showToast(res.error || 'Failed to post proposal.');
+      }
+    } catch (err) {
+      showToast('Error posting proposal.');
+    }
   };
 
   // Vote on Proposal with Multi-vote prevention & quorum status progression
