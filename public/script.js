@@ -14,21 +14,10 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* =====================================================
-     1. CUSTOM CURSOR DOT
-     ===================================================== */
+  /* Custom cursor dot disabled in favor of standard responsive OS cursor */
   const cursorDot = document.querySelector('.cursor-dot');
-  if (cursorDot && window.matchMedia('(pointer: fine)').matches) {
-    document.body.classList.add('has-custom-cursor');
-    window.addEventListener('mousemove', (e) => {
-      cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
-    });
-    document.addEventListener('mouseleave', () => { cursorDot.style.opacity = '0'; });
-    document.addEventListener('mouseenter', () => { cursorDot.style.opacity = '1'; });
-    document.querySelectorAll('a, button, .service-card, .feature-card').forEach((el) => {
-      el.addEventListener('mouseenter', () => cursorDot.classList.add('is-active'));
-      el.addEventListener('mouseleave', () => cursorDot.classList.remove('is-active'));
-    });
+  if (cursorDot) {
+    cursorDot.style.display = 'none';
   }
 
   /* =====================================================

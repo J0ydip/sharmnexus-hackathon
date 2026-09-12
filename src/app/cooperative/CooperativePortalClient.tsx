@@ -786,15 +786,6 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
             🗳️ <span>Member Assembly</span>
           </button>
         </nav>
-
-        <div className="coop-sidebar-footer">
-          <Link href="/" className="coop-btn coop-btn-outline w-100" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>
-            ← Back to ShramNexus
-          </Link>
-          <Link href="/admin" className="coop-btn coop-btn-dark w-100" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            ⚡ Federation Admin
-          </Link>
-        </div>
       </aside>
 
       {/* Main Content Area */}

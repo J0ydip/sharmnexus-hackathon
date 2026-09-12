@@ -6,6 +6,18 @@ import { createClient } from '@/lib/supabase/client';
 import { setAdminSession } from '@/app/actions/admin';
 import { registerCooperativeSocietyAction } from '@/app/actions/cooperative';
 import { toast } from 'sonner';
+import {
+  Globe,
+  Wrench,
+  Home,
+  Zap,
+  Handshake,
+  ShieldCheck,
+  ArrowLeft,
+  User,
+  Briefcase,
+  Building2,
+} from 'lucide-react';
 import './auth.css';
 
 export default function AuthPage() {
@@ -471,30 +483,50 @@ export default function AuthPage() {
           <div className="auth-panel auth-left" id="authLeft">
             <div className="branding">
               <div className="logo-circle">
-                <svg className="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L2 7V12C2 18.627 12 23 12 23C12 23 22 18.627 22 12V7L12 2Z" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <img
+                  src="/logo.png"
+                  alt="ShramNexus Logo"
+                  className="brand-logo-img"
+                />
               </div>
               <h1 className="brand-title">ShramNexus</h1>
               <p className="brand-tagline">COOPERATIVE-POWERED SERVICE NETWORK</p>
             </div>
 
-            {/* Animated Cooperative Network Illustration */}
+            {/* Clean Minimalist Cooperative Network Illustration */}
             <div className="illustration">
-              <div className="coop-hub">
-                <div className="hub-pulse"></div>
-                <div className="hub-icon">🌐</div>
-              </div>
-              <div className="network-node node-1"><span>🔧</span></div>
-              <div className="network-node node-2"><span>🏠</span></div>
-              <div className="network-node node-3"><span>⚡</span></div>
-              <div className="network-node node-4"><span>🤝</span></div>
-              <svg className="network-lines" viewBox="0 0 300 300">
-                <line x1="150" y1="150" x2="60" y2="70" className="pulse-line" />
-                <line x1="150" y1="150" x2="240" y2="90" className="pulse-line delay-1" />
-                <line x1="150" y1="150" x2="70" y2="220" className="pulse-line delay-2" />
-                <line x1="150" y1="150" x2="220" y2="210" className="pulse-line delay-3" />
+              {/* Soft Ambient Glow */}
+              <div className="hub-ambient-glow" />
+
+              {/* Clean Connecting Lines between Hub and Nodes (Stops outside boxes) */}
+              <svg className="network-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="43" y1="43" x2="27" y2="29" className="network-beam" />
+                <line x1="57" y1="43" x2="73" y2="29" className="network-beam" />
+                <line x1="43" y1="57" x2="27" y2="71" className="network-beam" />
+                <line x1="57" y1="57" x2="73" y2="71" className="network-beam" />
               </svg>
+
+              {/* Central Cooperative Hub */}
+              <div className="coop-hub" title="ShramNexus Cooperative Core">
+                <Globe className="w-6 h-6 text-white" />
+              </div>
+
+              {/* 4 Clean Minimalist Node Cards (No words, opaque, clean icons) */}
+              <div className="network-node node-1" title="Certified Trades & Repairs">
+                <Wrench className="w-5 h-5 text-amber-400" />
+              </div>
+
+              <div className="network-node node-2" title="Verified Household Services">
+                <Home className="w-5 h-5 text-emerald-400" />
+              </div>
+
+              <div className="network-node node-3" title="Electrical & Utilities Dispatch">
+                <Zap className="w-5 h-5 text-sky-400" />
+              </div>
+
+              <div className="network-node node-4" title="Cooperative Solidarity & Fair Pay">
+                <Handshake className="w-5 h-5 text-purple-400" />
+              </div>
             </div>
 
             <p className="brand-description">Connecting households with verified local professionals while empowering worker cooperatives.</p>
@@ -504,9 +536,7 @@ export default function AuthPage() {
           <div className="auth-panel auth-right" id="authRight">
             {/* Back to Home Button */}
             <a href="/" className="back-to-home" title="Back to Home" aria-label="Go back to ShramNexus landing page">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 10H1m0 0l8-8m-8 8l8 8"/>
-              </svg>
+              <ArrowLeft className="w-4 h-4" />
               Back to Home
             </a>
 
@@ -553,6 +583,7 @@ export default function AuthPage() {
                   className={`role-btn ${selectedRole === 'customer' ? 'active' : ''}`}
                   onClick={() => setSelectedRole('customer')}
                 >
+                  <User className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Customer
                 </button>
                 <button 
@@ -560,6 +591,7 @@ export default function AuthPage() {
                   className={`role-btn ${selectedRole === 'worker' ? 'active' : ''}`}
                   onClick={() => setSelectedRole('worker')}
                 >
+                  <Briefcase className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Worker
                 </button>
                 <button 
@@ -567,6 +599,7 @@ export default function AuthPage() {
                   className={`role-btn ${selectedRole === 'cooperative' ? 'active' : ''}`}
                   onClick={() => setSelectedRole('cooperative')}
                 >
+                  <Building2 className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Cooperative
                 </button>
               </div>
@@ -687,22 +720,45 @@ export default function AuthPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setLoginEmail('rajesh.test@sharmnexus.com');
-                        setLoginPassword('password123');
-                        const workerData = JSON.stringify({
-                          id: 'ded8c5f8-465c-412e-be09-2f4d6e1302e2',
-                          isLoggedIn: true,
-                          role: 'worker',
-                          name: 'Rajesh Plumber',
-                          email: 'rajesh.test@sharmnexus.com',
-                        });
-                        localStorage.setItem('shramnexus-auth', workerData);
-                        localStorage.setItem('sharmnexus-auth', workerData);
-                        toast.success('Welcome back, Rajesh! Opening worker operations...');
-                        setTimeout(() => {
-                          window.location.href = getRedirectTarget('/worker-dashboard');
-                        }, 300);
+                      disabled={isLoading}
+                      onClick={async () => {
+                        const email = 'rajesh.test@sharmnexus.com';
+                        const password = 'password123';
+                        setLoginEmail(email);
+                        setLoginPassword(password);
+                        setIsLoading(true);
+
+                        try {
+                          // Perform real authentic Supabase sign-in for complete worker session
+                          const { data: authData, error } = await supabase.auth.signInWithPassword({
+                            email,
+                            password,
+                          });
+
+                          if (error) {
+                            toast.error(error.message);
+                            setIsLoading(false);
+                            return;
+                          }
+
+                          const user = authData?.user;
+                          const workerData = JSON.stringify({
+                            id: user?.id || 'ded8c5f8-465c-412e-be09-2f4d6e1302e2',
+                            isLoggedIn: true,
+                            role: 'worker',
+                            name: 'Rajesh Kumar (Plumber)',
+                            email: email,
+                          });
+                          localStorage.setItem('shramnexus-auth', workerData);
+                          localStorage.setItem('sharmnexus-auth', workerData);
+                          toast.success('Welcome back, Rajesh! Opening worker operations...');
+                          setTimeout(() => {
+                            window.location.href = getRedirectTarget('/worker-dashboard');
+                          }, 300);
+                        } catch (err: any) {
+                          toast.error(err?.message || 'Login failed');
+                          setIsLoading(false);
+                        }
                       }}
                       style={{
                         background: '#b45309',
@@ -716,7 +772,7 @@ export default function AuthPage() {
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      1-Click Sign In ↗
+                      {isLoading ? 'Signing In...' : '1-Click Sign In ↗'}
                     </button>
                   </div>
                 </div>
@@ -949,6 +1005,7 @@ export default function AuthPage() {
                   className={`role-btn ${signupUserType === 'customer' ? 'active' : ''}`}
                   onClick={() => setSignupUserType('customer')}
                 >
+                  <User className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Customer
                 </button>
                 <button 
@@ -956,6 +1013,7 @@ export default function AuthPage() {
                   className={`role-btn ${signupUserType === 'worker' ? 'active' : ''}`}
                   onClick={() => setSignupUserType('worker')}
                 >
+                  <Briefcase className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Worker
                 </button>
                 <button 
@@ -963,6 +1021,7 @@ export default function AuthPage() {
                   className={`role-btn ${signupUserType === 'cooperative' ? 'active' : ''}`}
                   onClick={() => setSignupUserType('cooperative')}
                 >
+                  <Building2 className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Cooperative
                 </button>
               </div>

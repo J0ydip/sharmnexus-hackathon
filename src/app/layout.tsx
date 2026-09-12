@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { NavigationWrapper } from '@/components/common/NavigationWrapper';
+import { FloatingAIAssistant } from '@/components/chat/FloatingAIAssistant';
 import Script from 'next/script';
 import './globals.css';
 
@@ -50,6 +51,7 @@ export default function RootLayout({
         <NavigationWrapper>
           {children}
         </NavigationWrapper>
+        <FloatingAIAssistant />
         <Toaster />
         <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" strategy="afterInteractive" />
 

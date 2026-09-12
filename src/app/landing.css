@@ -49,31 +49,15 @@ body:has(.hero) main a, body:has(.hero) footer a {
    Color-inverting cursor
 ========================================= */
 .cursor-dot {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  mix-blend-mode: difference;
-  pointer-events: none;
-  z-index: 9999;
-  transform: translate(-50%, -50%);
-  opacity: 0;
-  transition: width 0.2s var(--ease), height 0.2s var(--ease), opacity 0.2s ease;
-  will-change: transform;
-}
-
-.cursor-dot.is-active {
-  width: 46px;
-  height: 46px;
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 body.has-custom-cursor,
 body.has-custom-cursor a,
 body.has-custom-cursor button {
-  cursor: none;
+  cursor: auto !important;
 }
 
 /* =========================================

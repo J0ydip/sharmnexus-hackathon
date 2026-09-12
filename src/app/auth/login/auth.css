@@ -235,17 +235,27 @@ html, body {
     height: 64px;
     margin: 0 auto 16px;
     background: rgba(255, 255, 255, 0.08);
-    border-radius: 50%;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(230, 170, 59, 0.3);
+    border: 1.5px solid rgba(230, 170, 59, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(230, 170, 59, 0.2);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.logo-icon {
-    width: 30px;
-    height: 30px;
-    color: var(--gold);
+.logo-circle:hover {
+    transform: scale(1.05);
+    border-color: rgba(230, 170, 59, 0.65);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 24px rgba(230, 170, 59, 0.35);
+}
+
+.brand-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
 }
 
 .brand-title {
@@ -272,129 +282,133 @@ html, body {
 }
 
 /* ============================================================================
-   Cooperative Network Illustration & Animations (Fixed Layout)
+   Minimalist & Premium Cooperative Network Illustration
    ============================================================================ */
 .illustration {
     position: relative;
-    height: 260px;
+    height: 250px;
     margin: 20px 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: visible;
+}
+
+/* Soft Ambient Radial Glow Behind Central Hub */
+.hub-ambient-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, rgba(230, 170, 59, 0.22) 0%, rgba(217, 111, 77, 0.08) 50%, transparent 75%);
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(16px);
+    z-index: 1;
 }
 
 /* Central Cooperative Hub */
 .coop-hub {
     position: absolute;
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, #e6aa3b, #d96f4d);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 58px;
+    height: 58px;
+    background: linear-gradient(135deg, #e6aa3b 0%, #d97706 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    z-index: 3;
-    box-shadow: 0 0 20px rgba(230, 170, 59, 0.4);
-    animation: hubFloat 4s ease-in-out infinite;
+    z-index: 4;
+    box-shadow: 0 0 24px rgba(230, 170, 59, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Expanding radar pulse ring */
-.hub-pulse {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 2px solid rgba(230, 170, 59, 0.6);
-    animation: radarPulse 2.5s cubic-bezier(0.21, 0.53, 0.56, 0.8) infinite;
+.coop-hub:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 0 32px rgba(230, 170, 59, 0.6), 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
-@keyframes hubFloat {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-8px) scale(1.03); }
-}
-
-@keyframes radarPulse {
-    0% { transform: scale(1); opacity: 1; }
-    100% { transform: scale(2.4); opacity: 0; }
-}
-
-/* Distributed Network Nodes (Properly Spaced) */
+/* Distributed Network Node Cards (Clean, Opaque, Icon-Only) */
 .network-node {
     position: absolute;
-    width: 44px;
-    height: 44px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    width: 46px;
+    height: 46px;
+    background: #23162d;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    backdrop-filter: blur(6px);
-    z-index: 2;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    z-index: 5;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
+}
+
+.network-node:hover {
+    transform: translate(-50%, -50%) translateY(-2px) scale(1.08);
+    border-color: rgba(230, 170, 59, 0.45);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
 }
 
 .node-1 {
-    top: 15px;
-    left: 40px;
-    animation: nodeFloat1 5s ease-in-out infinite;
+    left: 18%;
+    top: 20%;
+}
+.node-1:hover {
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 8px 22px rgba(245, 158, 11, 0.22);
 }
 
 .node-2 {
-    top: 20px;
-    right: 40px;
-    animation: nodeFloat2 6s ease-in-out infinite;
+    left: 82%;
+    top: 20%;
+}
+.node-2:hover {
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.22);
 }
 
 .node-3 {
-    bottom: 15px;
-    left: 45px;
-    animation: nodeFloat2 5.5s ease-in-out infinite reverse;
+    left: 18%;
+    top: 80%;
+}
+.node-3:hover {
+    border-color: rgba(14, 165, 233, 0.6);
+    box-shadow: 0 8px 22px rgba(14, 165, 233, 0.22);
 }
 
 .node-4 {
-    bottom: 20px;
-    right: 45px;
-    animation: nodeFloat1 6.5s ease-in-out infinite reverse;
+    left: 82%;
+    top: 80%;
+}
+.node-4:hover {
+    border-color: rgba(168, 85, 247, 0.6);
+    box-shadow: 0 8px 22px rgba(168, 85, 247, 0.22);
 }
 
-@keyframes nodeFloat1 {
-    0%, 100% { transform: translateY(0px) translateX(0px); }
-    50% { transform: translateY(-8px) translateX(6px); }
-}
-
-@keyframes nodeFloat2 {
-    0%, 100% { transform: translateY(0px) translateX(0px); }
-    50% { transform: translateY(8px) translateX(-6px); }
-}
-
-/* SVG Connection Lines */
+/* SVG Connecting Lines: subtle, clean, zero overlap with cards */
 .network-lines {
     position: absolute;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
-    z-index: 1;
+    z-index: 2;
     pointer-events: none;
 }
 
-.pulse-line {
-    stroke: rgba(230, 170, 59, 0.35);
-    stroke-width: 2;
-    stroke-dasharray: 4 4;
-    animation: lineFlow 3s linear infinite;
-}
-
-.delay-1 { animation-delay: 0.75s; }
-.delay-2 { animation-delay: 1.5s; }
-.delay-3 { animation-delay: 2.25s; }
-
-@keyframes lineFlow {
-    from { stroke-dashoffset: 24; }
-    to { stroke-dashoffset: 0; }
+.network-beam {
+    stroke: rgba(255, 255, 255, 0.22);
+    vector-effect: non-scaling-stroke;
+    stroke-width: 1.5px;
+    stroke-linecap: round;
 }
 
 /* ============================================================================

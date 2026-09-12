@@ -238,3 +238,34 @@ body { top: 0px !important; }
   z-index: 1;
 }
 
+/* =========================================
+   Universal Standard Cursor Enforcement
+   ========================================= */
+html, body {
+  cursor: auto !important;
+}
+
+a, button, [role="button"], input[type="submit"], input[type="button"], select {
+  cursor: pointer !important;
+}
+
+button:disabled, [role="button"][aria-disabled="true"], input:disabled {
+  cursor: not-allowed !important;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="number"],
+textarea {
+  cursor: text !important;
+}
+
+.cursor-dot {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+

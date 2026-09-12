@@ -4,6 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { updateWorkerAvailability } from '@/app/actions/workers';
 import { updateBookingStatus, getWorkerDashboardData, rejectJobRequest } from '@/app/actions/worker-jobs';
+import {
+  syncAndGetWorkerNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  markReviewAsRead,
+  markAllReviewsAsRead,
+  WorkerNotificationItem,
+} from '@/app/actions/workerNotifications';
 import { getBookingOtp } from '@/lib/utils';
 import { useBookingStore } from '@/lib/store/bookingStore';
 import { createClient } from '@/lib/supabase/client';
@@ -177,6 +185,14 @@ export function WorkerDashboardClient() {
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [isAcceptingId, setIsAcceptingId] = useState<string | null>(null);
   const [isRejectingId, setIsRejectingId] = useState<string | null>(null);
+
+  // Notifications & Reviews Read Status State
+  const [notifications, setNotifications] = useState<WorkerNotificationItem[]>([]);
+  const [unreadNotifsCount, setUnreadNotifsCount] = useState<number>(0);
+  const [unreadReviewsCount, setUnreadReviewsCount] = useState<number>(0);
+  const [notifFilter, setNotifFilter] = useState<'all' | 'unread' | 'payment' | 'rating'>('all');
+  const [isMarkingNotifs, setIsMarkingNotifs] = useState<boolean>(false);
+  const [isMarkingReviews, setIsMarkingReviews] = useState<boolean>(false);
 
   // Jobs tab state
   const [jobsTab, setJobsTab] = useState<'active' | 'pending' | 'completed'>('active');
@@ -354,6 +370,18 @@ export function WorkerDashboardClient() {
           }));
           setWorkerReviews(liveReviews);
         }
+
+        // Sync & fetch notifications with server-side read status
+        try {
+          const notifRes = await syncAndGetWorkerNotifications(authWorkerId);
+          if (notifRes && notifRes.notifications) {
+            setNotifications(notifRes.notifications);
+            setUnreadNotifsCount(notifRes.unreadNotifsCount);
+            setUnreadReviewsCount(notifRes.unreadReviewsCount);
+          }
+        } catch (notifErr) {
+          console.error('Error fetching notifications:', notifErr);
+        }
       } catch (err) {
         console.error('Error fetching worker dashboard data:', err);
       } finally {
@@ -372,6 +400,128 @@ export function WorkerDashboardClient() {
     setTimeout(() => {
       setToastMessage(null);
     }, 3000);
+  };
+
+  const getWorkerId = () => {
+    try {
+      const auth = JSON.parse(localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth') || '{}');
+      return auth?.id || null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const handleOpenReviews = async () => {
+    setActiveView('view-reviews');
+    setSidebarOpen(false);
+    if (unreadReviewsCount > 0) {
+      setUnreadReviewsCount(0);
+      setNotifications((prev) =>
+        prev.map((n) => (n.type === 'rating' ? { ...n, is_read: true } : n))
+      );
+      const wId = getWorkerId();
+      if (wId) {
+        try {
+          await markAllReviewsAsRead(wId);
+        } catch (e) {}
+      }
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    if (unreadNotifsCount === 0 || isMarkingNotifs) return;
+    setIsMarkingNotifs(true);
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setUnreadNotifsCount(0);
+    setUnreadReviewsCount(0);
+    showToast('✓ All notifications marked as read');
+    const wId = getWorkerId();
+    if (wId) {
+      try {
+        await markAllNotificationsAsRead(wId);
+      } catch (err) {
+        console.error('Error marking all notifications read:', err);
+      } finally {
+        setIsMarkingNotifs(false);
+      }
+    } else {
+      setIsMarkingNotifs(false);
+    }
+  };
+
+  const handleMarkSingleNotificationRead = async (notifId: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => {
+        if (n.id === notifId) {
+          if (!n.is_read) {
+            setUnreadNotifsCount((c) => Math.max(0, c - 1));
+            if (n.type === 'rating') {
+              setUnreadReviewsCount((rc) => Math.max(0, rc - 1));
+            }
+          }
+          return { ...n, is_read: true };
+        }
+        return n;
+      })
+    );
+    try {
+      await markNotificationAsRead(notifId);
+    } catch (err) {
+      console.error('Error marking notification read:', err);
+    }
+  };
+
+  const handleMarkAllReviewsRead = async () => {
+    if (unreadReviewsCount === 0 || isMarkingReviews) return;
+    setIsMarkingReviews(true);
+    setUnreadReviewsCount(0);
+    setNotifications((prev) =>
+      prev.map((n) => {
+        if (n.type === 'rating') {
+          if (!n.is_read) {
+            setUnreadNotifsCount((c) => Math.max(0, c - 1));
+          }
+          return { ...n, is_read: true };
+        }
+        return n;
+      })
+    );
+    showToast('✓ All customer reviews marked as read');
+    const wId = getWorkerId();
+    if (wId) {
+      try {
+        await markAllReviewsAsRead(wId);
+      } catch (err) {
+        console.error('Error marking all reviews read:', err);
+      } finally {
+        setIsMarkingReviews(false);
+      }
+    } else {
+      setIsMarkingReviews(false);
+    }
+  };
+
+  const handleMarkSingleReviewRead = async (ratingId: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => {
+        if (n.type === 'rating' && n.data?.source_id === ratingId) {
+          if (!n.is_read) {
+            setUnreadNotifsCount((c) => Math.max(0, c - 1));
+            setUnreadReviewsCount((rc) => Math.max(0, rc - 1));
+          }
+          return { ...n, is_read: true };
+        }
+        return n;
+      })
+    );
+    const wId = getWorkerId();
+    if (wId) {
+      try {
+        await markReviewAsRead(wId, ratingId);
+      } catch (err) {
+        console.error('Error marking review read:', err);
+      }
+    }
   };
 
   const handleLanguageChange = (newLang: Lang) => {
@@ -599,7 +749,12 @@ export function WorkerDashboardClient() {
   const averageRating = workerReviews.length > 0
     ? (workerReviews.reduce((acc, r) => acc + r.score, 0) / workerReviews.length).toFixed(1)
     : '4.8';
-  const totalNotifs = workerReviews.length + paidCompletedJobs.length + jobRequests.length;
+  const filteredNotifications = notifications.filter((n) => {
+    if (notifFilter === 'unread') return !n.is_read;
+    if (notifFilter === 'payment') return n.type === 'payment';
+    if (notifFilter === 'rating') return n.type === 'rating';
+    return true;
+  });
 
   return (
     <div className="worker-dashboard-container">
@@ -642,11 +797,11 @@ export function WorkerDashboardClient() {
           </button>
           <button
             type="button"
-            onClick={() => { setActiveView('view-reviews'); setSidebarOpen(false); }}
+            onClick={handleOpenReviews}
             className={`nav-item ${activeView === 'view-reviews' ? 'active' : ''}`}
           >
             <span>{t.nav_rev}</span>
-            {workerReviews.length > 0 && <span className="badge" style={{ background: '#f59e0b', color: '#fff' }}>{workerReviews.length}</span>}
+            {unreadReviewsCount > 0 && <span className="badge" style={{ background: '#f59e0b', color: '#fff' }}>{unreadReviewsCount}</span>}
           </button>
           <button
             type="button"
@@ -654,7 +809,7 @@ export function WorkerDashboardClient() {
             className={`nav-item ${activeView === 'view-notifications' ? 'active' : ''}`}
           >
             <span>{t.nav_notif}</span>
-            {totalNotifs > 0 && <span className="badge" style={{ background: '#3b82f6', color: '#fff' }}>{totalNotifs}</span>}
+            {unreadNotifsCount > 0 && <span className="badge" style={{ background: '#3b82f6', color: '#fff' }}>{unreadNotifsCount}</span>}
           </button>
           <button
             type="button"
@@ -739,6 +894,51 @@ export function WorkerDashboardClient() {
                 <span className="worker-slider" />
               </label>
             </div>
+
+            {/* Notification Bell Button */}
+            <button
+              type="button"
+              onClick={() => setActiveView('view-notifications')}
+              style={{
+                position: 'relative',
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                transition: 'all 0.15s ease',
+              }}
+              title="View Notifications"
+              aria-label="View notifications"
+            >
+              🔔
+              {unreadNotifsCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-5px',
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    borderRadius: '9999px',
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    padding: '1px 5px',
+                    minWidth: '16px',
+                    textAlign: 'center',
+                    lineHeight: '1.2',
+                    boxShadow: '0 2px 4px rgba(239, 68, 68, 0.4)',
+                  }}
+                >
+                  {unreadNotifsCount}
+                </span>
+              )}
+            </button>
 
             <div className="worker-topbar-user">
               <div className="worker-user-avatar">
@@ -1305,8 +1505,23 @@ export function WorkerDashboardClient() {
         {/* ================= 6. VIEW: REVIEWS ================= */}
         {activeView === 'view-reviews' && (
           <div className="worker-dashboard-view active">
-            <h1 className="worker-page-title">Customer Reviews & Ratings</h1>
-            <p className="worker-page-subtitle">Verified customer feedback and ratings submitted after completed jobs.</p>
+            <div className="notif-header-container">
+              <div>
+                <h1 className="worker-page-title" style={{ marginBottom: '0.2rem' }}>Customer Reviews & Ratings</h1>
+                <p className="worker-page-subtitle">Verified customer feedback and ratings submitted after completed jobs.</p>
+              </div>
+              {unreadReviewsCount > 0 && (
+                <button
+                  type="button"
+                  className="notif-mark-all-btn"
+                  onClick={handleMarkAllReviewsRead}
+                  disabled={isMarkingReviews}
+                >
+                  <span>✓</span> Mark all reviews as read
+                </button>
+              )}
+            </div>
+
             <div className="worker-card mt-4 text-center py-6">
               <h2 style={{ fontSize: '2.5rem', color: 'var(--gold, #e6aa3b)' }}>★ {averageRating} / 5</h2>
               <p className="text-muted">
@@ -1320,18 +1535,42 @@ export function WorkerDashboardClient() {
                   <p className="text-muted">No customer reviews yet. Ratings and testimonials left after completed jobs will appear here.</p>
                 </div>
               ) : (
-                workerReviews.map((rev) => (
-                  <div key={rev.id} className="worker-review-card">
-                    <div className="worker-review-head">
-                      <strong>{rev.customerName}</strong>
-                      <span style={{ color: 'var(--gold, #e6aa3b)', fontSize: '1.1rem' }}>
-                        {'★'.repeat(rev.score)}{'☆'.repeat(Math.max(0, 5 - rev.score))}
-                      </span>
+                workerReviews.map((rev) => {
+                  const matchingNotif = notifications.find(
+                    (n) => n.type === 'rating' && (n.data?.source_id === rev.id || n.id === rev.id)
+                  );
+                  const isUnread = matchingNotif ? !matchingNotif.is_read : false;
+
+                  return (
+                    <div
+                      key={rev.id}
+                      className={`worker-review-card ${isUnread ? 'unread' : ''}`}
+                    >
+                      <div className="worker-review-head">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <strong>{rev.customerName}</strong>
+                          {isUnread && <span className="worker-notif-badge-new">New</span>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ color: 'var(--gold, #e6aa3b)', fontSize: '1.1rem' }}>
+                            {'★'.repeat(rev.score)}{'☆'.repeat(Math.max(0, 5 - rev.score))}
+                          </span>
+                          {isUnread && (
+                            <button
+                              type="button"
+                              className="worker-notif-read-btn"
+                              onClick={() => handleMarkSingleReviewRead(rev.id)}
+                            >
+                              ✓ Mark read
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <small className="text-muted">{rev.service} • {rev.date}</small>
+                      <p className="mt-2 text-sm text-gray-700">&ldquo;{rev.review}&rdquo;</p>
                     </div>
-                    <small className="text-muted">{rev.service} • {rev.date}</small>
-                    <p className="mt-2 text-sm text-gray-700">&ldquo;{rev.review}&rdquo;</p>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -1340,63 +1579,123 @@ export function WorkerDashboardClient() {
         {/* ================= 7. VIEW: NOTIFICATIONS ================= */}
         {activeView === 'view-notifications' && (
           <div className="worker-dashboard-view active">
-            <h1 className="worker-page-title">Notifications</h1>
-            <div className="mt-4">
-              {completedJobs.length === 0 && activeJobs.length === 0 && jobRequests.length === 0 && workerReviews.length === 0 ? (
-                <div style={{ padding: '2.5rem', textAlign: 'center', background: '#fff', borderRadius: '12px' }}>
-                  <p className="text-muted">No notifications yet. New service requests and payment receipts will appear here.</p>
+            <div className="notif-header-container">
+              <div className="notif-header-left">
+                <h1 className="worker-page-title" style={{ margin: 0 }}>Notifications</h1>
+                {unreadNotifsCount > 0 && (
+                  <span className="notif-unread-pill">{unreadNotifsCount} Unread</span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="notif-mark-all-btn"
+                onClick={handleMarkAllNotificationsRead}
+                disabled={unreadNotifsCount === 0 || isMarkingNotifs}
+              >
+                <span>✓✓</span> Mark all as read
+              </button>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="notif-filter-tabs">
+              <button
+                type="button"
+                className={`notif-tab-btn ${notifFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setNotifFilter('all')}
+              >
+                All <span className="notif-tab-count">{notifications.length}</span>
+              </button>
+              <button
+                type="button"
+                className={`notif-tab-btn ${notifFilter === 'unread' ? 'active' : ''}`}
+                onClick={() => setNotifFilter('unread')}
+              >
+                Unread <span className="notif-tab-count">{unreadNotifsCount}</span>
+              </button>
+              <button
+                type="button"
+                className={`notif-tab-btn ${notifFilter === 'payment' ? 'active' : ''}`}
+                onClick={() => setNotifFilter('payment')}
+              >
+                💰 Payments <span className="notif-tab-count">{notifications.filter((n) => n.type === 'payment').length}</span>
+              </button>
+              <button
+                type="button"
+                className={`notif-tab-btn ${notifFilter === 'rating' ? 'active' : ''}`}
+                onClick={() => setNotifFilter('rating')}
+              >
+                ⭐ Ratings <span className="notif-tab-count">{notifications.filter((n) => n.type === 'rating').length}</span>
+              </button>
+            </div>
+
+            <div className="mt-3">
+              {filteredNotifications.length === 0 ? (
+                <div className="worker-notif-empty">
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+                    {notifFilter === 'unread' ? '🎉' : '🔔'}
+                  </div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
+                    {notifFilter === 'unread' ? "You're all caught up!" : 'No notifications found'}
+                  </h3>
+                  <p className="text-muted text-sm mt-1" style={{ maxWidth: '400px', margin: '0.5rem auto 0' }}>
+                    {notifFilter === 'unread'
+                      ? 'All payment receipts, ratings, and service updates have been marked as read.'
+                      : 'New customer ratings, booking dispatches, and cooperative settlement receipts will appear here.'}
+                  </p>
                 </div>
               ) : (
-                <>
-                  {workerReviews.map((rev) => (
-                    <div key={`notif-rev-${rev.id}`} className="worker-notification-card unread">
-                      <div className="worker-notif-icon">⭐</div>
-                      <div>
-                        <strong>New Customer Rating ({rev.score} Stars)</strong>
-                        <p className="text-sm text-gray-600">
-                          {rev.customerName} rated {rev.score} stars for {rev.service}: &ldquo;{rev.review}&rdquo;
-                        </p>
-                        <small className="text-muted">{rev.date}</small>
+                filteredNotifications.map((notif) => {
+                  const isPayment = notif.type === 'payment';
+                  const isRating = notif.type === 'rating';
+                  const iconEmoji = isPayment ? '💰' : isRating ? '⭐' : '🔔';
+                  const iconClass = isPayment ? 'payment' : isRating ? 'rating' : 'request';
+                  const formattedDate = notif.created_at
+                    ? new Date(notif.created_at).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : 'Recent';
+
+                  return (
+                    <div
+                      key={notif.id}
+                      className={`worker-notification-card ${!notif.is_read ? 'unread' : ''} ${isPayment ? 'payment-type' : ''}`}
+                    >
+                      <div className="worker-notif-main">
+                        <div className={`worker-notif-icon-wrap ${iconClass}`}>
+                          {iconEmoji}
+                        </div>
+                        <div className="worker-notif-content">
+                          <div className="worker-notif-title-row">
+                            <span className="worker-notif-title">{notif.title}</span>
+                            {!notif.is_read && (
+                              <span className="worker-notif-badge-new">New</span>
+                            )}
+                          </div>
+                          <p className="worker-notif-desc">{notif.body}</p>
+                          <span className="worker-notif-meta">📅 {formattedDate}</span>
+                        </div>
+                      </div>
+                      <div className="worker-notif-actions">
+                        {!notif.is_read ? (
+                          <button
+                            type="button"
+                            className="worker-notif-read-btn"
+                            onClick={() => handleMarkSingleNotificationRead(notif.id)}
+                            title="Mark as read"
+                          >
+                            <span>✓</span> Mark read
+                          </button>
+                        ) : (
+                          <span className="worker-notif-read-btn is-read">
+                            ✓ Read
+                          </span>
+                        )}
                       </div>
                     </div>
-                  ))}
-                  {completedJobs.filter((j) => j.paymentStatus === 'paid').map((j) => (
-                    <div key={`notif-pay-${j.id}`} className="worker-notification-card unread">
-                      <div className="worker-notif-icon">💰</div>
-                      <div>
-                        <strong>Payment Received</strong>
-                        <p className="text-sm text-gray-600">
-                          Settlement of ₹{(j.workerPayout || Math.round((j.amount || 0) * 0.85)).toLocaleString()} received for {j.service} from {j.name} ({j.paymentMethod}).
-                        </p>
-                        <small className="text-muted">{j.date}</small>
-                      </div>
-                    </div>
-                  ))}
-                  {activeJobs.map((j) => (
-                    <div key={`notif-active-${j.id}`} className="worker-notification-card">
-                      <div className="worker-notif-icon">🔧</div>
-                      <div>
-                        <strong>Service in Progress</strong>
-                        <p className="text-sm text-gray-600">
-                          Ongoing job: {j.service} for {j.name} at {j.address}.
-                        </p>
-                        <small className="text-muted">{j.date}</small>
-                      </div>
-                    </div>
-                  ))}
-                  {jobRequests.map((r) => (
-                    <div key={`notif-req-${r.id}`} className="worker-notification-card">
-                      <div className="worker-notif-icon">📋</div>
-                      <div>
-                        <strong>New Booking Request</strong>
-                        <p className="text-sm text-gray-600">
-                          {r.service} request from {r.name} ({r.price}).
-                        </p>
-                        <small className="text-muted">{r.date}</small>
-                      </div>
-                    </div>
-                  ))}
-                </>
+                  );
+                })
               )}
             </div>
           </div>
