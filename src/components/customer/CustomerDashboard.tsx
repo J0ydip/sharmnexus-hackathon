@@ -205,11 +205,11 @@ export function CustomerDashboard() {
         <div className="relative h-[82vh] min-h-[520px] w-full overflow-hidden bg-[#24172f] flex items-center justify-center border-b border-[#3d2b48]">
           {/* Background Image with Slow Cinematic Zoom */}
           <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-[#24172f]/60 z-10" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#24172f]/80 via-transparent to-[#24172f] z-10" />
+            <div className="absolute inset-0 bg-[#24172f]/35 z-10" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#24172f]/65 via-[#24172f]/15 to-[#24172f]/85 z-10" />
             <img
               src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=2069"
-              className="w-full h-full object-cover animate-bg-zoom opacity-40 grayscale"
+              className="w-full h-full object-cover animate-bg-zoom opacity-80 brightness-95 contrast-105"
               alt="Craftsman Background"
             />
           </div>
@@ -228,7 +228,7 @@ export function CustomerDashboard() {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-[#c8bacb] text-[10px] sm:text-xs tracking-[0.3em] uppercase font-semibold animate-fade-up mb-8 max-w-2xl leading-relaxed whitespace-pre-line">
+            <p className="text-[#fbf7ef]/90 text-[10px] sm:text-xs tracking-[0.3em] uppercase font-semibold animate-fade-up mb-8 max-w-2xl leading-relaxed whitespace-pre-line drop-shadow-md">
               {t?.heroSub || 'A story of verified craftsmanship.\nCooperative-Owned Gig Workforce.'}
             </p>
 
