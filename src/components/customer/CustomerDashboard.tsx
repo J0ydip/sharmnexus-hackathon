@@ -259,105 +259,122 @@ export function CustomerDashboard() {
           </div>
         </div>
 
-        {/* 10 Categories Grid & Recommended Workers */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 space-y-8 relative z-20">
-          {/* Active Request Banner - Shown when user has an active ongoing booking */}
-          {activeBooking && (
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e6dcd0] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#e2eee4] text-[#8ba58b] flex items-center justify-center font-bold shrink-0">
-                  <CalendarClock className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#d96f4d]">
-                      {t?.activeBadge || 'Active Request'}
-                    </span>
-                    <span className="text-[10px] font-bold bg-[#f5dfad] text-[#24172f] px-2 py-0.5 rounded-full border border-[#e6aa3b]/30">
-                      {activeBooking.status.replace('_', ' ').toUpperCase()}
-                    </span>
+        {/* Active Booking or Declined Alert Banners */}
+        {(activeBooking || (latestCancelledBooking && !activeBooking)) && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-8 mb-6 relative z-20">
+            {/* Active Request Banner - Shown when user has an active ongoing booking */}
+            {activeBooking && (
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#e6dcd0] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-[#e2eee4] text-[#8ba58b] flex items-center justify-center font-bold shrink-0">
+                    <CalendarClock className="w-5 h-5" />
                   </div>
-                  <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
-                    {activeBooking.service_name} • Booking #{activeBooking.id.slice(0, 8)}
-                  </h4>
-                  <p className="text-xs text-[#776e79]">
-                    {activeBooking.worker
-                      ? `Assigned to ${activeBooking.worker.full_name} (${activeBooking.worker.society_name || 'Labour Cooperative Society'})`
-                      : 'Assigning nearest verified cooperative worker...'}
-                  </p>
-                </div>
-              </div>
-              <Link
-                href={`/track/${activeBooking.id}`}
-                className="bg-[#24172f] hover:bg-[#3d2b48] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start sm:self-auto transition-transform hover:scale-[1.02] flex items-center gap-1.5"
-              >
-                <span>{t?.activeTrack || 'Track Live Status →'}</span>
-              </Link>
-            </div>
-          )}
-
-          {/* Dynamic Rejection / Declined Alert Banner - Shown immediately when tradesperson declines */}
-          {latestCancelledBooking && !activeBooking && (
-            <div className="bg-gradient-to-r from-[#fff5f5] via-[#fef2f2] to-[#fff5f5] rounded-2xl p-4 sm:p-5 border-2 border-red-200/90 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-start sm:items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold shrink-0 border border-red-200">
-                  <XCircle className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-red-600">
-                      Request Declined by Tradesperson
-                    </span>
-                    <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">
-                      UNAVAILABLE / CANCELLED
-                    </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#d96f4d]">
+                        {t?.activeBadge || 'Active Request'}
+                      </span>
+                      <span className="text-[10px] font-bold bg-[#f5dfad] text-[#24172f] px-2 py-0.5 rounded-full border border-[#e6aa3b]/30">
+                        {activeBooking.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
+                      {activeBooking.service_name} • Booking #{activeBooking.id.slice(0, 8)}
+                    </h4>
+                    <p className="text-xs text-[#776e79]">
+                      {activeBooking.worker
+                        ? `Assigned to ${activeBooking.worker.full_name} (${activeBooking.worker.society_name || 'Labour Cooperative Society'})`
+                        : 'Assigning nearest verified cooperative worker...'}
+                    </p>
                   </div>
-                  <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
-                    {latestCancelledBooking.service_name} • Booking #{latestCancelledBooking.id.slice(0, 8)}
-                  </h4>
-                  <p className="text-xs text-gray-600 mt-0.5 max-w-xl">
-                    The requested cooperative artisan was unavailable and declined this booking. <strong>No payment has been deducted.</strong> You can request another verified artisan immediately.
-                  </p>
+                </div>
+                <Link
+                  href={`/track/${activeBooking.id}`}
+                  className="bg-[#24172f] hover:bg-[#3d2b48] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start sm:self-auto transition-transform hover:scale-[1.02] flex items-center gap-1.5"
+                >
+                  <span>{t?.activeTrack || 'Track Live Status →'}</span>
+                </Link>
+              </div>
+            )}
+
+            {/* Dynamic Rejection / Declined Alert Banner - Shown immediately when tradesperson declines */}
+            {latestCancelledBooking && !activeBooking && (
+              <div className="bg-gradient-to-r from-[#fff5f5] via-[#fef2f2] to-[#fff5f5] rounded-2xl p-4 sm:p-5 border-2 border-red-200/90 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold shrink-0 border border-red-200">
+                    <XCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-red-600">
+                        Request Declined by Tradesperson
+                      </span>
+                      <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full border border-red-200">
+                        UNAVAILABLE / CANCELLED
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-[#24172f] mt-0.5">
+                      {latestCancelledBooking.service_name} • Booking #{latestCancelledBooking.id.slice(0, 8)}
+                    </h4>
+                    <p className="text-xs text-gray-600 mt-0.5 max-w-xl">
+                      The requested cooperative artisan was unavailable and declined this booking. <strong>No payment has been deducted.</strong> You can request another verified artisan immediately.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                  <Link
+                    href="/services"
+                    className="bg-[#d96f4d] hover:bg-[#b85435] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-[1.02]"
+                  >
+                    <span>Find Another Worker</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link
+                    href="/history"
+                    className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-xs font-semibold px-3 py-2.5 rounded-xl transition-colors"
+                  >
+                    History
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleDismissDeclined(latestCancelledBooking.id)}
+                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                    title="Dismiss alert"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
+            )}
+          </div>
+        )}
 
-              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-                <Link
-                  href="/services"
-                  className="bg-[#d96f4d] hover:bg-[#b85435] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-[1.02]"
-                >
-                  <span>Find Another Worker</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-                <Link
-                  href="/history"
-                  className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-xs font-semibold px-3 py-2.5 rounded-xl transition-colors"
-                >
-                  History
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => handleDismissDeclined(latestCancelledBooking.id)}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                  title="Dismiss alert"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
+        {/* 10 Categories Grid & Recommended Workers Section */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-8 space-y-12 relative z-10">
           {/* Categories Section */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-[#24172f] font-serif">
-                {t?.tradesTitle || '10 Verified Trades'}
-              </h2>
-              <Link href="/services" className="text-xs font-bold text-[#d96f4d] hover:underline">
-                View All Services ↗
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#d96f4d] block mb-1">
+                  Cooperative Marketplace
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#24172f] font-serif">
+                  {t?.tradesTitle || '10 Verified Trades'}
+                </h2>
+                <p className="text-xs text-[#776e79] mt-1">
+                  Book verified cooperative artisans at standardized fair wages
+                </p>
+              </div>
+              <Link
+                href="/services"
+                className="text-xs font-bold text-[#d96f4d] hover:text-[#b85435] transition-colors flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#f0e7d9]/70 hover:bg-[#f0e7d9] border border-[#d96f4d]/25 self-start sm:self-auto shadow-2xs hover:shadow-xs"
+              >
+                <span>View All Services</span>
+                <span>↗</span>
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
               {categoriesData.map((c) => {
                 const localizedName = c.names[lang] || c.names.en;
                 const englishName = c.names.en;
@@ -367,7 +384,7 @@ export function CustomerDashboard() {
                   <div
                     key={c.id}
                     onClick={() => handleCategoryClick(c.id)}
-                    className="group cursor-pointer bg-white p-4 rounded-2xl border border-[#e6dcd0] hover:border-[#d96f4d] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col items-center justify-center relative overflow-hidden"
+                    className="group cursor-pointer bg-white p-4 sm:p-5 rounded-2xl border border-[#e6dcd0] hover:border-[#d96f4d] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col items-center justify-center relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-b from-[#fbf7ef] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="w-12 h-12 rounded-xl bg-[#f0e7d9] text-[#24172f] group-hover:bg-[#d96f4d] group-hover:text-white flex items-center justify-center font-bold mb-3 transition-colors duration-300 z-10">
