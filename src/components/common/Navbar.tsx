@@ -176,7 +176,7 @@ export function Navbar() {
                 <img
                   src="/logo.png"
                   alt="ShramNexus Logo"
-                  className="w-9 h-9 rounded-xl object-contain shadow-xs border border-gray-100 bg-white"
+                  className="w-10 h-10 rounded-xl object-contain shadow-xs border border-amber-200/80 overflow-hidden"
                 />
                 <div>
                   <span className="font-extrabold text-gray-900 text-lg leading-tight block">
@@ -258,7 +258,7 @@ export function Navbar() {
             <img
               src="/logo.png"
               alt="ShramNexus Logo"
-              className="w-9 h-9 rounded-xl object-contain shadow-xs border border-gray-100 bg-white group-hover:scale-105 transition-transform"
+              className="w-10 h-10 rounded-xl object-contain shadow-xs border border-amber-200/80 group-hover:scale-105 transition-transform overflow-hidden"
             />
             <div>
               <span className="text-lg font-black tracking-tight text-gray-900 leading-tight">
