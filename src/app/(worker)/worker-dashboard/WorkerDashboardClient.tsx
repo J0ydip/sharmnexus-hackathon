@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useRealtimeBookings } from '@/hooks/useRealtimeBookings';
 import { updateWorkerAvailability } from '@/app/actions/workers';
 import { updateBookingStatus, getWorkerDashboardData, rejectJobRequest } from '@/app/actions/worker-jobs';
 import {
@@ -390,7 +391,8 @@ export function WorkerDashboardClient() {
     }
 
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 3000);
+    // Relaxed polling (30s) as a fallback — Realtime handles instant updates
+    const interval = setInterval(fetchDashboardData, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -410,6 +412,73 @@ export function WorkerDashboardClient() {
       return null;
     }
   };
+
+  // ---------------------------------------------------------------------------
+  // Supabase Realtime — instant job notifications without polling
+  // ---------------------------------------------------------------------------
+  const realtimeRefetch = useCallback(async () => {
+    const wId = getWorkerId();
+    if (!wId) return;
+    try {
+      const res = await getWorkerDashboardData(wId);
+      if (!res) return;
+      let rejectedIds: string[] = [];
+      try {
+        rejectedIds = JSON.parse(localStorage.getItem('shramnexus-rejected-requests') || '[]');
+      } catch (e) {}
+      const rejectedSet = new Set(rejectedIds);
+      if (res.requests) {
+        setJobRequests(
+          res.requests
+            .filter((r: any) => !rejectedSet.has(r.id) && r.status !== 'cancelled')
+            .map((r: any) => ({
+              id: r.id,
+              name: r.customers?.full_name || 'Household Customer',
+              service: r.service_categories?.name || 'General Maintenance',
+              date: r.scheduled_at ? new Date(r.scheduled_at).toLocaleDateString() : 'Today',
+              price: `₹ ${r.final_price || r.estimated_price || 400}`,
+              dist: '1.2 km',
+              desc: r.description || 'Service request via ShramNexus platform.',
+              address: r.address || 'Customer location',
+              otp: getBookingOtp(r.id),
+            }))
+        );
+      }
+      if (res.activeJobs) {
+        setActiveJobs(
+          res.activeJobs.map((j: any) => ({
+            id: j.id,
+            name: j.customers?.full_name || 'Cooperative Customer',
+            service: j.service_categories?.name || 'Maintenance',
+            date: j.scheduled_at ? new Date(j.scheduled_at).toLocaleDateString() : 'Today',
+            price: `₹ ${j.final_price || j.estimated_price || 400}`,
+            address: j.address || 'Customer location',
+            status: j.status,
+            otp: getBookingOtp(j.id),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error('Realtime refetch error:', err);
+    }
+  }, []);
+
+  const { isConnected: realtimeConnected } = useRealtimeBookings({
+    workerId: getWorkerId(),
+    onNewBooking: (event) => {
+      showToast(`🔔 New job request! ${event.booking_type === 'emergency' ? '🚨 EMERGENCY' : 'Booking'} — ₹${event.estimated_price || 'TBD'}`);
+      realtimeRefetch();
+    },
+    onBookingUpdate: (event) => {
+      if (event.status === 'cancelled') {
+        showToast('⚠️ A booking has been cancelled.');
+      } else if (event.status === 'completed') {
+        showToast('✅ Job completed & payment released!');
+      }
+      realtimeRefetch();
+    },
+    enabled: true,
+  });
 
   const handleOpenReviews = async () => {
     setActiveView('view-reviews');

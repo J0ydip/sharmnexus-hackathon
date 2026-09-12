@@ -30,6 +30,14 @@ import {
   updateBookingStatusAdmin,
   getAdminAuditLogs,
   AdminAuditLogItem,
+  adminRegisterCooperative,
+  getFederationTools,
+  adminTransferFederationTool,
+  adminAddFederationTool,
+  adminDispatchSpillover,
+  getAdminVelocityData,
+  FederationToolItem,
+  VelocityPoint,
 } from '@/app/actions/admin';
 import {
   getAdminSupportTickets,
@@ -146,6 +154,48 @@ export function AdminDashboardClient() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketItem | null>(null);
   const [isResolving, setIsResolving] = useState(false);
 
+  // Dynamic Velocity Data
+  const [velocityPoints, setVelocityPoints] = useState<VelocityPoint[]>([]);
+
+  // Federation Console State
+  const [federationTools, setFederationTools] = useState<FederationToolItem[]>([]);
+  const [federationSubTab, setFederationSubTab] = useState<'societies' | 'spillover' | 'equipment' | 'welfare'>('societies');
+  const [showRegisterCoopModal, setShowRegisterCoopModal] = useState(false);
+  const [isRegisteringCoop, setIsRegisteringCoop] = useState(false);
+  const [newCoopForm, setNewCoopForm] = useState({
+    name: '',
+    registration_number: '',
+    district: '',
+    state: '',
+    member_count: 45,
+    welfare_fund_balance: 80000,
+    monthly_revenue: 180000,
+  });
+
+  // Spillover Dispatch State
+  const [showSpilloverModal, setShowSpilloverModal] = useState(false);
+  const [isDispatchingSpillover, setIsDispatchingSpillover] = useState(false);
+  const [spilloverForm, setSpilloverForm] = useState({
+    fromSocietyId: '',
+    toSocietyId: '',
+    workerCount: 5,
+    trade: 'Electrician & Wiremen',
+    reason: 'Inter-district surge load balance and spillover routing',
+  });
+
+  // Federation Shared Equipment State
+  const [showAddToolModal, setShowAddToolModal] = useState(false);
+  const [isAddingTool, setIsAddingTool] = useState(false);
+  const [newToolForm, setNewToolForm] = useState({
+    name: '',
+    toolCode: '',
+    category: 'Heavy Equipment',
+    societyId: '',
+  });
+  const [toolTransferTarget, setToolTransferTarget] = useState<{ toolId: string; toolName: string } | null>(null);
+  const [transferSocietyId, setTransferSocietyId] = useState('');
+  const [isTransferringTool, setIsTransferringTool] = useState(false);
+
   // Disciplinary removal / audit modal
   const [pendingAction, setPendingAction] = useState<{
     type: 'worker' | 'coop';
@@ -156,7 +206,7 @@ export function AdminDashboardClient() {
 
   const fetchAllData = async () => {
     try {
-      const [s, w, c, b, r, e, coops, logs, tickets] = await Promise.all([
+      const [s, w, c, b, r, e, coops, logs, tickets, tools, vel] = await Promise.all([
         getAdminOverview(),
         getAdminWorkers(),
         getAdminCustomers(),
@@ -166,6 +216,8 @@ export function AdminDashboardClient() {
         getAdminCooperatives(),
         getAdminAuditLogs(),
         getAdminSupportTickets(),
+        getFederationTools(),
+        getAdminVelocityData(chartRange),
       ]);
       if (s) setStats(s);
       if (w) setWorkers(w);
@@ -176,11 +228,25 @@ export function AdminDashboardClient() {
       if (coops) setCooperatives(coops);
       if (logs) setAuditLogs(logs);
       if (tickets) setSupportTickets(tickets);
+      if (tools) setFederationTools(tools);
+      if (vel && vel.length > 0) setVelocityPoints(vel);
       setLastSynced(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
     } catch (err) {
       console.error('Error loading admin dashboard data:', err);
     }
   };
+
+  useEffect(() => {
+    async function loadVelocity() {
+      try {
+        const vel = await getAdminVelocityData(chartRange);
+        if (vel && vel.length > 0) setVelocityPoints(vel);
+      } catch (e) {
+        console.error('Error fetching velocity data for range:', chartRange, e);
+      }
+    }
+    loadVelocity();
+  }, [chartRange]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -334,6 +400,97 @@ export function AdminDashboardClient() {
       getAdminAuditLogs().then((logs) => setAuditLogs(logs));
     } catch (e: any) {
       showToast('Failed to reactivate cooperative');
+    }
+  };
+
+  const handleRegisterCoop = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCoopForm.name || !newCoopForm.registration_number || !newCoopForm.district) {
+      showToast('Please fill all required fields');
+      return;
+    }
+    setIsRegisteringCoop(true);
+    try {
+      await adminRegisterCooperative(newCoopForm);
+      showToast(`✓ Registered & accredited ${newCoopForm.name} into Federation!`);
+      setShowRegisterCoopModal(false);
+      setNewCoopForm({
+        name: '',
+        registration_number: '',
+        district: '',
+        state: '',
+        member_count: 45,
+        welfare_fund_balance: 80000,
+        monthly_revenue: 180000,
+      });
+      await fetchAllData();
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error registering cooperative: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsRegisteringCoop(false);
+    }
+  };
+
+  const handleDispatchSpillover = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!spilloverForm.fromSocietyId || !spilloverForm.toSocietyId) {
+      showToast('Please select source and destination societies');
+      return;
+    }
+    if (spilloverForm.fromSocietyId === spilloverForm.toSocietyId) {
+      showToast('Source and destination cannot be the same');
+      return;
+    }
+    setIsDispatchingSpillover(true);
+    try {
+      await adminDispatchSpillover(spilloverForm);
+      showToast(`✓ Spillover dispatched: Mobilized ${spilloverForm.workerCount} artisans!`);
+      setShowSpilloverModal(false);
+      await fetchAllData();
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error dispatching spillover');
+    } finally {
+      setIsDispatchingSpillover(false);
+    }
+  };
+
+  const handleAddTool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newToolForm.name || !newToolForm.toolCode || !newToolForm.societyId) {
+      showToast('Please fill all equipment fields');
+      return;
+    }
+    setIsAddingTool(true);
+    try {
+      await adminAddFederationTool(newToolForm);
+      showToast(`✓ Registered ${newToolForm.name} to Federation Asset Bank!`);
+      setShowAddToolModal(false);
+      setNewToolForm({ name: '', toolCode: '', category: 'Heavy Equipment', societyId: '' });
+      await fetchAllData();
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error registering equipment');
+    } finally {
+      setIsAddingTool(false);
+    }
+  };
+
+  const handleTransferTool = async () => {
+    if (!toolTransferTarget || !transferSocietyId) return;
+    setIsTransferringTool(true);
+    try {
+      await adminTransferFederationTool(toolTransferTarget.toolId, transferSocietyId);
+      showToast(`✓ Equipment ${toolTransferTarget.toolName} transferred successfully!`);
+      setToolTransferTarget(null);
+      setTransferSocietyId('');
+      await fetchAllData();
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error transferring equipment');
+    } finally {
+      setIsTransferringTool(false);
     }
   };
 
@@ -528,7 +685,7 @@ export function AdminDashboardClient() {
             onClick={() => setActiveTab('view-coops')}
             className={`nav-item ${activeTab === 'view-coops' ? 'active' : ''}`}
           >
-            🏢 Cooperatives
+            🏢 Cooperative Federation
           </button>
           <button
             type="button"
@@ -1030,7 +1187,7 @@ export function AdminDashboardClient() {
                       position: 'relative',
                     }}
                   >
-                    {VELOCITY_DATA[chartRange].map((bar, idx) => (
+                    {(velocityPoints.length > 0 ? velocityPoints : VELOCITY_DATA[chartRange]).map((bar, idx) => (
                       <div
                         key={`${bar.label}-${idx}`}
                         style={{
@@ -1812,7 +1969,7 @@ export function AdminDashboardClient() {
             );
           })()}
 
-          {/* 7. COOPERATIVES VIEW */}
+          {/* 7. COOPERATIVE FEDERATION CONSOLE VIEW */}
           {activeTab === 'view-coops' && (() => {
             const filteredCooperatives = cooperatives.filter((c) => {
               const q = coopSearch.toLowerCase();
@@ -1820,6 +1977,7 @@ export function AdminDashboardClient() {
                 !q ||
                 c.name.toLowerCase().includes(q) ||
                 c.reg.toLowerCase().includes(q) ||
+                c.district?.toLowerCase().includes(q) ||
                 c.id.toLowerCase().includes(q);
               const matchesFilter =
                 coopFilter === 'ALL'
@@ -1830,135 +1988,467 @@ export function AdminDashboardClient() {
               return matchesSearch && matchesFilter;
             });
 
+            const totalMembers = cooperatives.reduce((sum, c) => sum + (c.members || 0), 0);
+            const totalWelfareFund = cooperatives.reduce((sum, c) => sum + (c.welfareBalance || 0), 0);
+            const totalActiveBookings = cooperatives.reduce((sum, c) => sum + (c.activeBookingsCount || 0), 0);
+
             return (
               <div className="admin-view active">
-                <div className="card-header mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                {/* Master Federation Header */}
+                <div className="card-header mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', background: 'linear-gradient(135deg, #24172f 0%, #3a224c 100%)', color: '#fff', padding: '1.5rem', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}>
                   <div>
-                    <h1 className="page-title" style={{ margin: 0 }}>Labour Cooperative Societies</h1>
-                    <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>
-                      Federated cooperative societies governance &amp; statutory compliance
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '1.3rem' }}>🏛️</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#f3c969' }}>
+                        Apex Statutory Federation
+                      </span>
+                    </div>
+                    <h1 className="page-title" style={{ margin: 0, color: '#fff', fontSize: '1.45rem' }}>
+                      National Labour Cooperative Federation
+                    </h1>
+                    <p style={{ fontSize: '0.82rem', margin: '0.25rem 0 0 0', color: 'rgba(255,255,255,0.7)' }}>
+                      Reg: <code>NLCF-1001-HQ</code> • Multi-State Inter-Cooperative Capacity Exchange &amp; Welfare Mesh
                     </p>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ fontSize: '0.82rem', padding: '0.55rem 1.1rem', background: 'linear-gradient(135deg, #e6aa3b 0%, #d96f4d 100%)', color: '#fff', fontWeight: 700, border: 'none', borderRadius: '8px', boxShadow: '0 4px 12px rgba(217,111,77,0.35)' }}
+                      onClick={() => setShowRegisterCoopModal(true)}
+                    >
+                      + Register New Society
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ fontSize: '0.82rem', padding: '0.55rem 1.1rem', background: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 600, border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px' }}
+                      onClick={() => setShowSpilloverModal(true)}
+                    >
+                      ⚡ Mobilize Spillover
+                    </button>
                     <Link
                       href="/cooperative"
                       target="_blank"
-                      className="btn btn-outline"
-                      style={{ fontSize: '0.85rem', padding: '0.55rem 1.1rem', background: 'var(--ink)', color: '#fff' }}
+                      className="btn"
+                      style={{ fontSize: '0.82rem', padding: '0.55rem 1.1rem', background: '#fff', color: 'var(--ink)', fontWeight: 700, borderRadius: '8px' }}
                     >
-                      Open Cooperative Portal ↗
+                      Open Portal ↗
                     </Link>
                   </div>
                 </div>
 
-                <div className="card table-container">
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                    <input
-                      type="text"
-                      placeholder="Search society name or registration..."
-                      value={coopSearch}
-                      onChange={(e) => setCoopSearch(e.target.value)}
+                {/* 4 Master KPI Summary Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '1.5rem' }}>
+                  <div className="card" style={{ padding: '1.1rem', borderLeft: '4px solid #4f46e5' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>Affiliated Societies</div>
+                    <div style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--ink)', margin: '4px 0' }}>{cooperatives.length}</div>
+                    <small style={{ color: 'var(--green)', fontWeight: 600 }}>Jaipur, Jodhpur, Pune, Patna, Kolkata</small>
+                  </div>
+
+                  <div className="card" style={{ padding: '1.1rem', borderLeft: '4px solid #059669' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>Artisan Reserve</div>
+                    <div style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--green)', margin: '4px 0' }}>{totalMembers}</div>
+                    <small style={{ color: 'var(--muted)' }}>Verified democratic members</small>
+                  </div>
+
+                  <div className="card" style={{ padding: '1.1rem', borderLeft: '4px solid #d97706' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>Mutual Welfare Reserve</div>
+                    <div style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--gold)', margin: '4px 0' }}>{formatCurrency(totalWelfareFund)}</div>
+                    <small style={{ color: 'var(--muted)' }}>Central Emergency Pool</small>
+                  </div>
+
+                  <div className="card" style={{ padding: '1.1rem', borderLeft: '4px solid #0891b2' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>Spillover Capacity Mesh</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0891b2', margin: '6px 0 4px' }}>ACTIVE</div>
+                    <small style={{ color: 'var(--muted)' }}>{totalActiveBookings} active live assignments</small>
+                  </div>
+                </div>
+
+                {/* Sub-Tabs Nav Bar */}
+                <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid var(--border)', marginBottom: '1.25rem', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {[
+                    { id: 'societies', label: '🏛️ Affiliated Societies & Compliance' },
+                    { id: 'spillover', label: '🔄 Inter-Cooperative Capacity Matrix' },
+                    { id: 'equipment', label: `🛠️ Shared Equipment Bank (${federationTools.length})` },
+                    { id: 'welfare', label: '🛡️ Mutual Aid & Welfare Pool' },
+                  ].map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setFederationSubTab(st.id as any)}
                       style={{
-                        padding: '7px 14px',
-                        border: '1px solid var(--border)',
+                        padding: '8px 16px',
+                        fontSize: '0.84rem',
+                        fontWeight: federationSubTab === st.id ? 700 : 500,
+                        color: federationSubTab === st.id ? 'var(--ink)' : 'var(--muted)',
+                        background: federationSubTab === st.id ? '#f3ede4' : 'transparent',
+                        border: 'none',
                         borderRadius: '8px',
-                        fontSize: '0.82rem',
-                        outline: 'none',
-                        width: '260px',
-                        background: '#fcfbfa',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
                       }}
-                    />
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((f) => (
-                        <button
-                          key={f}
-                          type="button"
-                          className={`btn btn-outline ${coopFilter === f ? 'active' : ''}`}
-                          style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
-                          onClick={() => setCoopFilter(f)}
-                        >
-                          {f === 'ALL' ? 'All Societies' : f === 'ACTIVE' ? 'Active' : 'Suspended'}
-                        </button>
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* SUB-TAB 1: AFFILIATED SOCIETIES */}
+                {federationSubTab === 'societies' && (
+                  <div className="card table-container">
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                      <input
+                        type="text"
+                        placeholder="Search society name, district, registration..."
+                        value={coopSearch}
+                        onChange={(e) => setCoopSearch(e.target.value)}
+                        style={{
+                          padding: '7px 14px',
+                          border: '1px solid var(--border)',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                          outline: 'none',
+                          width: '280px',
+                          background: '#fcfbfa',
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((f) => (
+                          <button
+                            key={f}
+                            type="button"
+                            className={`btn btn-outline ${coopFilter === f ? 'active' : ''}`}
+                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                            onClick={() => setCoopFilter(f)}
+                          >
+                            {f === 'ALL' ? 'All Societies' : f === 'ACTIVE' ? 'Active' : 'Suspended'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Society &amp; District</th>
+                          <th>Reg. Number &amp; State</th>
+                          <th>Artisan Pool</th>
+                          <th>Capacity Load</th>
+                          <th>Spillover Status</th>
+                          <th>Governance Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredCooperatives.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--muted)' }}>
+                              No cooperative societies found matching &ldquo;{coopSearch}&rdquo;.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredCooperatives.map((c) => (
+                            <tr key={c.id}>
+                              <td>
+                                <strong>{c.name}</strong>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                                  📍 {c.district}, {c.state}
+                                </div>
+                              </td>
+                              <td>
+                                <code>{c.reg}</code>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Unit: {c.id.substring(0, 8)}...</div>
+                              </td>
+                              <td>
+                                <strong>{c.members}</strong> Members
+                                <div style={{ fontSize: '0.72rem', color: 'var(--green)' }}>
+                                  Fund: {formatCurrency(c.welfareBalance)}
+                                </div>
+                              </td>
+                              <td>
+                                <div style={{ width: '110px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: '2px' }}>
+                                    <span>{c.capacityUtilization}%</span>
+                                    <span className="text-muted">{c.activeBookingsCount} jobs</span>
+                                  </div>
+                                  <div style={{ height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <div
+                                      style={{
+                                        width: `${Math.min(c.capacityUtilization, 100)}%`,
+                                        height: '100%',
+                                        background: c.capacityUtilization > 70 ? '#ef4444' : c.capacityUtilization > 30 ? '#059669' : '#3b82f6',
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <span
+                                  className={`badge ${
+                                    c.spilloverStatus === 'Surplus Capacity'
+                                      ? 'badge-verified'
+                                      : c.spilloverStatus === 'Overloaded'
+                                      ? 'badge-req'
+                                      : 'badge-ongoing'
+                                  }`}
+                                  style={{ fontSize: '0.72rem' }}
+                                >
+                                  ● {c.spilloverStatus}
+                                </span>
+                              </td>
+                              <td>
+                                {c.status === 'Active' ? (
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    style={{
+                                      fontSize: '0.72rem',
+                                      padding: '4px 10px',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                      borderColor: 'var(--red)',
+                                      color: 'var(--red)',
+                                    }}
+                                    onClick={() => handleTriggerAdminAction('coop', c.id, c.name)}
+                                  >
+                                    Suspend
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    style={{
+                                      fontSize: '0.72rem',
+                                      padding: '4px 10px',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                      borderColor: 'var(--green)',
+                                      color: 'var(--green)',
+                                    }}
+                                    onClick={() => handleReactivateCoop(c.id, c.name)}
+                                  >
+                                    ✓ Reactivate
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* SUB-TAB 2: SPILLOVER & CAPACITY MATRIX */}
+                {federationSubTab === 'spillover' && (
+                  <div>
+                    <div style={{ background: '#f8f6f2', border: '1px solid var(--border)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <h3 style={{ margin: '0 0 4px 0', fontSize: '1rem', color: 'var(--ink)' }}>
+                          ⚡ Dynamic Inter-District Labor Capacity Balancing
+                        </h3>
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--muted)', maxWidth: '650px', lineHeight: 1.4 }}>
+                          When a high-density urban district experiences a sudden surge in emergency bookings (e.g. monsoon plumbing or construction spikes), the Federation router routes excess demand to affiliated neighboring societies with surplus labor reserves.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{ padding: '0.6rem 1.25rem', background: 'linear-gradient(135deg, #e6aa3b 0%, #d96f4d 100%)', color: '#fff', fontWeight: 700, borderRadius: '8px', border: 'none' }}
+                        onClick={() => setShowSpilloverModal(true)}
+                      >
+                        + Mobilize Spillover Dispatch
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
+                      {cooperatives.map((c) => (
+                        <div key={c.id} className="card" style={{ padding: '1.25rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                            <div>
+                              <strong style={{ fontSize: '1rem', color: 'var(--ink)' }}>{c.name}</strong>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>📍 {c.district}, {c.state}</div>
+                            </div>
+                            <span
+                              className={`badge ${
+                                c.spilloverStatus === 'Surplus Capacity'
+                                  ? 'badge-verified'
+                                  : c.spilloverStatus === 'Overloaded'
+                                  ? 'badge-req'
+                                  : 'badge-ongoing'
+                              }`}
+                            >
+                              {c.spilloverStatus}
+                            </span>
+                          </div>
+
+                          <div style={{ background: '#fcfbfa', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 12px', margin: '10px 0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                              <span>Capacity Load:</span>
+                              <strong>{c.capacityUtilization}%</strong>
+                            </div>
+                            <div style={{ height: '7px', background: '#e5e7eb', borderRadius: '4px', overflow: 'hidden', marginBottom: '6px' }}>
+                              <div
+                                style={{
+                                  width: `${Math.min(c.capacityUtilization, 100)}%`,
+                                  height: '100%',
+                                  background: c.capacityUtilization > 70 ? '#ef4444' : c.capacityUtilization > 30 ? '#059669' : '#3b82f6',
+                                }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--muted)' }}>
+                              <span>Active Artisans: <strong>{c.members}</strong></span>
+                              <span>Live Jobs: <strong>{c.activeBookingsCount}</strong></span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                              Monthly Rev: <strong>₹ {c.monthlyRevenue.toLocaleString('en-IN')}</strong>
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              style={{ fontSize: '0.74rem', padding: '4px 10px' }}
+                              onClick={() => {
+                                setSpilloverForm((prev) => ({
+                                  ...prev,
+                                  fromSocietyId: c.spilloverStatus === 'Surplus Capacity' ? c.id : prev.fromSocietyId,
+                                  toSocietyId: c.spilloverStatus === 'Overloaded' ? c.id : prev.toSocietyId,
+                                }));
+                                setShowSpilloverModal(true);
+                              }}
+                            >
+                              Dispatch Router ↗
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
+                )}
 
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Society Name</th>
-                        <th>Reg. Number</th>
-                        <th>Registered Artisans</th>
-                        <th>Federation Status</th>
-                        <th>Administrative Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredCooperatives.length === 0 ? (
+                {/* SUB-TAB 3: SHARED EQUIPMENT BANK */}
+                {federationSubTab === 'equipment' && (
+                  <div className="card table-container">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1rem' }}>Central Federation Heavy Equipment Registry</h3>
+                        <small className="text-muted">Capital-intensive machinery shared across cooperative units on-demand</small>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{ padding: '0.45rem 1rem', background: 'var(--ink)', color: '#fff', fontSize: '0.82rem', fontWeight: 600, borderRadius: '8px' }}
+                        onClick={() => setShowAddToolModal(true)}
+                      >
+                        + Register Equipment to Bank
+                      </button>
+                    </div>
+
+                    <table className="admin-table">
+                      <thead>
                         <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--muted)' }}>
-                            No cooperative societies found matching &ldquo;{coopSearch}&rdquo;.
-                          </td>
+                          <th>Equipment Name</th>
+                          <th>Tool Code</th>
+                          <th>Category</th>
+                          <th>Holding Cooperative</th>
+                          <th>Status</th>
+                          <th>Action</th>
                         </tr>
-                      ) : (
-                        filteredCooperatives.map((c) => (
-                          <tr key={c.id}>
-                            <td>
-                              <strong>{c.name}</strong>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Federation Unit: {c.id}</div>
-                            </td>
-                            <td><code>{c.reg}</code></td>
-                            <td>
-                              <strong>{c.members}</strong> Active Members
-                            </td>
-                            <td>
-                              <span className={`badge ${c.status === 'Active' ? 'badge-verified' : 'badge-req'}`}>
-                                ● {c.status}
-                              </span>
-                            </td>
-                            <td>
-                              {c.status === 'Active' ? (
-                                <button
-                                  type="button"
-                                  className="btn btn-outline"
-                                  style={{
-                                    fontSize: '0.72rem',
-                                    padding: '4px 10px',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    borderColor: 'var(--red)',
-                                    color: 'var(--red)',
-                                  }}
-                                  onClick={() => handleTriggerAdminAction('coop', c.id, c.name)}
-                                >
-                                  Disciplinary Suspend
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="btn btn-outline"
-                                  style={{
-                                    fontSize: '0.72rem',
-                                    padding: '4px 10px',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    borderColor: 'var(--green)',
-                                    color: 'var(--green)',
-                                  }}
-                                  onClick={() => handleReactivateCoop(c.id, c.name)}
-                                >
-                                  ✓ Reactivate
-                                </button>
-                              )}
+                      </thead>
+                      <tbody>
+                        {federationTools.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)' }}>
+                              No shared machinery registered in the Federation Tool Bank.
                             </td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                        ) : (
+                          federationTools.map((t) => (
+                            <tr key={t.id}>
+                              <td>
+                                <strong>{t.name}</strong>
+                              </td>
+                              <td><code>{t.toolCode}</code></td>
+                              <td>{t.category}</td>
+                              <td>
+                                🏛️ <strong>{t.societyName}</strong>
+                              </td>
+                              <td>
+                                <span
+                                  className={`badge ${
+                                    t.status === 'Available'
+                                      ? 'badge-verified'
+                                      : t.status === 'In Use'
+                                      ? 'badge-ongoing'
+                                      : 'badge-req'
+                                  }`}
+                                >
+                                  ● {t.status}
+                                </span>
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline"
+                                  style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                                  onClick={() => {
+                                    setToolTransferTarget({ toolId: t.id, toolName: t.name });
+                                    setTransferSocietyId(cooperatives[0]?.id || '');
+                                  }}
+                                >
+                                  Transfer Tool ↗
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* SUB-TAB 4: MUTUAL AID & WELFARE POOL */}
+                {federationSubTab === 'welfare' && (
+                  <div className="card table-container">
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <h3 style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>Federation Mutual Welfare &amp; Capital Solvency Pool</h3>
+                      <small className="text-muted">Consolidated statutory social protection fund backed by enforced 5% booking allocation</small>
+                    </div>
+
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Cooperative Society</th>
+                          <th>Location</th>
+                          <th>Active Artisans</th>
+                          <th>Welfare Capital Balance</th>
+                          <th>Monthly Run-Rate</th>
+                          <th>Compliance Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cooperatives.map((c) => (
+                          <tr key={c.id}>
+                            <td><strong>{c.name}</strong></td>
+                            <td>{c.district}, {c.state}</td>
+                            <td><strong>{c.members}</strong> members</td>
+                            <td><strong style={{ color: 'var(--green)' }}>{formatCurrency(c.welfareBalance)}</strong></td>
+                            <td>₹ {c.monthlyRevenue.toLocaleString('en-IN')}/mo</td>
+                            <td>
+                              <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
+                                ✓ 100% Solvency Compliant
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -2688,6 +3178,542 @@ export function AdminDashboardClient() {
                   {isResolving ? 'Resolving...' : '✓ Mark as Resolved'}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          FEDERATION MODAL 1: REGISTER COOPERATIVE SOCIETY
+         ========================================================= */}
+      {showRegisterCoopModal && (
+        <div
+          className="admin-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(36, 23, 47, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            zIndex: 10001,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            className="admin-modal-content"
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              maxWidth: '540px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.3rem', margin: 0, color: 'var(--ink)' }}>
+                  🏛️ Accredit New Cooperative Society
+                </h2>
+                <small className="text-muted">Direct database entry under Multi-State Cooperative Societies Act</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRegisterCoopModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleRegisterCoop}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Society Legal Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Bhopal Artisan Welfare Society"
+                    value={newCoopForm.name}
+                    onChange={(e) => setNewCoopForm({ ...newCoopForm, name: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Statutory Reg. Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. BAWS-MP-2026"
+                    value={newCoopForm.registration_number}
+                    onChange={(e) => setNewCoopForm({ ...newCoopForm, registration_number: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    District *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Bhopal"
+                    value={newCoopForm.district}
+                    onChange={(e) => setNewCoopForm({ ...newCoopForm, district: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    State *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Madhya Pradesh"
+                    value={newCoopForm.state}
+                    onChange={(e) => setNewCoopForm({ ...newCoopForm, state: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Initial Registered Members
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newCoopForm.member_count}
+                    onChange={(e) => setNewCoopForm({ ...newCoopForm, member_count: Number(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Initial Welfare Fund (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={newCoopForm.welfare_fund_balance}
+                    onChange={(e) => setNewCoopForm({ ...newCoopForm, welfare_fund_balance: Number(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Projected Monthly Rev (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="5000"
+                    value={newCoopForm.monthly_revenue}
+                    onChange={(e) => setNewCoopForm({ ...newCoopForm, monthly_revenue: Number(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ padding: '0.6rem 1.25rem' }}
+                  onClick={() => setShowRegisterCoopModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isRegisteringCoop}
+                  className="btn"
+                  style={{ padding: '0.6rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700 }}
+                >
+                  {isRegisteringCoop ? 'Registering...' : '✓ Accredit & Save to DB'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          FEDERATION MODAL 2: MOBILIZE SPILLOVER DISPATCH
+         ========================================================= */}
+      {showSpilloverModal && (
+        <div
+          className="admin-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(36, 23, 47, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            zIndex: 10001,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            className="admin-modal-content"
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.3rem', margin: 0, color: 'var(--ink)' }}>
+                  ⚡ Mobilize Inter-District Spillover
+                </h2>
+                <small className="text-muted">Route surge capacity between affiliated societies with audit logging</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSpilloverModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleDispatchSpillover}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Source Society (Surplus Labor Pool) *
+                  </label>
+                  <select
+                    required
+                    value={spilloverForm.fromSocietyId}
+                    onChange={(e) => setSpilloverForm({ ...spilloverForm, fromSocietyId: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  >
+                    <option value="">-- Select Source Cooperative Society --</option>
+                    {cooperatives.map((c) => (
+                      <option key={`src-${c.id}`} value={c.id}>
+                        {c.name} ({c.district}) — {c.members} members [{c.spilloverStatus}]
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Destination Society (Surge / High Demand) *
+                  </label>
+                  <select
+                    required
+                    value={spilloverForm.toSocietyId}
+                    onChange={(e) => setSpilloverForm({ ...spilloverForm, toSocietyId: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  >
+                    <option value="">-- Select Destination Society --</option>
+                    {cooperatives.map((c) => (
+                      <option key={`dst-${c.id}`} value={c.id}>
+                        {c.name} ({c.district}) — {c.activeBookingsCount} active bookings
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                      Mobilized Artisans Count
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={spilloverForm.workerCount}
+                      onChange={(e) => setSpilloverForm({ ...spilloverForm, workerCount: Number(e.target.value) || 1 })}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                      Trade Specialty
+                    </label>
+                    <select
+                      value={spilloverForm.trade}
+                      onChange={(e) => setSpilloverForm({ ...spilloverForm, trade: e.target.value })}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                    >
+                      <option value="Electrician & Wiremen">Electrician & Wiremen</option>
+                      <option value="Plumber & Sanitization">Plumber & Sanitization</option>
+                      <option value="Carpenter & Joinery">Carpenter & Joinery</option>
+                      <option value="Painter & Surface Finishing">Painter & Surface Finishing</option>
+                      <option value="Mason & Construction">Mason & Construction</option>
+                      <option value="Multi-Skill Emergency Squad">Multi-Skill Emergency Squad</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Justification / Operational Note *
+                  </label>
+                  <textarea
+                    rows={2}
+                    required
+                    value={spilloverForm.reason}
+                    onChange={(e) => setSpilloverForm({ ...spilloverForm, reason: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.82rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ padding: '0.6rem 1.25rem' }}
+                  onClick={() => setShowSpilloverModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isDispatchingSpillover}
+                  className="btn"
+                  style={{ padding: '0.6rem 1.5rem', background: 'linear-gradient(135deg, #e6aa3b 0%, #d96f4d 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700 }}
+                >
+                  {isDispatchingSpillover ? 'Mobilizing...' : '⚡ Confirm Dispatch & Log Audit'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          FEDERATION MODAL 3: REGISTER EQUIPMENT TO TOOL BANK
+         ========================================================= */}
+      {showAddToolModal && (
+        <div
+          className="admin-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(36, 23, 47, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            zIndex: 10001,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            className="admin-modal-content"
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              maxWidth: '480px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.3rem', margin: 0, color: 'var(--ink)' }}>
+                  🛠️ Register Shared Equipment
+                </h2>
+                <small className="text-muted">Add machinery to Federation Capital Asset Bank</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddToolModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleAddTool}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Equipment Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Rotary Core Drill 1200W"
+                    value={newToolForm.name}
+                    onChange={(e) => setNewToolForm({ ...newToolForm, name: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                      Tool Code *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. TB-008"
+                      value={newToolForm.toolCode}
+                      onChange={(e) => setNewToolForm({ ...newToolForm, toolCode: e.target.value })}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                      Category
+                    </label>
+                    <select
+                      value={newToolForm.category}
+                      onChange={(e) => setNewToolForm({ ...newToolForm, category: e.target.value })}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                    >
+                      <option value="Heavy Equipment">Heavy Equipment</option>
+                      <option value="Scaffolding">Scaffolding & Access</option>
+                      <option value="Precision Measuring">Precision Measuring</option>
+                      <option value="Diagnostics">Diagnostics & Thermal</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '4px' }}>
+                    Assigned Holding Cooperative *
+                  </label>
+                  <select
+                    required
+                    value={newToolForm.societyId}
+                    onChange={(e) => setNewToolForm({ ...newToolForm, societyId: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem' }}
+                  >
+                    <option value="">-- Select Cooperative Society --</option>
+                    {cooperatives.map((c) => (
+                      <option key={`tool-soc-${c.id}`} value={c.id}>
+                        {c.name} ({c.district})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ padding: '0.6rem 1.25rem' }}
+                  onClick={() => setShowAddToolModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAddingTool}
+                  className="btn"
+                  style={{ padding: '0.6rem 1.5rem', background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700 }}
+                >
+                  {isAddingTool ? 'Saving...' : '✓ Add Equipment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          FEDERATION MODAL 4: TRANSFER / REASSIGN EQUIPMENT
+         ========================================================= */}
+      {toolTransferTarget && (
+        <div
+          className="admin-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(36, 23, 47, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            zIndex: 10001,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            className="admin-modal-content"
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              maxWidth: '460px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+            }}
+          >
+            <h2 style={{ fontSize: '1.25rem', margin: '0 0 6px 0', color: 'var(--ink)' }}>
+              Reassign Shared Equipment
+            </h2>
+            <p className="text-muted" style={{ fontSize: '0.85rem', margin: '0 0 1.25rem 0' }}>
+              Transferring <strong>{toolTransferTarget.toolName}</strong> to another federated cooperative society.
+            </p>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '6px' }}>
+                Select Receiving Cooperative Society
+              </label>
+              <select
+                value={transferSocietyId}
+                onChange={(e) => setTransferSocietyId(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem' }}
+              >
+                {cooperatives.map((c) => (
+                  <option key={`xfer-${c.id}`} value={c.id}>
+                    {c.name} ({c.district}, {c.state})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ padding: '0.6rem 1.25rem' }}
+                onClick={() => setToolTransferTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isTransferringTool || !transferSocietyId}
+                className="btn"
+                style={{ padding: '0.6rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700 }}
+                onClick={handleTransferTool}
+              >
+                {isTransferringTool ? 'Transferring...' : '✓ Confirm Transfer'}
+              </button>
             </div>
           </div>
         </div>

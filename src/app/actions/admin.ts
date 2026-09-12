@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { cacheThrough, cacheInvalidate, CACHE_KEYS } from '@/lib/redis';
 
 export async function setAdminSession() {
   const cookieStore = await cookies();
@@ -36,50 +37,67 @@ export interface AdminOverviewStats {
   workerDisbursements: number;
 }
 
+// ---------------------------------------------------------------------------
+// getAdminOverview — cached with Redis (60s TTL)
+// Avoids 3 parallel count(*) queries on every admin page load
+// ---------------------------------------------------------------------------
 export async function getAdminOverview(): Promise<AdminOverviewStats> {
-  const supabase = await createClient();
+  return cacheThrough<AdminOverviewStats>(
+    CACHE_KEYS.ADMIN_OVERVIEW,
+    async () => {
+      const supabase = await createClient();
 
-  try {
-    const [workersRes, customersRes, bookingsRes] = await Promise.all([
-      supabase.from('workers').select('id, is_verified', { count: 'exact' }),
-      supabase.from('customers').select('id', { count: 'exact' }),
-      supabase.from('bookings').select('id, estimated_price, final_price, status', { count: 'exact' }),
-    ]);
+      try {
+        const [workersRes, customersRes, bookingsRes] = await Promise.all([
+          supabase.from('workers').select('id, is_verified', { count: 'exact' }),
+          supabase.from('customers').select('id', { count: 'exact' }),
+          supabase.from('bookings').select('id, estimated_price, final_price, status', { count: 'exact' }),
+        ]);
 
-    const totalWorkers = workersRes.count || 0;
-    const totalCustomers = customersRes.count || 0;
-    const totalBookings = bookingsRes.count || 0;
+        const totalWorkers = workersRes.count || 0;
+        const totalCustomers = customersRes.count || 0;
+        const totalBookings = bookingsRes.count || 0;
 
-    let liveDbVolume = 0;
-    if (bookingsRes.data && bookingsRes.data.length > 0) {
-      liveDbVolume = bookingsRes.data.reduce(
-        (sum, b) => sum + (Number(b.final_price) || Number(b.estimated_price) || 0),
-        0
-      );
-    }
-    const totalVolume = liveDbVolume;
+        let liveDbVolume = 0;
+        if (bookingsRes.data && bookingsRes.data.length > 0) {
+          liveDbVolume = bookingsRes.data.reduce(
+            (sum, b) => sum + (Number(b.final_price) || Number(b.estimated_price) || 0),
+            0
+          );
+        }
+        const totalVolume = liveDbVolume;
 
-    return {
-      totalWorkers,
-      totalCustomers,
-      totalBookings,
-      totalVolume,
-      platformCommission: Math.round(totalVolume * 0.1), // 10% platform operations
-      welfarePool: Math.round(totalVolume * 0.05), // 5% welfare pool
-      workerDisbursements: Math.round(totalVolume * 0.85), // 85% worker wages
-    };
-  } catch (err) {
-    console.error('Error fetching admin overview:', err);
-    return {
-      totalWorkers: 0,
-      totalCustomers: 0,
-      totalBookings: 0,
-      totalVolume: 0,
-      platformCommission: 0,
-      welfarePool: 0,
-      workerDisbursements: 0,
-    };
-  }
+        return {
+          totalWorkers,
+          totalCustomers,
+          totalBookings,
+          totalVolume,
+          platformCommission: Math.round(totalVolume * 0.1),
+          welfarePool: Math.round(totalVolume * 0.05),
+          workerDisbursements: Math.round(totalVolume * 0.85),
+        };
+      } catch (err) {
+        console.error('Error fetching admin overview:', err);
+        return {
+          totalWorkers: 0,
+          totalCustomers: 0,
+          totalBookings: 0,
+          totalVolume: 0,
+          platformCommission: 0,
+          welfarePool: 0,
+          workerDisbursements: 0,
+        };
+      }
+    },
+    60 // 60-second TTL
+  );
+}
+
+/**
+ * Call this after booking status changes to bust the admin overview cache.
+ */
+export async function invalidateAdminCache(): Promise<void> {
+  await cacheInvalidate(CACHE_KEYS.ADMIN_OVERVIEW);
 }
 
 export interface AdminTransactionItem {
@@ -562,29 +580,60 @@ export interface AdminCooperativeItem {
   id: string;
   name: string;
   reg: string;
+  district: string;
+  state: string;
   members: number;
+  welfareBalance: number;
+  monthlyRevenue: number;
   status: 'Active' | 'Under Review' | 'Suspended';
+  capacityUtilization: number;
+  spilloverStatus: 'Surplus Capacity' | 'Optimal' | 'Overloaded';
+  activeBookingsCount: number;
 }
 
 export async function getAdminCooperatives(): Promise<AdminCooperativeItem[]> {
   const supabase = await createClient();
 
   try {
-    const [coopsRes, auditRes] = await Promise.all([
+    const [coopsRes, auditRes, workersRes, bookingsRes] = await Promise.all([
       supabase
         .from('cooperative_societies')
-        .select('id, name, registration_number, member_count, is_active')
+        .select('*')
         .order('created_at', { ascending: false }),
       supabase
         .from('admin_audit_logs')
         .select('target_id, action')
         .eq('target_type', 'coop')
         .order('created_at', { ascending: true }),
+      supabase
+        .from('workers')
+        .select('id, society_id'),
+      supabase
+        .from('bookings')
+        .select('id, status, worker_id, workers(society_id)')
+        .in('status', ['assigned', 'in_progress', 'accepted']),
     ]);
 
     const coopActionMap = new Map<string, string>();
     auditRes.data?.forEach((l) => {
       coopActionMap.set(l.target_id, l.action);
+    });
+
+    // Count workers per society
+    const workerCounts = new Map<string, number>();
+    workersRes.data?.forEach((w: any) => {
+      if (w.society_id) {
+        workerCounts.set(w.society_id, (workerCounts.get(w.society_id) || 0) + 1);
+      }
+    });
+
+    // Count active bookings per society
+    const activeBookingCounts = new Map<string, number>();
+    bookingsRes.data?.forEach((b: any) => {
+      const sId = b.workers?.society_id;
+      if (sId) {
+        activeBookingCounts.set(sId, (activeBookingCounts.get(sId) || 0) + 1);
+      }
     });
 
     const data = coopsRes.data || [];
@@ -594,12 +643,27 @@ export async function getAdminCooperatives(): Promise<AdminCooperativeItem[]> {
       if (lastAction === 'suspend') status = 'Suspended';
       if (lastAction === 'reactivate') status = 'Active';
 
+      const realMemberCount = Number(c.member_count) || workerCounts.get(c.id) || 12;
+      const activeBookings = activeBookingCounts.get(c.id) || 0;
+      const utilization = realMemberCount > 0 ? Math.min(100, Math.round((activeBookings / realMemberCount) * 100)) : 0;
+
+      let spilloverStatus: 'Surplus Capacity' | 'Optimal' | 'Overloaded' = 'Surplus Capacity';
+      if (utilization > 70) spilloverStatus = 'Overloaded';
+      else if (utilization > 30) spilloverStatus = 'Optimal';
+
       return {
         id: c.id,
         name: c.name,
         reg: c.registration_number || 'N/A',
-        members: c.member_count || 0,
+        district: c.district || 'General District',
+        state: c.state || 'India',
+        members: realMemberCount,
+        welfareBalance: Number(c.welfare_fund_balance) || 0,
+        monthlyRevenue: Number(c.monthly_revenue) || 0,
         status,
+        capacityUtilization: utilization,
+        spilloverStatus,
+        activeBookingsCount: activeBookings,
       };
     });
 
@@ -788,6 +852,355 @@ export async function getAdminAuditLogs(): Promise<AdminAuditLogItem[]> {
     return data || [];
   } catch (err) {
     console.error('Error fetching admin audit logs:', err);
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Federation Management & Accreditation Actions
+// ---------------------------------------------------------------------------
+
+export async function adminRegisterCooperative(data: {
+  name: string;
+  registration_number: string;
+  district: string;
+  state: string;
+  member_count: number;
+  welfare_fund_balance?: number;
+  monthly_revenue?: number;
+}) {
+  const isAdmin = await checkAdminSession();
+  if (!isAdmin) throw new Error('Unauthorized');
+  const supabase = await createClient();
+
+  const { data: created, error } = await supabase
+    .from('cooperative_societies')
+    .insert({
+      name: data.name,
+      registration_number: data.registration_number,
+      district: data.district,
+      state: data.state,
+      member_count: Number(data.member_count) || 0,
+      welfare_fund_balance: Number(data.welfare_fund_balance) || 50000,
+      monthly_revenue: Number(data.monthly_revenue) || 100000,
+      is_active: true,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error registering cooperative society:', error);
+    throw new Error('Failed to register cooperative: ' + error.message);
+  }
+
+  await supabase.from('admin_audit_logs').insert({
+    admin_email: 'admin@shramnexus.com',
+    target_type: 'coop',
+    target_id: created?.id || data.registration_number,
+    target_name: data.name,
+    action: 'register_cooperative',
+    reason: `Accredited new cooperative society into Federation (${data.district}, ${data.state}) with ${data.member_count} initial artisan members.`,
+  });
+
+  revalidatePath('/admin');
+  return { success: true, cooperative: created };
+}
+
+export interface FederationToolItem {
+  id: string;
+  name: string;
+  toolCode: string;
+  category: string;
+  status: 'Available' | 'In Use' | 'Maintenance';
+  societyId: string;
+  societyName: string;
+}
+
+export async function getFederationTools(): Promise<FederationToolItem[]> {
+  const supabase = await createClient();
+  try {
+    const { data: tools, error } = await supabase
+      .from('cooperative_tools')
+      .select('id, name, tool_code, category, status, society_id, cooperative_societies:society_id(name)')
+      .order('created_at', { ascending: false });
+
+    if (error || !tools) return [];
+
+    return tools.map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      toolCode: t.tool_code || 'TB-000',
+      category: t.category || 'Heavy Equipment',
+      status: t.status || 'Available',
+      societyId: t.society_id,
+      societyName: t.cooperative_societies?.name || 'Central Federation Bank',
+    }));
+  } catch (err) {
+    console.error('Error fetching federation tools:', err);
+    return [];
+  }
+}
+
+export async function adminTransferFederationTool(toolId: string, targetSocietyId: string) {
+  const isAdmin = await checkAdminSession();
+  if (!isAdmin) throw new Error('Unauthorized');
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('cooperative_tools')
+    .update({ society_id: targetSocietyId, status: 'Available' })
+    .eq('id', toolId);
+
+  if (error) throw new Error('Failed to transfer equipment: ' + error.message);
+
+  await supabase.from('admin_audit_logs').insert({
+    admin_email: 'admin@shramnexus.com',
+    target_type: 'tool',
+    target_id: toolId,
+    target_name: `Tool ${toolId}`,
+    action: 'transfer_tool',
+    reason: `Federated equipment reassigned to cooperative society ${targetSocietyId}`,
+  });
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+export async function adminAddFederationTool(data: {
+  name: string;
+  toolCode: string;
+  category: string;
+  societyId: string;
+}) {
+  const isAdmin = await checkAdminSession();
+  if (!isAdmin) throw new Error('Unauthorized');
+  const supabase = await createClient();
+
+  const { error } = await supabase.from('cooperative_tools').insert({
+    name: data.name,
+    tool_code: data.toolCode,
+    category: data.category,
+    society_id: data.societyId,
+    status: 'Available',
+  });
+
+  if (error) throw new Error('Failed to add equipment: ' + error.message);
+
+  await supabase.from('admin_audit_logs').insert({
+    admin_email: 'admin@shramnexus.com',
+    target_type: 'tool',
+    target_id: data.toolCode,
+    target_name: data.name,
+    action: 'add_federation_tool',
+    reason: `Registered new specialized machinery into Federation Asset Bank (${data.name})`,
+  });
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+export async function adminDispatchSpillover(params: {
+  fromSocietyId: string;
+  toSocietyId: string;
+  workersCount?: number;
+  workerCount?: number;
+  trade: string;
+  reason: string;
+}) {
+  const count = params.workersCount || params.workerCount || 1;
+  const isAdmin = await checkAdminSession();
+  if (!isAdmin) throw new Error('Unauthorized');
+  const supabase = await createClient();
+
+  await supabase.from('admin_audit_logs').insert({
+    admin_email: 'admin@shramnexus.com',
+    target_type: 'federation_spillover',
+    target_id: `${params.fromSocietyId}->${params.toSocietyId}`,
+    target_name: `Spillover: ${count} ${params.trade} artisans`,
+    action: 'dispatch_spillover',
+    reason: `Inter-cooperative spillover dispatch: Mobilizing ${count} ${params.trade} artisans from ${params.fromSocietyId} to support high-demand surge in ${params.toSocietyId}. Justification: ${params.reason}`,
+  });
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Dynamic Revenue Velocity Trend Action (Direct from Supabase Bookings)
+// ---------------------------------------------------------------------------
+
+export interface VelocityPoint {
+  label: string;
+  val: number; // 0–100 scaled height for visual display
+  gmv: string;
+  workerShare: string;
+  welfareShare: string;
+  platformShare: string;
+}
+
+export async function getAdminVelocityData(
+  range: '7D' | '30D' | '6M' | '1Y'
+): Promise<VelocityPoint[]> {
+  const supabase = await createClient();
+  try {
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('created_at, final_price, estimated_price')
+      .order('created_at', { ascending: true });
+
+    const allBookings = bookings || [];
+    const now = new Date();
+
+    if (range === '7D') {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const points: VelocityPoint[] = [];
+      const buckets = new Map<string, number>();
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        buckets.set(key, 0);
+      }
+
+      allBookings.forEach((b: any) => {
+        if (!b.created_at) return;
+        const d = new Date(b.created_at);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        if (buckets.has(key)) {
+          const val = Number(b.final_price) || Number(b.estimated_price) || 0;
+          buckets.set(key, (buckets.get(key) || 0) + val);
+        }
+      });
+
+      let maxVal = 1;
+      buckets.forEach((v) => {
+        if (v > maxVal) maxVal = v;
+      });
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dayLabel = days[d.getDay()];
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        const total = buckets.get(key) || 0;
+        const scaledHeight = maxVal > 0 && total > 0 ? Math.max(18, Math.round((total / maxVal) * 100)) : 12;
+
+        points.push({
+          label: dayLabel,
+          val: scaledHeight,
+          gmv: `₹ ${total.toLocaleString('en-IN')}`,
+          workerShare: `₹ ${Math.round(total * 0.85).toLocaleString('en-IN')}`,
+          welfareShare: `₹ ${Math.round(total * 0.05).toLocaleString('en-IN')}`,
+          platformShare: `₹ ${Math.round(total * 0.10).toLocaleString('en-IN')}`,
+        });
+      }
+      return points;
+    }
+
+    if (range === '30D') {
+      const points: VelocityPoint[] = [];
+      const weekBuckets = [0, 0, 0, 0];
+      const thirtyDaysAgo = now.getTime() - 30 * 86400 * 1000;
+
+      allBookings.forEach((b: any) => {
+        if (!b.created_at) return;
+        const t = new Date(b.created_at).getTime();
+        if (t >= thirtyDaysAgo) {
+          const diffDays = Math.floor((t - thirtyDaysAgo) / (86400 * 1000));
+          const weekIdx = Math.min(3, Math.floor(diffDays / 7.5));
+          const val = Number(b.final_price) || Number(b.estimated_price) || 0;
+          weekBuckets[weekIdx] += val;
+        }
+      });
+
+      let maxVal = Math.max(...weekBuckets, 1);
+      ['Week 1', 'Week 2', 'Week 3', 'Week 4'].forEach((label, idx) => {
+        const total = weekBuckets[idx];
+        const scaled = total > 0 ? Math.max(20, Math.round((total / maxVal) * 100)) : 14;
+        points.push({
+          label,
+          val: scaled,
+          gmv: `₹ ${total.toLocaleString('en-IN')}`,
+          workerShare: `₹ ${Math.round(total * 0.85).toLocaleString('en-IN')}`,
+          welfareShare: `₹ ${Math.round(total * 0.05).toLocaleString('en-IN')}`,
+          platformShare: `₹ ${Math.round(total * 0.10).toLocaleString('en-IN')}`,
+        });
+      });
+      return points;
+    }
+
+    if (range === '6M') {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const points: VelocityPoint[] = [];
+      const monthTotals: number[] = [];
+      const labels: string[] = [];
+
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        labels.push(monthNames[d.getMonth()]);
+        monthTotals.push(0);
+      }
+
+      allBookings.forEach((b: any) => {
+        if (!b.created_at) return;
+        const d = new Date(b.created_at);
+        for (let i = 5; i >= 0; i--) {
+          const target = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          if (d.getFullYear() === target.getFullYear() && d.getMonth() === target.getMonth()) {
+            const val = Number(b.final_price) || Number(b.estimated_price) || 0;
+            monthTotals[5 - i] += val;
+            break;
+          }
+        }
+      });
+
+      let maxVal = Math.max(...monthTotals, 1);
+      labels.forEach((label, idx) => {
+        const total = monthTotals[idx];
+        const scaled = total > 0 ? Math.max(20, Math.round((total / maxVal) * 100)) : 14;
+        points.push({
+          label,
+          val: scaled,
+          gmv: `₹ ${total.toLocaleString('en-IN')}`,
+          workerShare: `₹ ${Math.round(total * 0.85).toLocaleString('en-IN')}`,
+          welfareShare: `₹ ${Math.round(total * 0.05).toLocaleString('en-IN')}`,
+          platformShare: `₹ ${Math.round(total * 0.10).toLocaleString('en-IN')}`,
+        });
+      });
+      return points;
+    }
+
+    // 1Y
+    const quarters = ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
+    const qTotals = [0, 0, 0, 0];
+    const currentYear = now.getFullYear();
+
+    allBookings.forEach((b: any) => {
+      if (!b.created_at) return;
+      const d = new Date(b.created_at);
+      if (d.getFullYear() === currentYear) {
+        const qIdx = Math.floor(d.getMonth() / 3);
+        const val = Number(b.final_price) || Number(b.estimated_price) || 0;
+        qTotals[qIdx] += val;
+      }
+    });
+
+    let maxVal = Math.max(...qTotals, 1);
+    return quarters.map((label, idx) => {
+      const total = qTotals[idx];
+      const scaled = total > 0 ? Math.max(20, Math.round((total / maxVal) * 100)) : 14;
+      return {
+        label,
+        val: scaled,
+        gmv: `₹ ${total.toLocaleString('en-IN')}`,
+        workerShare: `₹ ${Math.round(total * 0.85).toLocaleString('en-IN')}`,
+        welfareShare: `₹ ${Math.round(total * 0.05).toLocaleString('en-IN')}`,
+        platformShare: `₹ ${Math.round(total * 0.10).toLocaleString('en-IN')}`,
+      };
+    });
+  } catch (err) {
+    console.error('Error computing velocity data:', err);
     return [];
   }
 }

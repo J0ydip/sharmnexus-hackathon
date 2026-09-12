@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getChatRateLimiter, checkRateLimit } from '@/lib/rateLimit';
 
 interface ChatRequestPayload {
   messages: Array<{
@@ -28,6 +29,21 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 export async function POST(req: Request) {
   try {
+    // --- Rate Limiting ---
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anonymous';
+    const limiter = getChatRateLimiter();
+    const rateResult = await checkRateLimit(limiter, ip);
+
+    if (!rateResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests. Please slow down.',
+          retryAfterMs: rateResult.resetMs,
+        },
+        { status: 429 }
+      );
+    }
+
     const body: ChatRequestPayload = await req.json();
     const { messages = [], context = {} } = body;
 

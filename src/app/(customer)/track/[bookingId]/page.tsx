@@ -18,6 +18,7 @@ import { recordCashPayment as recordCashPaymentAction } from '@/app/actions/paym
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
 import { CancelBookingModal } from '@/components/customer/CancelBookingModal';
 import { getBookingOtp } from '@/lib/utils';
+import { ServiceQRCode } from '@/components/common/ServiceQRCode';
 import { createClient } from '@/lib/supabase/client';
 import {
   ArrowLeft,
@@ -483,13 +484,22 @@ export default function BookingTrackingPage({ params }: PageProps) {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center self-start sm:self-auto shrink-0 border border-[#e6aa3b]/30">
-              <span className="text-[10px] uppercase font-bold text-[#f5dfad] block">
-                Verified PIN
-              </span>
-              <span className="font-mono text-2xl font-black tracking-widest text-[#f5dfad]" suppressHydrationWarning>
-                {getBookingOtp(booking.id, booking.otp)}
-              </span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-start sm:self-auto shrink-0">
+              <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center border border-[#e6aa3b]/30">
+                <span className="text-[10px] uppercase font-bold text-[#f5dfad] block">
+                  Verified PIN
+                </span>
+                <span className="font-mono text-2xl font-black tracking-widest text-[#f5dfad]" suppressHydrationWarning>
+                  {getBookingOtp(booking.id, booking.otp)}
+                </span>
+              </div>
+              <ServiceQRCode
+                bookingId={booking.id}
+                serviceTitle={booking.service_name || 'Cooperative Service'}
+                workerName={booking.worker?.full_name}
+                customerName={booking.customer_name}
+                otp={getBookingOtp(booking.id, booking.otp)}
+              />
             </div>
           </div>
         ) : (
@@ -511,13 +521,22 @@ export default function BookingTrackingPage({ params }: PageProps) {
               </div>
             </div>
 
-            <div className="bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center self-start sm:self-auto shrink-0 border border-white/20">
-              <span className="text-[10px] uppercase font-bold text-[#c8bacb] block">
-                Completion OTP
-              </span>
-              <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
-                {getBookingOtp(booking.id, booking.otp)}
-              </span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-start sm:self-auto shrink-0">
+              <div className="bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center border border-white/20">
+                <span className="text-[10px] uppercase font-bold text-[#c8bacb] block">
+                  Completion OTP
+                </span>
+                <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
+                  {getBookingOtp(booking.id, booking.otp)}
+                </span>
+              </div>
+              <ServiceQRCode
+                bookingId={booking.id}
+                serviceTitle={booking.service_name || 'Cooperative Service'}
+                workerName={booking.worker?.full_name}
+                customerName={booking.customer_name}
+                otp={getBookingOtp(booking.id, booking.otp)}
+              />
             </div>
           </div>
         )}

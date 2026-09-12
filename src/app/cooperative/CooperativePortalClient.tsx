@@ -24,6 +24,7 @@ import {
   createWelfareClaimAction,
   onboardMemberAction,
 } from '@/app/actions/cooperative';
+import { AnalyticsDashboard } from '@/components/cooperative/AnalyticsDashboard';
 import './cooperative.css';
 
 type CoopTab =
@@ -35,7 +36,8 @@ type CoopTab =
   | 'view-tools'
   | 'view-payments'
   | 'view-welfare'
-  | 'view-assembly';
+  | 'view-assembly'
+  | 'view-analytics';
 
 interface TabMeta {
   title: string;
@@ -52,6 +54,7 @@ const TAB_META: Record<CoopTab, TabMeta> = {
   'view-payments': { title: 'Transparent Earnings', subtitle: 'Configured cooperative revenue and surplus distribution' },
   'view-welfare': { title: 'Worker Welfare Fund', subtitle: 'Social security, emergency assistance, and annual dividend' },
   'view-assembly': { title: 'Member Assembly', subtitle: 'Democratic decision-making and cooperative governance' },
+  'view-analytics': { title: 'Analytics', subtitle: 'Data-driven insights for cooperative governance' },
 };
 
 export function CooperativePortalClient({ initialData }: { initialData: CooperativePortalData }) {
@@ -864,6 +867,13 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
             onClick={() => { setActiveTab('view-assembly'); setMobileOpen(false); }}
           >
             🗳️ <span>Member Assembly</span>
+          </button>
+          <button
+            type="button"
+            className={`coop-nav-link ${activeTab === 'view-analytics' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('view-analytics'); setMobileOpen(false); }}
+          >
+            📊 <span>Analytics</span>
           </button>
         </nav>
       </aside>
@@ -1989,6 +1999,13 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                   })
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Analytics View */}
+          {activeTab === 'view-analytics' && (
+            <div className="coop-view-container" style={{ padding: '0.5rem 0' }}>
+              <AnalyticsDashboard societyId={data.society.id} />
             </div>
           )}
         </div>
