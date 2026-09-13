@@ -263,25 +263,28 @@ body:has(.hero) em {
    Navbar
 ========================================= */
 .navbar {
-  position: sticky;
-  z-index: 100;
+  position: fixed !important;
+  z-index: 1000 !important;
   top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
   max-width: 1200px;
   width: calc(100% - 32px);
-  margin: 14px auto 0;
+  margin: 0 auto;
   padding: 0.72rem 1rem 0.72rem 1.35rem;
   display: flex;
   align-items: center;
   gap: 2rem;
-  background: rgba(251, 247, 239, 0.95) !important;
+  background: rgba(251, 247, 239, 0.92) !important;
   border: 1px solid rgba(255, 255, 255, 0.85);
   border-bottom: 1px solid rgba(230, 220, 208, 0.8);
   border-radius: 999px;
   backdrop-filter: blur(40px) saturate(160%);
   -webkit-backdrop-filter: blur(40px) saturate(160%);
   box-shadow: 
-    0 12px 35px rgba(36, 23, 47, 0.09),
+    0 16px 40px rgba(36, 23, 47, 0.12),
     0 1px 0 0 rgba(255, 255, 255, 0.9) inset;
+  transition: all 0.3s var(--ease);
 }
 
 .brand {
