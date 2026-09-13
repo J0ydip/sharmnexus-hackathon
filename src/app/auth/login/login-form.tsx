@@ -39,14 +39,8 @@ export function LoginForm() {
         } catch (e) {}
         localStorage.setItem('shramnexus-admin-auth', 'true');
         localStorage.setItem('sharmnexus-admin-auth', 'true');
-        const adminData = JSON.stringify({
-          isLoggedIn: true,
-          role: 'admin',
-          name: 'Super Admin',
-          email: 'admin@shramnexus.com',
-        });
-        localStorage.setItem('shramnexus-auth', adminData);
-        localStorage.setItem('sharmnexus-auth', adminData);
+        localStorage.removeItem('shramnexus-auth');
+        localStorage.removeItem('sharmnexus-auth');
         document.cookie = 'admin-session=true; path=/; max-age=86400';
         toast.success('Welcome, Super Admin! Transporting to Admin Console...');
         setTimeout(() => {

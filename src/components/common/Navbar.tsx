@@ -39,8 +39,10 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { lang, changeLang, t } = useCustomerI18n();
   const [user, setUser] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [liveBookings, setLiveBookings] = useState<any[]>([]);
   const bookings = useBookingStore((state) => state.bookings);
   const activeBookings = bookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled');
 
@@ -49,13 +51,13 @@ export function Navbar() {
     try {
       const isRead = localStorage.getItem('shramnexus_notifications_read');
       if (!isRead) {
-        setUnreadCount(2);
+        setUnreadCount(1);
       } else {
         setUnreadCount(0);
       }
     } catch (e) {}
 
-    // 2. Load authenticated user immediately
+    // 2. Load authenticated user and their recent bookings immediately
     async function getUser() {
       try {
         const localAuth = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
@@ -63,16 +65,37 @@ export function Navbar() {
         if (localAuth) {
           try {
             const p = JSON.parse(localAuth);
-            initialUser = {
-              email: p.email,
-              user_metadata: { full_name: p.name }
-            };
-            setUser(initialUser);
+            if (p.role === 'admin' || p.name === 'Super Admin' || p.email === 'admin@shramnexus.com') {
+              localStorage.removeItem('shramnexus-auth');
+              localStorage.removeItem('sharmnexus-auth');
+            } else {
+              initialUser = {
+                email: p.email,
+                user_metadata: { full_name: p.name }
+              };
+              setUser(initialUser);
+            }
           } catch (e) {}
         }
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          const userRole = session.user.user_metadata?.user_type || session.user.user_metadata?.role;
+          const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+          const userEmail = session.user.email;
+          if (userRole === 'admin' || userName === 'Super Admin' || userEmail === 'admin@shramnexus.com') {
+            setUser(null);
+            return;
+          }
           setUser(session.user);
+          const { data: bList } = await supabase
+            .from('bookings')
+            .select('id, status, scheduled_at, service_categories(name), worker:worker_id(full_name)')
+            .eq('customer_id', session.user.id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (bList && bList.length > 0) {
+            setLiveBookings(bList);
+          }
         } else if (!initialUser) {
           setUser(null);
         }
@@ -82,6 +105,26 @@ export function Navbar() {
     }
     getUser();
   }, []);
+
+  // Auto-apply Google Translate on mount if a non-English language is saved
+  useEffect(() => {
+    if (lang && lang !== 'en') {
+      const applyTranslation = () => {
+        const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
+        if (gtCombo && gtCombo.value !== lang) {
+          gtCombo.value = lang;
+          gtCombo.dispatchEvent(new Event('change'));
+          setTimeout(() => {
+            const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
+            if (bar) bar.style.display = 'none';
+            document.body.style.top = '0px';
+          }, 500);
+        }
+      };
+      setTimeout(applyTranslation, 1200);
+      setTimeout(applyTranslation, 3000);
+    }
+  }, [lang]);
 
   const handleMarkAllNotificationsRead = () => {
     setUnreadCount(0);
@@ -107,12 +150,39 @@ export function Navbar() {
     homeLink = '/worker-dashboard';
   }
 
-  const { lang, changeLang, t } = useCustomerI18n();
-
   const switchLanguage = (newLang: CustomerLanguage) => {
     changeLang(newLang);
+
+    // Smooth fade transition during language switch
+    document.body.style.transition = 'opacity 0.25s ease';
+    document.body.style.opacity = '0.6';
+
+    // Set cookies for Google Translate
     document.cookie = `googtrans=/en/${newLang}; path=/`;
     document.cookie = `googtrans=/en/${newLang}; path=/; domain=${window.location.hostname}`;
+
+    // Programmatically trigger Google Translate via its hidden <select>
+    const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
+    if (gtCombo) {
+      gtCombo.value = newLang;
+      gtCombo.dispatchEvent(new Event('change'));
+      // Restore opacity after translation settles
+      setTimeout(() => {
+        document.body.style.opacity = '1';
+      }, 400);
+    } else {
+      // Google Translate widget not loaded yet — reload to apply cookie
+      window.location.reload();
+    }
+
+    // Hide the Google Translate toolbar if it appears
+    setTimeout(() => {
+      const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
+      if (bar) {
+        bar.style.display = 'none';
+      }
+      document.body.style.top = '0px';
+    }, 500);
   };
 
   const navLinks: Array<{
@@ -130,7 +200,6 @@ export function Navbar() {
       icon: CalendarClock,
       badge: activeBookings.length > 0 ? activeBookings.length : undefined,
     },
-    { href: '/#cooperatives', label: 'Cooperative', icon: Building2 },
     { href: '/#support', label: 'Help & Support', icon: HelpCircle },
     {
       href: '/emergency',
@@ -154,12 +223,12 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200/80 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-2xs">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
+      <div className="container mx-auto flex h-16 items-center justify-between px-2.5 sm:px-6">
         {/* Left: Mobile Menu & Brand */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Mobile Sheet Nav */}
           <Sheet>
-            <SheetTrigger className="md:hidden inline-flex items-center justify-center rounded-xl text-gray-700 hover:bg-gray-100 h-10 w-10">
+            <SheetTrigger className="md:hidden inline-flex items-center justify-center rounded-xl text-gray-700 hover:bg-gray-100 h-9 w-9">
               <Menu className="h-5 w-5" />
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] p-6">
@@ -167,7 +236,7 @@ export function Navbar() {
                 <img
                   src="/logo.png"
                   alt="ShramNexus Logo"
-                  className="w-9 h-9 rounded-xl object-contain shadow-xs border border-gray-100 bg-white"
+                  className="w-10 h-10 rounded-xl object-contain shadow-xs border border-amber-200/80 overflow-hidden"
                 />
                 <div>
                   <span className="font-extrabold text-gray-900 text-lg leading-tight block">
@@ -245,14 +314,14 @@ export function Navbar() {
           </Sheet>
 
           {/* Logo & Brand */}
-          <Link href={homeLink} className="flex items-center gap-2.5 group">
+          <Link href={homeLink} className="flex items-center gap-2 sm:gap-2.5 group">
             <img
               src="/logo.png"
               alt="ShramNexus Logo"
-              className="w-9 h-9 rounded-xl object-contain shadow-xs border border-gray-100 bg-white group-hover:scale-105 transition-transform"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl object-contain shadow-xs border border-amber-200/80 group-hover:scale-105 transition-transform overflow-hidden"
             />
             <div>
-              <span className="text-lg font-black tracking-tight text-gray-900 leading-tight">
+              <span className="text-base sm:text-lg font-black tracking-tight text-gray-900 leading-tight">
                 Shram<span className="text-[#e6aa3b]">Nexus</span>
               </span>
               <span className="hidden sm:inline-block text-[10px] font-bold text-[#24172f] bg-[#fbf7ef] px-2 py-0.5 rounded-md ml-2 border border-[#e6aa3b]/30">
@@ -305,7 +374,7 @@ export function Navbar() {
         </nav>
 
         {/* Right: Notifications, Language, Profile */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2.5">
           {/* Notifications Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger className="relative inline-flex items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 h-9 w-9 transition-colors">
@@ -316,7 +385,7 @@ export function Navbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 p-0 rounded-2xl shadow-xl border border-gray-200">
               <div className="p-3.5 border-b border-gray-100 flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-900">Cooperative Notifications</span>
+                <span className="text-xs font-bold text-gray-900">Notifications</span>
                 <button
                   type="button"
                   onClick={handleMarkAllNotificationsRead}
@@ -326,36 +395,54 @@ export function Navbar() {
                 </button>
               </div>
               <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
-                <div className="p-3 hover:bg-gray-50 text-xs transition-colors flex items-start gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-[#fbf7ef] text-[#e6aa3b] mt-0.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                {liveBookings.length === 0 && bookings.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-500">
+                    No active notifications. Service and booking updates will appear here.
                   </div>
-                  <div>
-                    <strong className="text-gray-900 block text-[11px]">Worker Rajesh Kumar Assigned</strong>
-                    <p className="text-gray-500 text-[11px] mt-0.5">Local Labour Society assigned plumber for booking SN-2026-8941.</p>
-                    <span className="text-[10px] text-gray-400 mt-1 block">10 mins ago</span>
-                  </div>
-                </div>
-                <div className="p-3 hover:bg-gray-50 text-xs transition-colors flex items-start gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700 mt-0.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <strong className="text-gray-900 block text-[11px]">Cooperative Welfare Guarantee</strong>
-                    <p className="text-gray-500 text-[11px] mt-0.5">Your booking directly funds worker health insurance and fair wages.</p>
-                    <span className="text-[10px] text-gray-400 mt-1 block">2 hours ago</span>
-                  </div>
-                </div>
+                ) : (
+                  (liveBookings.length > 0 ? liveBookings : bookings).map((b: any) => {
+                    const srvName = b.service_categories?.name || b.service_name || 'Service';
+                    const workerName = b.worker?.full_name || (b.worker as any)?.name;
+                    const isDone = b.status === 'completed';
+                    const isCancelled = b.status === 'cancelled';
+                    return (
+                      <Link
+                        key={b.id}
+                        href={`/track/${b.id}`}
+                        className="p-3 hover:bg-gray-50 text-xs transition-colors flex items-start gap-2.5 block"
+                      >
+                        <div className={`p-1.5 rounded-lg mt-0.5 ${isDone ? 'bg-emerald-100 text-emerald-700' : isCancelled ? 'bg-red-100 text-red-700' : 'bg-[#fbf7ef] text-[#e6aa3b]'}`}>
+                          {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : isCancelled ? <Clock className="w-3.5 h-3.5 text-red-500" /> : <Clock className="w-3.5 h-3.5" />}
+                        </div>
+                        <div>
+                          <strong className="text-gray-900 block text-[11px]">
+                            {isDone ? `✓ Completed: ${srvName}` : isCancelled ? `Cancelled: ${srvName}` : `${srvName} (${b.status})`}
+                          </strong>
+                          <p className="text-gray-500 text-[11px] mt-0.5">
+                            {isDone
+                              ? 'Job completed! Click to view receipt or rate worker.'
+                              : isCancelled
+                              ? 'This booking has been cancelled.'
+                              : workerName
+                              ? `${workerName} assigned from cooperative.`
+                              : 'Dispatch network matching verified tradesperson.'}
+                          </p>
+                          <span className="text-[10px] text-gray-400 mt-1 block">#{b.id.slice(0, 8)}</span>
+                        </div>
+                      </Link>
+                    );
+                  })
+                )}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Language Switcher */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-xl text-gray-600 hover:bg-gray-100 h-9 px-2.5 text-xs font-semibold transition-colors">
+            <DropdownMenuTrigger className="inline-flex items-center justify-center gap-1 rounded-xl text-gray-600 hover:bg-gray-100 h-9 w-9 sm:w-auto sm:px-2.5 text-xs font-semibold transition-colors">
               <Globe className="h-4 w-4 text-gray-500" />
               <span className="hidden sm:inline">{lang.toUpperCase()}</span>
-              <ChevronDown className="h-3 w-3 opacity-50" />
+              <ChevronDown className="hidden sm:inline h-3 w-3 opacity-50" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-xl">
               <DropdownMenuItem onClick={() => switchLanguage('en')} className="text-xs cursor-pointer">
@@ -382,14 +469,14 @@ export function Navbar() {
           {/* User Profile Menu */}
           {user ? (
             <DropdownMenu>
-              <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 hover:bg-gray-100 h-9 px-3 text-xs font-semibold transition-colors">
-                <div className="w-5 h-5 rounded-full bg-[#24172f] text-white flex items-center justify-center font-bold text-[10px]">
+              <DropdownMenuTrigger className="inline-flex items-center justify-center sm:justify-start gap-2 rounded-xl border border-gray-200 bg-gray-50/80 hover:bg-gray-100 h-9 w-9 sm:w-auto p-0 sm:px-3 text-xs font-semibold transition-colors">
+                <div className="w-6 h-6 rounded-full bg-[#24172f] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
                   {user.user_metadata?.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                 </div>
-                <span className="max-w-[100px] truncate text-gray-800 font-medium">
+                <span className="hidden sm:inline-block max-w-[100px] truncate text-gray-800 font-medium">
                   {user.user_metadata?.full_name || user.email?.split('@')[0] || 'My Account'}
                 </span>
-                <ChevronDown className="h-3 w-3 opacity-50" />
+                <ChevronDown className="hidden sm:inline-block h-3 w-3 opacity-50" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5 shadow-xl border border-gray-200">
                 <DropdownMenuLabel className="px-3 py-2">

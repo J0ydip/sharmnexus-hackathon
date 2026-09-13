@@ -59,27 +59,38 @@ export default function CustomerProfilePage() {
         if (localAuth) {
           try {
             const parsed = JSON.parse(localAuth);
-            if (parsed.name && !name) name = parsed.name;
-            if (parsed.email && !userEmail) userEmail = parsed.email;
+            if (parsed.role === 'admin' || parsed.name === 'Super Admin' || parsed.email === 'admin@shramnexus.com') {
+              localStorage.removeItem('shramnexus-auth');
+              localStorage.removeItem('sharmnexus-auth');
+            } else {
+              if (parsed.name && !name) name = parsed.name;
+              if (parsed.email && !userEmail) userEmail = parsed.email;
+            }
           } catch (e) {}
         }
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          userEmail = session.user.email || userEmail;
-          if (session.user.user_metadata?.full_name) {
-            name = session.user.user_metadata.full_name;
-          } else if (!name && session.user.email) {
-            name = session.user.email.split('@')[0];
-          }
-          if (session.user.user_metadata?.phone) {
-            userPhone = session.user.user_metadata.phone;
-          }
-          if (session.user.user_metadata?.address) {
-            userAddress = session.user.user_metadata.address;
-          }
-          if (session.user.user_metadata?.city) {
-            userCity = session.user.user_metadata.city;
+          const isAdm = session.user.user_metadata?.user_type === 'admin' ||
+                        session.user.user_metadata?.role === 'admin' ||
+                        session.user.user_metadata?.full_name === 'Super Admin' ||
+                        session.user.email === 'admin@shramnexus.com';
+          if (!isAdm) {
+            userEmail = session.user.email || userEmail;
+            if (session.user.user_metadata?.full_name) {
+              name = session.user.user_metadata.full_name;
+            } else if (!name && session.user.email) {
+              name = session.user.email.split('@')[0];
+            }
+            if (session.user.user_metadata?.phone) {
+              userPhone = session.user.user_metadata.phone;
+            }
+            if (session.user.user_metadata?.address) {
+              userAddress = session.user.user_metadata.address;
+            }
+            if (session.user.user_metadata?.city) {
+              userCity = session.user.user_metadata.city;
+            }
           }
         }
 

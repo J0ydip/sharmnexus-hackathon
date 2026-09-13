@@ -69,19 +69,16 @@ a {
   will-change: transform;
 }
 
-.cursor-dot.is-active {
-  width: 46px;
-  height: 46px;
+.cursor-dot {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 body.has-custom-cursor,
 body.has-custom-cursor a,
 body.has-custom-cursor button {
-  cursor: none;
-}
-
-@media (pointer: coarse) {
-  .cursor-dot { display: none; }
+  cursor: auto !important;
 }
 
 button,

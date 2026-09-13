@@ -510,14 +510,111 @@
   font-size: 0.75rem;
 }
 
+.admin-mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(36, 23, 47, 0.05);
+  font-size: 1.3rem;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--ink);
+}
+
+.admin-sidebar-backdrop {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .dashboard-split { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
-  .admin-sidebar { display: none; }
-  .admin-topbar { padding: 0 1.5rem; }
-  .admin-content-area { padding: 1.5rem; }
+  .admin-sidebar {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .admin-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(36, 23, 47, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+  }
+
+  .admin-mobile-menu-btn {
+    display: flex;
+  }
+
+  .admin-topbar {
+    height: 60px;
+    padding: 0 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .admin-topbar .topbar-title {
+    font-size: 1.1rem;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .admin-topbar-desc {
+    display: none !important;
+  }
+
+  .admin-topbar-sync-badge {
+    display: none !important;
+  }
+
+  .admin-btn-text {
+    display: none !important;
+  }
+
+  .admin-back-btn,
+  .admin-refresh-btn {
+    padding: 0.4rem 0.5rem !important;
+  }
+
+  .topbar-user-info {
+    display: none !important;
+  }
+
+  .topbar-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .admin-content-area {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-topbar {
+    padding: 0 0.5rem;
+  }
+  .admin-topbar .topbar-title {
+    font-size: 0.95rem;
+  }
 }
 
 @keyframes spin {

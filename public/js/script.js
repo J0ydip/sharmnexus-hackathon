@@ -13,21 +13,10 @@
 
 const initScript = () => {
 
-  /* =====================================================
-     1. CUSTOM CURSOR DOT
-     ===================================================== */
+  /* Custom cursor dot disabled in favor of standard responsive OS cursor */
   const cursorDot = document.querySelector('.cursor-dot');
-  if (cursorDot && window.matchMedia('(pointer: fine)').matches) {
-    document.body.classList.add('has-custom-cursor');
-    window.addEventListener('mousemove', (e) => {
-      cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
-    });
-    document.addEventListener('mouseleave', () => { cursorDot.style.opacity = '0'; });
-    document.addEventListener('mouseenter', () => { cursorDot.style.opacity = '1'; });
-    document.querySelectorAll('a, button, .service-card, .feature-card').forEach((el) => {
-      el.addEventListener('mouseenter', () => cursorDot.classList.add('is-active'));
-      el.addEventListener('mouseleave', () => cursorDot.classList.remove('is-active'));
-    });
+  if (cursorDot) {
+    cursorDot.style.display = 'none';
   }
 
   /* =====================================================
@@ -129,6 +118,29 @@ const initScript = () => {
         },
         () => alert('Location access was not available. Showing Jaipur network instead.')
       );
+    });
+
+    // Interactive Demand Zone Focus
+    document.querySelectorAll('.demand-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const lat = parseFloat(card.dataset.lat);
+        const lng = parseFloat(card.dataset.lng);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          map.flyTo([lat, lng], 14, { duration: 1.2 });
+          const target = markers.find(m => {
+            const ll = m.getLatLng();
+            return Math.abs(ll.lat - lat) < 0.005 && Math.abs(ll.lng - lng) < 0.005;
+          });
+          if (target) {
+            if (!map.hasLayer(target)) target.addTo(map);
+            target.openPopup();
+          }
+          const mapCard = document.querySelector('.map-card');
+          if (mapCard) {
+            mapCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      });
     });
 
     setTimeout(() => map.invalidateSize(true), 200);

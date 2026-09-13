@@ -12,12 +12,17 @@ import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/data/mockData';
 import { toast } from 'sonner';
 import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
-import { getBookingById as getBookingByIdAction } from '@/app/actions/bookings';
+import { getBookingById as getBookingByIdAction, submitRating } from '@/app/actions/bookings';
 import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
+import { recordCashPayment as recordCashPaymentAction } from '@/app/actions/payments';
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
+import { CancelBookingModal } from '@/components/customer/CancelBookingModal';
 import { getBookingOtp } from '@/lib/utils';
+import { ServiceQRCode } from '@/components/common/ServiceQRCode';
+import { createClient } from '@/lib/supabase/client';
 import {
   ArrowLeft,
+  ArrowRight,
   Phone,
   MessageSquare,
   ShieldCheck,
@@ -33,6 +38,8 @@ import {
   Truck,
   Wrench,
   Award,
+  Star,
+  XCircle,
 } from 'lucide-react';
 
 interface PageProps {
@@ -49,72 +56,105 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [dbBooking, setDbBooking] = useState<Booking | null>(null);
+  const [ratingStars, setRatingStars] = useState(5);
+  const [ratingReviewText, setRatingReviewText] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    let isMounted = true;
+
     async function loadDb() {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId);
-      if (isUuid) {
-        try {
-          const b = await getBookingByIdAction(bookingId);
-          if (b) {
-            const hasPaid = (b.payments && b.payments.some((p: any) => p.status === 'completed')) || b.status === 'completed';
-            const latestPayment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
-            setDbBooking({
-              id: b.id,
-              customer_id: b.customer_id,
-              customer_name: 'Customer',
-              customer_phone: '',
-              worker_id: b.worker_id || 'unassigned',
-              worker: b.worker ? {
-                id: b.worker.id,
-                full_name: b.worker.full_name,
-                phone: b.worker.phone || '',
-                society_name: 'Cooperative Society',
-                profile_photo_url: b.worker.profile_photo_url || '',
-                profession: b.service?.name || 'Service Professional',
-                avg_rating: b.worker.avg_rating || 4.8,
-                approx_distance_km: 2.5,
-                hourly_rate: 300,
-                is_verified: true,
-                verification_status: 'verified',
-                cooperative_member_id: 'MEM-001',
-                total_jobs_completed: 12,
-                skills: [b.service?.name || 'General'],
-                badges: ['Verified'],
-                availability: 'Immediate (within 45 mins)',
-                experience_years: 4,
-                rating_count: 15,
-              } : (workers[0] || ({} as any)),
-              service_category_id: b.service_category_id || '',
-              service_name: b.service?.name || 'Service',
-              service_icon: b.service?.icon_url || 'Droplet',
-              booking_type: b.booking_type || 'scheduled',
-              status: b.status || 'requested',
-              urgency: 'normal',
-              description: b.description || '',
-              address: b.address || '',
-              city: b.city || 'Kolkata',
-              lat: b.latitude || 22.5726,
-              lng: b.longitude || 88.3639,
-              scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
-              time_slot: 'Scheduled',
-              estimated_price: b.estimated_price || 350,
-              final_price: b.final_price || b.estimated_price || 350,
-              otp: getBookingOtp(b.id),
-              payment_status: hasPaid ? 'completed' : 'pending',
-              payment_method: hasPaid
-                ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
-                : (b.payment_method || 'Pay after service'),
-              created_at: b.created_at,
-            } as any);
+      try {
+        const b = await getBookingByIdAction(bookingId);
+        if (b && isMounted) {
+          const hasPaid = Boolean(b.payments && b.payments.some((p: any) => p.status === 'completed' && p.method !== 'pin_verified' && p.method !== 'pay_after_work'));
+          const latestPayment = b.payments && b.payments.length > 0 ? b.payments.find((p: any) => p.status === 'completed' && p.method !== 'pin_verified') || b.payments[0] : null;
+          const userRating = (b.ratings && b.ratings.length > 0) ? b.ratings[0] : null;
+          setDbBooking({
+            id: b.id,
+            customer_id: b.customer_id,
+            customer_name: b.customers?.full_name || 'Customer',
+            customer_phone: b.customers?.phone || '',
+            worker_id: b.worker_id || 'unassigned',
+            worker: b.worker ? {
+              id: b.worker.id,
+              full_name: b.worker.full_name,
+              phone: b.worker.phone || '',
+              society_name: b.worker.society?.name || 'Cooperative Society',
+              profile_photo_url: b.worker.profile_photo_url || '',
+              profession: b.service?.name || 'Service Professional',
+              primary_skill: b.service?.name || 'Service Professional',
+              avg_rating: b.worker.avg_rating || 4.8,
+              approx_distance_km: 2.5,
+              hourly_rate: 300,
+              is_verified: true,
+              verification_status: 'verified',
+              cooperative_member_id: `MEM-${(b.worker.id || '').substring(0, 4).toUpperCase()}`,
+              total_jobs_completed: b.worker.total_jobs_completed || 12,
+              skills: [b.service?.name || 'General'],
+              badges: ['Verified'],
+              availability: 'Immediate (within 45 mins)',
+              experience_years: 4,
+              years_experience: 4,
+              rating_count: 15,
+            } : (workers[0] || ({} as any)),
+            service_category_id: b.service_category_id || '',
+            service_name: b.service?.name || 'Service',
+            service_icon: b.service?.icon_url || 'Droplet',
+            booking_type: b.booking_type || 'scheduled',
+            status: b.status || 'requested',
+            urgency: 'normal',
+            description: b.description || '',
+            address: b.address || '',
+            city: b.city || 'Kolkata',
+            lat: b.latitude || 22.5726,
+            lng: b.longitude || 88.3639,
+            scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Scheduled',
+            time_slot: 'Scheduled',
+            estimated_price: b.estimated_price || 350,
+            final_price: b.final_price || b.estimated_price || 350,
+            otp: getBookingOtp(b.id),
+            rating: userRating?.score,
+            review: userRating?.review,
+            payment_status: hasPaid ? 'completed' : 'pending',
+            payment_method: hasPaid
+              ? (latestPayment?.method ? (latestPayment.method === 'cash' ? 'Cash Handover to Worker' : `Online (${latestPayment.method.toUpperCase()})`) : 'Online Razorpay / UPI')
+              : (b.payment_method || 'Pay after service (Pending)'),
+            created_at: b.created_at,
+          } as any);
+
+          if (b.status) {
+            useBookingStore.getState().updateBookingStatus(b.id, b.status as any);
           }
-        } catch (err) {
-          console.warn('Could not fetch Supabase booking:', err);
         }
+      } catch (err) {
+        console.warn('Could not fetch Supabase booking:', err);
       }
     }
+
     loadDb();
+    const interval = setInterval(loadDb, 2500);
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`booking-live-${bookingId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings', filter: `id=eq.${bookingId}` },
+        () => {
+          loadDb();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [bookingId, workers]);
 
   const booking =
@@ -223,6 +263,74 @@ export default function BookingTrackingPage({ params }: PageProps) {
     }
   };
 
+  const handleMarkCashPaid = async () => {
+    try {
+      const amount = booking?.final_price || booking?.estimated_price || 450;
+      const res = await recordCashPaymentAction(bookingId, amount);
+      if (res?.error) {
+        toast.error(`Could not record cash payment: ${res.error}`);
+        return;
+      }
+      if (dbBooking) {
+        setDbBooking({
+          ...dbBooking,
+          payment_status: 'completed',
+          payment_method: 'Cash Handover to Worker',
+        });
+      }
+      setBookingPaymentStatus(bookingId, 'completed', 'Cash Handover to Worker');
+      setIsReceiptOpen(true);
+      toast.success('💵 Cash payment recorded! Official cooperative receipt generated.');
+    } catch (e: any) {
+      toast.error('Could not record cash payment: ' + (e?.message || 'Error'));
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!booking) return;
+    setIsCancelling(true);
+    try {
+      if (dbBooking) {
+        setDbBooking({ ...dbBooking, status: 'cancelled' });
+      }
+      updateBookingStatus(booking.id, 'cancelled');
+      await updateBookingStatusAction(booking.id, 'cancelled');
+      toast.info('Booking has been cancelled.');
+    } catch (err: any) {
+      console.warn('Error cancelling booking:', err);
+      toast.error(err?.message || 'Could not cancel booking');
+    } finally {
+      setIsCancelling(false);
+      setIsCancelModalOpen(false);
+    }
+  };
+
+  const handleRatingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!booking) return;
+    setIsSubmittingRating(true);
+    try {
+      await submitRating({
+        bookingId: booking.id,
+        workerId: booking.worker_id,
+        score: ratingStars,
+        review: ratingReviewText,
+      });
+      if (dbBooking) {
+        setDbBooking({
+          ...dbBooking,
+          rating: ratingStars,
+          review: ratingReviewText,
+        });
+      }
+      toast.success('Thank you! Your verified rating was submitted to the cooperative.');
+    } catch (err: any) {
+      toast.error('Could not submit rating: ' + (err?.message || 'Error'));
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12 flex items-center justify-center">
@@ -287,25 +395,77 @@ export default function BookingTrackingPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Prototype Demo Simulator Button */}
+          {/* Prototype Demo Simulator Button & Cancel Button */}
           {booking.status !== 'completed' && booking.status !== 'cancelled' && (
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSimulateNextStatus}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-8 px-3 rounded-xl shadow-xs flex items-center gap-1.5 animate-pulse"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span className="hidden sm:inline">Simulate Next Status</span>
-              <span className="sm:hidden">Next</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setIsCancelModalOpen(true)}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold text-xs h-8 px-3 rounded-xl shadow-xs cursor-pointer"
+              >
+                Cancel Booking
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSimulateNextStatus}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-8 px-3 rounded-xl shadow-xs flex items-center gap-1.5 animate-pulse cursor-pointer"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span className="hidden sm:inline">Simulate Next Status</span>
+                <span className="sm:hidden">Next</span>
+              </Button>
+            </div>
           )}
         </div>
       </div>
 
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 pt-6 space-y-6">
         {/* OTP Security Verification Strip */}
-        {booking.status === 'completed' ? (
+        {/* Status Verification Strip / Rejection Alert */}
+        {booking.status === 'cancelled' ? (
+          <div className="bg-gradient-to-r from-[#2b1111] via-[#451818] to-[#2b1111] text-white rounded-2xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-5 border border-red-500/40 animate-in fade-in duration-300">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30">
+                <XCircle className="w-7 h-7 text-red-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-red-300">
+                    Request Declined by Tradesperson
+                  </span>
+                  <span className="text-[10px] font-bold bg-red-900/60 text-red-200 px-2 py-0.5 rounded-full border border-red-500/30">
+                    CANCELLED
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                  Tradesperson was unavailable for this booking
+                </h3>
+                <p className="text-xs text-red-200/90 mt-0.5 max-w-xl leading-relaxed">
+                  The cooperative tradesperson declined this service request. <strong>No payment was deducted from your account.</strong> You can request another verified cooperative artisan immediately.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+              <Link
+                href="/services"
+                className="bg-[#e6aa3b] hover:bg-[#d96f4d] text-[#24172f] hover:text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all text-center flex items-center justify-center gap-2"
+              >
+                <span>Find Another Tradesperson</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/history"
+                className="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-3 rounded-xl border border-white/20 transition-all text-center"
+              >
+                View Bookings
+              </Link>
+            </div>
+          </div>
+        ) : booking.status === 'completed' ? (
           <div className="bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] text-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#e6aa3b]/30">
             <div className="flex items-start sm:items-center gap-3.5">
               <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0 text-[#f5dfad]">
@@ -324,13 +484,22 @@ export default function BookingTrackingPage({ params }: PageProps) {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center self-start sm:self-auto shrink-0 border border-[#e6aa3b]/30">
-              <span className="text-[10px] uppercase font-bold text-[#f5dfad] block">
-                Verified PIN
-              </span>
-              <span className="font-mono text-2xl font-black tracking-widest text-[#f5dfad]" suppressHydrationWarning>
-                {getBookingOtp(booking.id, booking.otp)}
-              </span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-start sm:self-auto shrink-0">
+              <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center border border-[#e6aa3b]/30">
+                <span className="text-[10px] uppercase font-bold text-[#f5dfad] block">
+                  Verified PIN
+                </span>
+                <span className="font-mono text-2xl font-black tracking-widest text-[#f5dfad]" suppressHydrationWarning>
+                  {getBookingOtp(booking.id, booking.otp)}
+                </span>
+              </div>
+              <ServiceQRCode
+                bookingId={booking.id}
+                serviceTitle={booking.service_name || 'Cooperative Service'}
+                workerName={booking.worker?.full_name}
+                customerName={booking.customer_name}
+                otp={getBookingOtp(booking.id, booking.otp)}
+              />
             </div>
           </div>
         ) : (
@@ -352,13 +521,22 @@ export default function BookingTrackingPage({ params }: PageProps) {
               </div>
             </div>
 
-            <div className="bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center self-start sm:self-auto shrink-0 border border-white/20">
-              <span className="text-[10px] uppercase font-bold text-[#c8bacb] block">
-                Completion OTP
-              </span>
-              <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
-                {getBookingOtp(booking.id, booking.otp)}
-              </span>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-start sm:self-auto shrink-0">
+              <div className="bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center border border-white/20">
+                <span className="text-[10px] uppercase font-bold text-[#c8bacb] block">
+                  Completion OTP
+                </span>
+                <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
+                  {getBookingOtp(booking.id, booking.otp)}
+                </span>
+              </div>
+              <ServiceQRCode
+                bookingId={booking.id}
+                serviceTitle={booking.service_name || 'Cooperative Service'}
+                workerName={booking.worker?.full_name}
+                customerName={booking.customer_name}
+                otp={getBookingOtp(booking.id, booking.otp)}
+              />
             </div>
           </div>
         )}
@@ -377,6 +555,16 @@ export default function BookingTrackingPage({ params }: PageProps) {
                   SIH 26089 Workflow
                 </span>
               </div>
+
+              {booking.status === 'cancelled' && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <div>
+                    <strong className="font-bold block text-red-900">Service Discontinued</strong>
+                    This service request was declined by the tradesperson. Dispatch and execution have been concluded.
+                  </div>
+                </div>
+              )}
 
               <div className="relative pl-6 space-y-6 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200">
                 {TIMELINE_STEPS.map((stepItem, idx) => {
@@ -463,11 +651,17 @@ export default function BookingTrackingPage({ params }: PageProps) {
             {/* Worker Contact Card */}
             <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
               <div className="flex items-center gap-3">
-                <img
-                  src={worker.profile_photo_url}
-                  alt={worker.full_name}
-                  className="w-14 h-14 rounded-2xl object-cover border border-[#e6dcd0] shadow-xs"
-                />
+                {worker.profile_photo_url && worker.profile_photo_url.trim() ? (
+                  <img
+                    src={worker.profile_photo_url}
+                    alt={worker.full_name || 'Worker'}
+                    className="w-14 h-14 rounded-2xl object-cover border border-[#e6dcd0] shadow-xs shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#24172f] to-[#b85435] text-white font-bold text-xl flex items-center justify-center border border-[#e6dcd0] shadow-xs shrink-0">
+                    {worker.full_name?.charAt(0)?.toUpperCase() || 'W'}
+                  </div>
+                )}
                 <div>
                   <div className="flex items-center gap-1.5">
                     <h3 className="font-bold text-gray-900 text-base">{worker.full_name}</h3>
@@ -476,7 +670,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                     </span>
                   </div>
                   <span className="text-xs font-semibold text-[#d96f4d] block mt-0.5">
-                    {worker.primary_skill} ({worker.years_experience} yrs exp)
+                    {(worker as any).primary_skill || (worker as any).profession || 'Service Professional'} ({(worker as any).years_experience || (worker as any).experience_years || 4} yrs exp)
                   </span>
                   <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-0.5">
                     <Building2 className="w-3 h-3 text-[#d96f4d] shrink-0" />
@@ -513,6 +707,66 @@ export default function BookingTrackingPage({ params }: PageProps) {
                 </Button>
               </div>
             </div>
+
+            {/* Verified Rating Display */}
+            {booking.status === 'completed' && (booking.rating || (dbBooking as any)?.ratings?.[0]) && (
+              <div className="bg-amber-50/90 p-4 rounded-2xl border border-amber-200 text-xs space-y-1.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-900 flex items-center gap-1.5 text-sm">
+                    <Star className="w-4 h-4 text-amber-500 fill-current" />
+                    Your Rating: {booking.rating || (dbBooking as any)?.ratings?.[0]?.score} / 5 Stars
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded">
+                    Verified
+                  </span>
+                </div>
+                {(booking.review || (dbBooking as any)?.ratings?.[0]?.review) && (
+                  <p className="text-gray-700 text-xs italic mt-1">&ldquo;{booking.review || (dbBooking as any)?.ratings?.[0]?.review}&rdquo;</p>
+                )}
+              </div>
+            )}
+
+            {/* Rating & Review Form (if completed and not rated yet) */}
+            {booking.status === 'completed' && !booking.rating && !(dbBooking as any)?.ratings?.[0] && (
+              <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-[#e6aa3b] fill-current" />
+                    Rate Worker Service
+                  </h3>
+                  <span className="text-[10px] text-gray-400">Cooperative Review</span>
+                </div>
+                <form onSubmit={handleRatingSubmit} className="space-y-2.5">
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setRatingStars(s)}
+                        className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                      >
+                        <Star className={`w-5 h-5 ${s <= ratingStars ? 'text-[#e6aa3b] fill-current' : 'text-gray-300'}`} />
+                      </button>
+                    ))}
+                    <span className="text-xs font-bold text-gray-700 ml-2">{ratingStars} / 5 Stars</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Leave verified feedback for cooperative..."
+                    value={ratingReviewText}
+                    onChange={(e) => setRatingReviewText(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#e6aa3b]"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isSubmittingRating}
+                    className="w-full bg-[#e6aa3b] hover:bg-[#d96f4d] text-white font-bold text-xs h-8 rounded-xl cursor-pointer"
+                  >
+                    {isSubmittingRating ? 'Submitting Rating...' : 'Submit Rating'}
+                  </Button>
+                </form>
+              </div>
+            )}
 
             {/* Digital Invoice / Transparent Price Card */}
             <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3.5 text-xs">
@@ -598,6 +852,14 @@ export default function BookingTrackingPage({ params }: PageProps) {
                       setIsReceiptOpen(true);
                     }}
                   />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleMarkCashPaid}
+                    className="w-full rounded-xl py-2 text-xs font-semibold border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    💵 Paid Cash to Worker
+                  </Button>
                   <p className="text-[10px] text-center text-gray-400">
                     UPI, Cards, NetBanking • Protected by Cooperative Fair-Share Guarantee
                   </p>
@@ -618,6 +880,17 @@ export default function BookingTrackingPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+
+      {/* Cancel Booking Disclaimer Modal */}
+      <CancelBookingModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirm={handleConfirmCancel}
+        bookingId={booking?.id}
+        serviceName={booking?.service_name}
+        workerName={worker?.full_name}
+        isCancelling={isCancelling}
+      />
 
       {/* Official Cooperative Receipt & Invoice Modal */}
       <CooperativeReceiptModal

@@ -254,10 +254,10 @@ export const INITIAL_SOCIETIES: CooperativeSociety[] = [
 
 export const INITIAL_WORKERS: WorkerProfile[] = [
   {
-    id: 'worker-rajesh-kumar',
+    id: 'ded8c5f8-465c-412e-be09-2f4d6e1302e2',
     full_name: 'Rajesh Kumar',
-    phone: '+91 98765 43210',
-    email: 'rajesh.kumar@shramnexus.coop',
+    phone: '+91 99999 99999',
+    email: 'rajesh.test@sharmnexus.com',
     profile_photo_url: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=400&auto=format&fit=crop&q=80',
     society_id: 'soc-1',
     society_name: 'Patna District Labour Society',

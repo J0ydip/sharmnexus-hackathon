@@ -17,10 +17,43 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
         const localAuth = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
         if (localAuth) {
           const parsed = JSON.parse(localAuth);
+          if (parsed.role === 'admin' || parsed.name === 'Super Admin' || parsed.email === 'admin@shramnexus.com') {
+            localStorage.removeItem('shramnexus-auth');
+            localStorage.removeItem('sharmnexus-auth');
+            return false;
+          }
           if (parsed.isLoggedIn) return true;
         }
       } catch (e) {}
       return false;
+    };
+
+    const isUserAdmin = (user: any) => {
+      if (!user) return false;
+      const role = user.user_metadata?.user_type || user.user_metadata?.role;
+      const name = user.user_metadata?.full_name || user.user_metadata?.name;
+      const email = user.email;
+      return role === 'admin' || name === 'Super Admin' || email === 'admin@shramnexus.com';
+    };
+
+    const syncUser = (user: any) => {
+      if (isUserAdmin(user)) return;
+      try {
+        const local = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
+        if (!local) {
+          const role = user.user_metadata?.user_type || 'customer';
+          const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+          const payload = JSON.stringify({
+            id: user.id,
+            isLoggedIn: true,
+            role,
+            name,
+            email: user.email,
+          });
+          localStorage.setItem('shramnexus-auth', payload);
+          localStorage.setItem('sharmnexus-auth', payload);
+        }
+      } catch (e) {}
     };
 
     if (checkLocal()) {
@@ -29,7 +62,12 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        if (isUserAdmin(session.user)) {
+          setHasSession(false);
+          return;
+        }
         setHasSession(true);
+        syncUser(session.user);
       } else if (!checkLocal()) {
         setHasSession(false);
       }
@@ -37,7 +75,12 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
+        if (isUserAdmin(session.user)) {
+          setHasSession(false);
+          return;
+        }
         setHasSession(true);
+        syncUser(session.user);
       } else if (!checkLocal()) {
         setHasSession(false);
       }

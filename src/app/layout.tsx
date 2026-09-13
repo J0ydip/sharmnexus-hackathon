@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { NavigationWrapper } from '@/components/common/NavigationWrapper';
+import { FloatingAIAssistant } from '@/components/chat/FloatingAIAssistant';
 import Script from 'next/script';
 import './globals.css';
 
@@ -16,16 +17,19 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
-      { url: '/logo.png', sizes: 'any' },
-      { url: '/favicon.png', type: 'image/png' },
+      { url: '/logo.png?v=3', sizes: 'any' },
+      { url: '/favicon.png?v=3', type: 'image/png' },
     ],
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    shortcut: '/logo.png?v=3',
+    apple: '/logo.png?v=3',
   },
 };
 
 export const viewport: Viewport = {
   themeColor: '#24172f',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -41,15 +45,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..405,100..1000;1,9..405,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Great+Vibes&display=swap" rel="stylesheet" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" async></script>
-        <link rel="icon" type="image/png" sizes="32x32" href="/logo.png?v=2" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/logo.png?v=2" />
-        <link rel="shortcut icon" href="/logo.png?v=2" />
-        <link rel="apple-touch-icon" href="/logo.png?v=2" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/logo.png?v=3" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/logo.png?v=3" />
+        <link rel="shortcut icon" href="/logo.png?v=3" />
+        <link rel="apple-touch-icon" href="/logo.png?v=3" />
       </head>
       <body className="antialiased min-h-screen">
         <NavigationWrapper>
           {children}
         </NavigationWrapper>
+        <FloatingAIAssistant />
+        <div id="google_translate_element" style={{ display: 'none', position: 'absolute' }}></div>
         <Toaster />
         <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" strategy="afterInteractive" />
 

@@ -1,0 +1,63 @@
+services:
+  # Next.js Cluster Node 1
+  shramnexus-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost}
+    container_name: shramnexus-app-1
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - CLUSTER_NODE=replica-1
+    networks:
+      - shramnexus-net
+
+  # Next.js Cluster Node 2 (Reuses cached Docker build layers)
+  shramnexus-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost}
+    container_name: shramnexus-app-2
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - CLUSTER_NODE=replica-2
+    networks:
+      - shramnexus-net
+
+  # NGINX Reverse Proxy & Layer 7 Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: shramnexus-nginx-lb
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - shramnexus-1
+      - shramnexus-2
+    networks:
+      - shramnexus-net
+
+networks:
+  shramnexus-net:
+    name: sih_new_shramnexus-net
+    driver: bridge

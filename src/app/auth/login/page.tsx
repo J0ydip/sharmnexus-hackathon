@@ -6,6 +6,18 @@ import { createClient } from '@/lib/supabase/client';
 import { setAdminSession } from '@/app/actions/admin';
 import { registerCooperativeSocietyAction } from '@/app/actions/cooperative';
 import { toast } from 'sonner';
+import {
+  Globe,
+  Wrench,
+  Home,
+  Zap,
+  Handshake,
+  ShieldCheck,
+  ArrowLeft,
+  User,
+  Briefcase,
+  Building2,
+} from 'lucide-react';
 import './auth.css';
 
 export default function AuthPage() {
@@ -31,6 +43,11 @@ export default function AuthPage() {
         } else {
           setRedirectNotice('Please sign in or register to proceed.');
         }
+      }
+
+      const errorParam = params.get('error');
+      if (errorParam) {
+        toast.error(`Authentication Error: ${errorParam}`);
       }
     }
   }, []);
@@ -117,14 +134,8 @@ export default function AuthPage() {
         } catch (e) {}
         localStorage.setItem('shramnexus-admin-auth', 'true');
         localStorage.setItem('sharmnexus-admin-auth', 'true');
-        const adminData = JSON.stringify({
-          isLoggedIn: true,
-          role: 'admin',
-          name: 'Super Admin',
-          email: 'admin@shramnexus.com',
-        });
-        localStorage.setItem('shramnexus-auth', adminData);
-        localStorage.setItem('sharmnexus-auth', adminData);
+        localStorage.removeItem('shramnexus-auth');
+        localStorage.removeItem('sharmnexus-auth');
         document.cookie = 'admin-session=true; path=/; max-age=86400';
         toast.success('Welcome, Super Admin! Transporting to Admin Console...');
         setTimeout(() => {
@@ -169,73 +180,38 @@ export default function AuthPage() {
         return;
       }
     }
-    // 🛠️ WORKER DEMO CREDENTIALS BYPASS 🛠️
-    const isWorkerEmail =
-      trimmedEmail === 'worker@shramnexus' ||
-      trimmedEmail === 'worker@shramnexus.com' ||
-      trimmedEmail === 'worker@sharmnexus.com' ||
-      trimmedEmail === 'worker' ||
-      trimmedEmail.startsWith('worker@');
+    let effectiveEmail = loginEmail.trim();
+    let effectivePassword = loginPassword.trim();
 
-    if (isWorkerEmail && (trimmedPassword === 'worker123' || loginPassword === 'worker123')) {
-      setIsLoading(true);
-      try {
-        const workerData = JSON.stringify({
-          isLoggedIn: true,
-          role: 'worker',
-          name: 'Rajesh Sharma (Electrician)',
-          email: trimmedEmail || 'worker@shramnexus.com',
-        });
-        localStorage.setItem('shramnexus-auth', workerData);
-        localStorage.setItem('sharmnexus-auth', workerData);
-        toast.success('Welcome back, Rajesh! Loading Worker Dashboard...');
-        setTimeout(() => {
-          window.location.href = getRedirectTarget('/worker-dashboard');
-        }, 400);
-        return;
-      } catch (err) {
-        window.location.href = '/worker-dashboard';
-        return;
-      }
+    // Map worker shortcut to real Supabase worker account
+    const isWorkerShortcut =
+      trimmedEmail === 'worker' ||
+      trimmedEmail === 'worker@shramnexus' ||
+      trimmedEmail === 'worker@sharmnexus.com' ||
+      trimmedEmail === 'rajesh.test@sharmnexus.com' ||
+      trimmedEmail === 'rajesh.test@shramnexus.com' ||
+      trimmedEmail === 'rajesh.test@sharamnexus.com';
+    if (isWorkerShortcut && (effectivePassword === 'password123' || effectivePassword === 'worker123')) {
+      effectiveEmail = 'rajesh.test@sharmnexus.com';
+      effectivePassword = 'password123';
     }
 
-    // 👤 CUSTOMER DEMO CREDENTIALS BYPASS 👤
-    const isCustomerEmail =
-      trimmedEmail === 'customer@shramnexus' ||
-      trimmedEmail === 'customer@shramnexus.com' ||
-      trimmedEmail === 'customer@sharmnexus.com' ||
-      trimmedEmail === 'user@shramnexus.com' ||
+    // Map customer shortcut to real Supabase customer account
+    const isCustomerShortcut =
       trimmedEmail === 'customer' ||
-      trimmedEmail.startsWith('customer@') ||
-      trimmedEmail.startsWith('demo@');
-
-    if (isCustomerEmail && (trimmedPassword === 'customer123' || loginPassword === 'customer123')) {
-      setIsLoading(true);
-      try {
-        const customerData = JSON.stringify({
-          isLoggedIn: true,
-          role: 'customer',
-          name: 'Pooja Verma',
-          email: trimmedEmail || 'customer@shramnexus.com',
-        });
-        localStorage.setItem('shramnexus-auth', customerData);
-        localStorage.setItem('sharmnexus-auth', customerData);
-        toast.success('Welcome back, Pooja! Ready to book trusted services.');
-        setTimeout(() => {
-          window.location.href = getRedirectTarget('/');
-        }, 400);
-        return;
-      } catch (err) {
-        window.location.href = '/';
-        return;
-      }
+      trimmedEmail === 'customer@shramnexus' ||
+      trimmedEmail === 'customer@sharmnexus.com' ||
+      trimmedEmail === 'user@shramnexus.com';
+    if (isCustomerShortcut && (effectivePassword === 'customer123' || effectivePassword === 'password123')) {
+      effectiveEmail = 'customer@shramnexus.com';
+      effectivePassword = 'customer123';
     }
 
     setIsLoading(true);
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({ 
-        email: loginEmail, 
-        password: loginPassword 
+        email: effectiveEmail, 
+        password: effectivePassword 
       });
       if (error) {
         toast.error(error.message);
@@ -298,11 +274,24 @@ export default function AuthPage() {
       // 4. Successful authenticated session matching selected role
       toast.success(`Successfully logged in as ${actualRole.toUpperCase()}!`);
 
+      let workerFullName = '';
+      if (actualRole === 'worker') {
+        const { data: wRec } = await supabase
+          .from('workers')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (wRec?.full_name) {
+          workerFullName = wRec.full_name;
+        }
+      }
+
       try {
         const authPayload = JSON.stringify({
+          id: user.id,
           isLoggedIn: true,
           role: actualRole,
-          name: user.user_metadata?.full_name || loginEmail.split('@')[0],
+          name: workerFullName || user.user_metadata?.full_name || loginEmail.split('@')[0],
           email: loginEmail,
         });
         localStorage.setItem('shramnexus-auth', authPayload);
@@ -451,17 +440,19 @@ export default function AuthPage() {
     }
   }
 
-  async function handleOAuth(provider: 'google' | 'github') {
+  async function handleOAuth(provider: 'google' = 'google') {
     try {
+      const redirectTarget = getRedirectTarget('/');
+      const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTarget)}`;
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: callbackUrl,
         },
       });
       if (error) toast.error(error.message);
     } catch (err) {
-      toast.error(`Failed to connect with ${provider}`);
+      toast.error(`Failed to connect with Google`);
     }
   }
 
@@ -486,30 +477,50 @@ export default function AuthPage() {
           <div className="auth-panel auth-left" id="authLeft">
             <div className="branding">
               <div className="logo-circle">
-                <svg className="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L2 7V12C2 18.627 12 23 12 23C12 23 22 18.627 22 12V7L12 2Z" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <img
+                  src="/logo.png"
+                  alt="ShramNexus Logo"
+                  className="brand-logo-img"
+                />
               </div>
               <h1 className="brand-title">ShramNexus</h1>
               <p className="brand-tagline">COOPERATIVE-POWERED SERVICE NETWORK</p>
             </div>
 
-            {/* Animated Cooperative Network Illustration */}
+            {/* Clean Minimalist Cooperative Network Illustration */}
             <div className="illustration">
-              <div className="coop-hub">
-                <div className="hub-pulse"></div>
-                <div className="hub-icon">🌐</div>
-              </div>
-              <div className="network-node node-1"><span>🔧</span></div>
-              <div className="network-node node-2"><span>🏠</span></div>
-              <div className="network-node node-3"><span>⚡</span></div>
-              <div className="network-node node-4"><span>🤝</span></div>
-              <svg className="network-lines" viewBox="0 0 300 300">
-                <line x1="150" y1="150" x2="60" y2="70" className="pulse-line" />
-                <line x1="150" y1="150" x2="240" y2="90" className="pulse-line delay-1" />
-                <line x1="150" y1="150" x2="70" y2="220" className="pulse-line delay-2" />
-                <line x1="150" y1="150" x2="220" y2="210" className="pulse-line delay-3" />
+              {/* Soft Ambient Glow */}
+              <div className="hub-ambient-glow" />
+
+              {/* Clean Connecting Lines between Hub and Nodes (Stops outside boxes) */}
+              <svg className="network-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="43" y1="43" x2="27" y2="29" className="network-beam" />
+                <line x1="57" y1="43" x2="73" y2="29" className="network-beam" />
+                <line x1="43" y1="57" x2="27" y2="71" className="network-beam" />
+                <line x1="57" y1="57" x2="73" y2="71" className="network-beam" />
               </svg>
+
+              {/* Central Cooperative Hub */}
+              <div className="coop-hub" title="ShramNexus Cooperative Core">
+                <Globe className="w-6 h-6 text-white" />
+              </div>
+
+              {/* 4 Clean Minimalist Node Cards (No words, opaque, clean icons) */}
+              <div className="network-node node-1" title="Certified Trades & Repairs">
+                <Wrench className="w-5 h-5 text-amber-400" />
+              </div>
+
+              <div className="network-node node-2" title="Verified Household Services">
+                <Home className="w-5 h-5 text-emerald-400" />
+              </div>
+
+              <div className="network-node node-3" title="Electrical & Utilities Dispatch">
+                <Zap className="w-5 h-5 text-sky-400" />
+              </div>
+
+              <div className="network-node node-4" title="Cooperative Solidarity & Fair Pay">
+                <Handshake className="w-5 h-5 text-purple-400" />
+              </div>
             </div>
 
             <p className="brand-description">Connecting households with verified local professionals while empowering worker cooperatives.</p>
@@ -519,9 +530,7 @@ export default function AuthPage() {
           <div className="auth-panel auth-right" id="authRight">
             {/* Back to Home Button */}
             <a href="/" className="back-to-home" title="Back to Home" aria-label="Go back to ShramNexus landing page">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 10H1m0 0l8-8m-8 8l8 8"/>
-              </svg>
+              <ArrowLeft className="w-4 h-4" />
               Back to Home
             </a>
 
@@ -568,6 +577,7 @@ export default function AuthPage() {
                   className={`role-btn ${selectedRole === 'customer' ? 'active' : ''}`}
                   onClick={() => setSelectedRole('customer')}
                 >
+                  <User className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Customer
                 </button>
                 <button 
@@ -575,6 +585,7 @@ export default function AuthPage() {
                   className={`role-btn ${selectedRole === 'worker' ? 'active' : ''}`}
                   onClick={() => setSelectedRole('worker')}
                 >
+                  <Briefcase className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Worker
                 </button>
                 <button 
@@ -582,6 +593,7 @@ export default function AuthPage() {
                   className={`role-btn ${selectedRole === 'cooperative' ? 'active' : ''}`}
                   onClick={() => setSelectedRole('cooperative')}
                 >
+                  <Building2 className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Cooperative
                 </button>
               </div>
@@ -661,7 +673,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* Worker Quick Demo Access Banner */}
+              {/* Worker Portal Login Helper */}
               {selectedRole === 'worker' && (
                 <div style={{
                   padding: '10px 14px',
@@ -677,14 +689,14 @@ export default function AuthPage() {
                   gap: '8px',
                   flexWrap: 'wrap'
                 }}>
-                  <span>🛠️ <strong>Demo Worker</strong> (<code>worker@shramnexus.com</code> / <code>worker123</code>)</span>
+                  <span>🛠️ <strong>Worker Portal</strong>: Sign in with your registered trade account</span>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button
                       type="button"
                       onClick={() => {
-                        setLoginEmail('worker@shramnexus.com');
-                        setLoginPassword('worker123');
-                        toast.success('Credentials filled! Click "Sign in" below.');
+                        setLoginEmail('rajesh.test@sharmnexus.com');
+                        setLoginPassword('password123');
+                        toast.success('Demo worker credentials filled! Click "Sign in" below.');
                       }}
                       style={{
                         background: 'var(--terracotta)',
@@ -698,28 +710,52 @@ export default function AuthPage() {
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      Auto-Fill
+                      Auto-Fill Demo Worker
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setLoginEmail('worker@shramnexus.com');
-                        setLoginPassword('worker123');
-                        const workerData = JSON.stringify({
-                          isLoggedIn: true,
-                          role: 'worker',
-                          name: 'Rajesh Sharma (Electrician)',
-                          email: 'worker@shramnexus.com',
-                        });
-                        localStorage.setItem('shramnexus-auth', workerData);
-                        localStorage.setItem('sharmnexus-auth', workerData);
-                        toast.success('Welcome back, Rajesh! Loading Worker Dashboard...');
-                        setTimeout(() => {
-                          window.location.href = getRedirectTarget('/worker-dashboard');
-                        }, 300);
+                      disabled={isLoading}
+                      onClick={async () => {
+                        const email = 'rajesh.test@sharmnexus.com';
+                        const password = 'password123';
+                        setLoginEmail(email);
+                        setLoginPassword(password);
+                        setIsLoading(true);
+
+                        try {
+                          // Perform real authentic Supabase sign-in for complete worker session
+                          const { data: authData, error } = await supabase.auth.signInWithPassword({
+                            email,
+                            password,
+                          });
+
+                          if (error) {
+                            toast.error(error.message);
+                            setIsLoading(false);
+                            return;
+                          }
+
+                          const user = authData?.user;
+                          const workerData = JSON.stringify({
+                            id: user?.id || 'ded8c5f8-465c-412e-be09-2f4d6e1302e2',
+                            isLoggedIn: true,
+                            role: 'worker',
+                            name: 'Rajesh Kumar (Plumber)',
+                            email: email,
+                          });
+                          localStorage.setItem('shramnexus-auth', workerData);
+                          localStorage.setItem('sharmnexus-auth', workerData);
+                          toast.success('Welcome back, Rajesh! Opening worker operations...');
+                          setTimeout(() => {
+                            window.location.href = getRedirectTarget('/worker-dashboard');
+                          }, 300);
+                        } catch (err: any) {
+                          toast.error(err?.message || 'Login failed');
+                          setIsLoading(false);
+                        }
                       }}
                       style={{
-                        background: '#b85435',
+                        background: '#b45309',
                         color: '#ffffff',
                         border: 'none',
                         borderRadius: '6px',
@@ -730,7 +766,7 @@ export default function AuthPage() {
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      1-Click Sign In ↗
+                      {isLoading ? 'Signing In...' : '1-Click Sign In ↗'}
                     </button>
                   </div>
                 </div>
@@ -915,20 +951,14 @@ export default function AuthPage() {
               <div className="divider"><span>OR</span></div>
 
               <div className="social-login">
-                <button type="button" className="btn btn-social" onClick={() => handleOAuth('google')}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                <button type="button" className="btn btn-social w-100" onClick={() => handleOAuth('google')}>
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  <span>Google</span>
-                </button>
-                <button type="button" className="btn btn-social" onClick={() => handleOAuth('github')}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                  </svg>
-                  <span>GitHub</span>
+                  <span>Continue with Google</span>
                 </button>
               </div>
 
@@ -963,6 +993,7 @@ export default function AuthPage() {
                   className={`role-btn ${signupUserType === 'customer' ? 'active' : ''}`}
                   onClick={() => setSignupUserType('customer')}
                 >
+                  <User className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Customer
                 </button>
                 <button 
@@ -970,6 +1001,7 @@ export default function AuthPage() {
                   className={`role-btn ${signupUserType === 'worker' ? 'active' : ''}`}
                   onClick={() => setSignupUserType('worker')}
                 >
+                  <Briefcase className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Worker
                 </button>
                 <button 
@@ -977,6 +1009,7 @@ export default function AuthPage() {
                   className={`role-btn ${signupUserType === 'cooperative' ? 'active' : ''}`}
                   onClick={() => setSignupUserType('cooperative')}
                 >
+                  <Building2 className="w-3.5 h-3.5 inline-block mr-1.5" />
                   Cooperative
                 </button>
               </div>
@@ -1297,6 +1330,24 @@ export default function AuthPage() {
                   <span className="btn-loader"></span>
                 </button>
               </form>
+
+              {signupUserType === 'customer' && (
+                <>
+                  <div className="divider"><span>OR</span></div>
+
+                  <div className="social-login">
+                    <button type="button" className="btn btn-social w-100" onClick={() => handleOAuth('google')}>
+                      <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      <span>Continue with Google</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
 

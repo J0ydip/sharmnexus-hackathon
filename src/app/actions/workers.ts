@@ -156,16 +156,27 @@ export async function createWorkerRegistration(data: {
 // ---------------------------------------------------------------------------
 // updateWorkerAvailability — toggle online/offline duty status
 // ---------------------------------------------------------------------------
-export async function updateWorkerAvailability(workerId: string, isAvailable: boolean) {
+export async function updateWorkerAvailability(workerIdOrIsAvailable: string | boolean, maybeIsAvailable?: boolean) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { error: 'Not authenticated' };
 
+  let isAvailable: boolean;
+  let targetWorkerId: string;
+
+  if (typeof workerIdOrIsAvailable === 'boolean') {
+    isAvailable = workerIdOrIsAvailable;
+    targetWorkerId = user.id;
+  } else {
+    targetWorkerId = (typeof workerIdOrIsAvailable === 'string' && workerIdOrIsAvailable.trim()) ? workerIdOrIsAvailable : user.id;
+    isAvailable = maybeIsAvailable !== undefined ? maybeIsAvailable : true;
+  }
+
   const { error } = await supabase
     .from('workers')
     .update({ is_available: isAvailable })
-    .eq('id', workerId);
+    .eq('id', targetWorkerId);
 
   if (error) {
     console.error('Error updating worker availability:', error);
@@ -174,7 +185,7 @@ export async function updateWorkerAvailability(workerId: string, isAvailable: bo
 
   revalidatePath('/worker-dashboard');
   revalidatePath('/worker-profile');
-  return { success: true };
+  return { success: true, is_available: isAvailable };
 }
 
 // ---------------------------------------------------------------------------

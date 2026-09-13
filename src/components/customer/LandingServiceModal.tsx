@@ -155,16 +155,9 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
   useEffect(() => {
     if (!service) return;
 
-    // Add modal-open class to document body to restore normal cursor and suppress custom cursor dot
+    // Prevent background scrolling when modal is open
     document.body.classList.add('landing-modal-open');
-    const wasCustomCursor = document.body.classList.contains('has-custom-cursor');
-    if (wasCustomCursor) {
-      document.body.classList.remove('has-custom-cursor');
-    }
-    const cursorDot = document.querySelector('.cursor-dot') as HTMLElement | null;
-    if (cursorDot) {
-      cursorDot.style.display = 'none';
-    }
+    document.body.classList.remove('has-custom-cursor');
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -175,12 +168,7 @@ export function LandingServiceModal({ service, onClose }: LandingServiceModalPro
 
     return () => {
       document.body.classList.remove('landing-modal-open');
-      if (wasCustomCursor) {
-        document.body.classList.add('has-custom-cursor');
-      }
-      if (cursorDot) {
-        cursorDot.style.display = '';
-      }
+      document.body.classList.remove('has-custom-cursor');
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [service]);

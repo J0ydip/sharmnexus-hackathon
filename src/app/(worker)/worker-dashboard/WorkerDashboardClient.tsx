@@ -1,13 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useRealtimeBookings } from '@/hooks/useRealtimeBookings';
 import { updateWorkerAvailability } from '@/app/actions/workers';
-import { updateBookingStatus, getWorkerDashboardData } from '@/app/actions/worker-jobs';
+import { updateBookingStatus, getWorkerDashboardData, rejectJobRequest } from '@/app/actions/worker-jobs';
+import {
+  syncAndGetWorkerNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  markReviewAsRead,
+  markAllReviewsAsRead,
+  WorkerNotificationItem,
+} from '@/app/actions/workerNotifications';
 import { getBookingOtp } from '@/lib/utils';
 import { useBookingStore } from '@/lib/store/bookingStore';
 import { createClient } from '@/lib/supabase/client';
 import './worker.css';
+
+
 
 type WorkerView =
   | 'view-dashboard'
@@ -40,6 +51,7 @@ interface ActiveJob {
   date: string;
   price: string;
   address: string;
+  status: string;
   otp?: string;
 }
 
@@ -49,6 +61,19 @@ interface CompletedJob {
   service: string;
   date: string;
   price: string;
+  amount?: number;
+  workerPayout?: number;
+  paymentStatus?: 'paid' | 'pending';
+  paymentMethod?: string;
+}
+
+interface WorkerReview {
+  id: string;
+  customerName: string;
+  service: string;
+  score: number;
+  review: string;
+  date: string;
 }
 
 const TRANSLATIONS: Record<Lang, Record<string, string>> = {
@@ -134,6 +159,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
 export function WorkerDashboardClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [activeView, setActiveView] = useState<WorkerView>('view-dashboard');
   const [lang, setLang] = useState<Lang>('en');
@@ -141,58 +167,33 @@ export function WorkerDashboardClient() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Worker state
-  const [workerName, setWorkerName] = useState('Raj Kumar');
+  // Authenticated Worker state
+  const [workerName, setWorkerName] = useState('Worker');
   const [workerPhone, setWorkerPhone] = useState('+91 98765 43210');
-  const [workerSkill, setWorkerSkill] = useState('Master Plumber & Pipe Specialist');
-  const [workerExp, setWorkerExp] = useState('8');
-  const [workerPrice, setWorkerPrice] = useState('450');
-  const [workerLoc, setWorkerLoc] = useState('Patna Central, Bihar');
-  const [workerBio, setWorkerBio] = useState('Certified master plumber with 8 years of residential leak repairs and society plumbing. Affiliated with Patna District Labour Society.');
-  const [workerLanguages, setWorkerLanguages] = useState('Hindi, Bhojpuri, English');
+  const [workerSkill, setWorkerSkill] = useState('Trade Professional');
+  const [workerExp, setWorkerExp] = useState('5');
+  const [workerPrice, setWorkerPrice] = useState('350');
+  const [workerLoc, setWorkerLoc] = useState('New Delhi');
+  const [workerBio, setWorkerBio] = useState('Certified cooperative tradesperson dedicated to reliable community service.');
+  const [workerSociety, setWorkerSociety] = useState('Labour Welfare Cooperative Society');
+  const [workerLanguages, setWorkerLanguages] = useState('Hindi, English');
 
-  // Job data
-  const [jobRequests, setJobRequests] = useState<JobRequest[]>([
-    {
-      id: 'REQ001',
-      name: 'Sanjay Verma',
-      service: 'Leaking Pipe Repair',
-      date: 'Today, 2:00 PM',
-      price: '₹ 450',
-      dist: '1.2 km',
-      desc: 'Kitchen sink main pipe is leaking heavily and needs urgent joint replacement.',
-    },
-    {
-      id: 'REQ002',
-      name: 'Anjali Desai',
-      service: 'Geyser Installation & Check',
-      date: 'Tomorrow, 10:00 AM',
-      price: '₹ 800',
-      dist: '3.5 km',
-      desc: 'Need a new 15L geyser safely installed and connected in the master bathroom.',
-    },
-  ]);
+  // Job data - 100% Real Database Driven
+  const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
+  const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
+  const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
+  const [workerReviews, setWorkerReviews] = useState<WorkerReview[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [isAcceptingId, setIsAcceptingId] = useState<string | null>(null);
+  const [isRejectingId, setIsRejectingId] = useState<string | null>(null);
 
-  const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([
-    {
-      id: 'JOB099',
-      name: 'Karan Singh',
-      service: 'Bathroom Tap Replacement',
-      date: 'Today, 5:00 PM',
-      price: '₹ 300',
-      address: 'Flat 302, Bailey Road, Patna',
-    },
-  ]);
-
-  const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([
-    {
-      id: 'JOB098',
-      name: 'Priya Sharma',
-      service: 'Kitchen Water Line Seal',
-      date: 'Yesterday',
-      price: '₹ 450',
-    },
-  ]);
+  // Notifications & Reviews Read Status State
+  const [notifications, setNotifications] = useState<WorkerNotificationItem[]>([]);
+  const [unreadNotifsCount, setUnreadNotifsCount] = useState<number>(0);
+  const [unreadReviewsCount, setUnreadReviewsCount] = useState<number>(0);
+  const [notifFilter, setNotifFilter] = useState<'all' | 'unread' | 'payment' | 'rating'>('all');
+  const [isMarkingNotifs, setIsMarkingNotifs] = useState<boolean>(false);
+  const [isMarkingReviews, setIsMarkingReviews] = useState<boolean>(false);
 
   // Jobs tab state
   const [jobsTab, setJobsTab] = useState<'active' | 'pending' | 'completed'>('active');
@@ -262,156 +263,138 @@ export function WorkerDashboardClient() {
     }
     verifyWorkerAccess();
 
-    // Fetch live backend data if available with deduplication
-    getWorkerDashboardData()
-      .then((res) => {
+    // Fetch live backend data directly from Supabase
+    async function fetchDashboardData() {
+      try {
+        let authWorkerId: string | undefined = undefined;
+        try {
+          const auth = JSON.parse(localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth') || '{}');
+          if (auth && auth.id) authWorkerId = auth.id;
+        } catch (e) {}
+
+        const res = await getWorkerDashboardData(authWorkerId);
         if (!res) return;
         if (res.worker) {
-          if (res.worker.full_name) setWorkerName(res.worker.full_name);
-          if (res.worker.phone) setWorkerPhone(res.worker.phone);
-          if (res.worker.address) setWorkerLoc(res.worker.address);
-          if (res.worker.is_available !== undefined) setIsAvailable(res.worker.is_available);
-        }
-        if (res.requests && res.requests.length > 0) {
-          const liveRequests: JobRequest[] = res.requests.map((r: any) => ({
-            id: r.id,
-            name: r.customers?.full_name || 'Household Customer',
-            service: r.service_categories?.name || 'General Maintenance',
-            date: r.scheduled_at ? new Date(r.scheduled_at).toLocaleDateString() : 'Today',
-            price: `₹ ${r.final_price || r.estimated_price || 400}`,
-            dist: '1.5 km',
-            desc: r.description || 'Verified job request through cooperative portal.',
-            address: r.address || 'Address provided via dispatch',
-          }));
-          setJobRequests((prev) => {
-            const combined = [...liveRequests, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((r) => {
-              if (!r.id || seen.has(r.id)) return false;
-              seen.add(r.id);
-              return true;
-            });
-          });
-        }
-        if (res.activeJobs && res.activeJobs.length > 0) {
-          const liveActive: ActiveJob[] = res.activeJobs.map((j: any) => ({
-            id: j.id,
-            name: j.customers?.full_name || 'Customer',
-            service: j.service_categories?.name || 'Cooperative Service',
-            date: j.scheduled_at ? new Date(j.scheduled_at).toLocaleDateString() : 'Today',
-            price: `₹ ${j.final_price || j.estimated_price || 400}`,
-            address: j.address || 'Customer Location',
-          }));
-          setActiveJobs((prev) => {
-            const combined = [...liveActive, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((j) => {
-              if (!j.id || seen.has(j.id)) return false;
-              seen.add(j.id);
-              return true;
-            });
-          });
-        }
-        if (res.completedJobs && res.completedJobs.length > 0) {
-          const liveCompleted: CompletedJob[] = res.completedJobs.map((c: any) => ({
-            id: c.id,
-            name: c.customers?.full_name || 'Customer',
-            service: c.service_categories?.name || 'Cooperative Service',
-            date: c.completed_at ? new Date(c.completed_at).toLocaleDateString() : 'Recent',
-            price: `₹ ${c.final_price || c.estimated_price || 400}`,
-          }));
-          setCompletedJobs((prev) => {
-            const combined = [...liveCompleted, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((c) => {
-              if (!c.id || seen.has(c.id)) return false;
-              seen.add(c.id);
-              return true;
-            });
-          });
-        }
-      })
-      .catch(() => {});
-
-    // Sync any bookings created locally in browser session
-    try {
-      const storeStr = localStorage.getItem('shramnexus-customer-store-v3');
-      if (storeStr) {
-        const store = JSON.parse(storeStr);
-        const clientBookings = store?.state?.bookings || [];
-        const extraReqs: JobRequest[] = [];
-        const extraActive: ActiveJob[] = [];
-        const extraCompleted: CompletedJob[] = [];
-
-        clientBookings.forEach((cb: any) => {
-          if (cb.status === 'requested') {
-            extraReqs.push({
-              id: cb.id,
-              name: cb.customer_name || 'Household Customer',
-              service: cb.service_name || 'Home Service',
-              date: cb.scheduled_at || 'Today',
-              price: `₹ ${cb.estimated_price || 450}`,
-              dist: '1.2 km',
-              desc: cb.description || 'Verified job request through cooperative portal.',
-              address: cb.address || 'Address provided via dispatch',
-              otp: cb.otp,
-            });
-          } else if (cb.status === 'assigned' || cb.status === 'in_progress') {
-            extraActive.push({
-              id: cb.id,
-              name: cb.customer_name || 'Household Customer',
-              service: cb.service_name || 'Home Service',
-              date: cb.scheduled_at || 'Today',
-              price: `₹ ${cb.final_price || cb.estimated_price || 450}`,
-              address: cb.address || 'Address provided via dispatch',
-              otp: cb.otp,
-            });
-          } else if (cb.status === 'completed') {
-            extraCompleted.push({
-              id: cb.id,
-              name: cb.customer_name || 'Household Customer',
-              service: cb.service_name || 'Home Service',
-              date: 'Today',
-              price: `₹ ${cb.final_price || cb.estimated_price || 450}`,
-            });
+          const w = res.worker as any;
+          if (w.full_name) setWorkerName(w.full_name);
+          if (w.phone) setWorkerPhone(w.phone);
+          if (w.address) setWorkerLoc(w.address);
+          if (w.is_available !== undefined) setIsAvailable(w.is_available);
+          if (w.skills && w.skills.length > 0) {
+            const firstSkill = w.skills[0];
+            const cat = Array.isArray(firstSkill?.category) ? firstSkill.category[0] : firstSkill?.category;
+            const skillTitle = cat?.name || firstSkill?.certification_name;
+            if (skillTitle) setWorkerSkill(skillTitle);
+            if (firstSkill?.years_experience) setWorkerExp(String(firstSkill.years_experience));
           }
-        });
+          const soc = Array.isArray(w.society) ? w.society[0] : w.society;
+          if (soc?.name) {
+            setWorkerSociety(`${soc.name}${soc.district ? ` (${soc.district})` : ''}`);
+          }
+        }
+        let rejectedIds: string[] = [];
+        try {
+          rejectedIds = JSON.parse(localStorage.getItem('shramnexus-rejected-requests') || '[]');
+        } catch (e) {}
+        const rejectedSet = new Set(rejectedIds);
 
-        if (extraReqs.length > 0) {
-          setJobRequests((prev) => {
-            const combined = [...extraReqs, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((r) => {
-              if (!r.id || seen.has(r.id)) return false;
-              seen.add(r.id);
-              return true;
-            });
-          });
+        if (res.requests) {
+          const liveRequests: JobRequest[] = res.requests
+            .filter((r: any) => !rejectedSet.has(r.id) && r.status !== 'cancelled')
+            .map((r: any) => ({
+              id: r.id,
+              name: r.customers?.full_name || 'Household Customer',
+              phone: r.customers?.phone || '',
+              service: r.service_categories?.name || 'General Maintenance',
+              date: r.scheduled_at ? new Date(r.scheduled_at).toLocaleDateString() : 'Today',
+              price: `₹ ${r.final_price || r.estimated_price || 400}`,
+              dist: '1.2 km',
+              desc: r.description || 'Verified job request through cooperative portal.',
+              address: r.address || 'Address provided via dispatch',
+              otp: getBookingOtp(r.id),
+            }));
+          setJobRequests(liveRequests);
         }
-        if (extraActive.length > 0) {
-          setActiveJobs((prev) => {
-            const combined = [...extraActive, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((j) => {
-              if (!j.id || seen.has(j.id)) return false;
-              seen.add(j.id);
-              return true;
-            });
-          });
+        if (res.activeJobs) {
+          const liveActive: ActiveJob[] = res.activeJobs
+            .filter((j: any) => !rejectedSet.has(j.id) && j.status !== 'cancelled')
+            .map((j: any) => ({
+              id: j.id,
+              name: j.customers?.full_name || 'Customer',
+              phone: j.customers?.phone || '',
+              service: j.service_categories?.name || 'Cooperative Service',
+              date: j.scheduled_at ? new Date(j.scheduled_at).toLocaleDateString() : 'Today',
+              price: `₹ ${j.final_price || j.estimated_price || 400}`,
+              address: j.address || 'Customer Location',
+              status: j.status || 'accepted',
+              otp: getBookingOtp(j.id),
+            }));
+          setActiveJobs(liveActive);
         }
-        if (extraCompleted.length > 0) {
-          setCompletedJobs((prev) => {
-            const combined = [...extraCompleted, ...prev];
-            const seen = new Set<string>();
-            return combined.filter((c) => {
-              if (!c.id || seen.has(c.id)) return false;
-              seen.add(c.id);
-              return true;
-            });
+        if (res.completedJobs) {
+          const liveCompleted: CompletedJob[] = res.completedJobs.map((c: any) => {
+            const rawPrice = c.final_price || c.estimated_price || 450;
+            const pmts = c.payments || [];
+            const completedPayment = pmts.find((p: any) => p.status === 'completed');
+            const isPaid = Boolean(completedPayment);
+            const payout = completedPayment?.worker_payout || Math.round(rawPrice * 0.85);
+            const method = completedPayment?.method
+              ? (completedPayment.method === 'cash' ? 'Cash in Hand' : `Online (${completedPayment.method.toUpperCase()})`)
+              : 'Awaiting Settlement';
+
+            return {
+              id: c.id,
+              name: c.customers?.full_name || 'Household Customer',
+              service: c.service_categories?.name || 'Cooperative Service',
+              date: c.completed_at ? new Date(c.completed_at).toLocaleDateString() : 'Recent',
+              price: `₹ ${rawPrice}`,
+              amount: rawPrice,
+              workerPayout: payout,
+              paymentStatus: isPaid ? 'paid' : 'pending',
+              paymentMethod: method,
+            };
           });
+          setCompletedJobs(liveCompleted);
         }
+        if (res.reviews) {
+          const liveReviews: WorkerReview[] = res.reviews.map((r: any) => ({
+            id: r.id,
+            customerName: r.customer?.full_name || 'Verified Customer',
+            service: r.booking?.service_categories?.name || 'Cooperative Service',
+            score: r.score || 5,
+            review: r.review || 'Service completed satisfactorily according to cooperative quality standards.',
+            date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }) : 'Recent',
+          }));
+          setWorkerReviews(liveReviews);
+        }
+
+        // Sync & fetch notifications with server-side read status
+        try {
+          const notifRes = await syncAndGetWorkerNotifications(authWorkerId);
+          if (notifRes && notifRes.notifications) {
+            setNotifications(notifRes.notifications);
+            setUnreadNotifsCount(notifRes.unreadNotifsCount);
+            setUnreadReviewsCount(notifRes.unreadReviewsCount);
+          }
+        } catch (notifErr) {
+          console.error('Error fetching notifications:', notifErr);
+        }
+      } catch (err) {
+        console.error('Error fetching worker dashboard data:', err);
+      } finally {
+        setIsLoadingJobs(false);
       }
-    } catch (e) {}
+    }
+
+    fetchDashboardData();
+    // Relaxed polling (30s) as a fallback — Realtime handles instant updates
+    const interval = setInterval(fetchDashboardData, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const showToast = (msg: string) => {
@@ -419,6 +402,195 @@ export function WorkerDashboardClient() {
     setTimeout(() => {
       setToastMessage(null);
     }, 3000);
+  };
+
+  const getWorkerId = () => {
+    try {
+      const auth = JSON.parse(localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth') || '{}');
+      return auth?.id || null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Supabase Realtime — instant job notifications without polling
+  // ---------------------------------------------------------------------------
+  const realtimeRefetch = useCallback(async () => {
+    const wId = getWorkerId();
+    if (!wId) return;
+    try {
+      const res = await getWorkerDashboardData(wId);
+      if (!res) return;
+      let rejectedIds: string[] = [];
+      try {
+        rejectedIds = JSON.parse(localStorage.getItem('shramnexus-rejected-requests') || '[]');
+      } catch (e) {}
+      const rejectedSet = new Set(rejectedIds);
+      if (res.requests) {
+        setJobRequests(
+          res.requests
+            .filter((r: any) => !rejectedSet.has(r.id) && r.status !== 'cancelled')
+            .map((r: any) => ({
+              id: r.id,
+              name: r.customers?.full_name || 'Household Customer',
+              service: r.service_categories?.name || 'General Maintenance',
+              date: r.scheduled_at ? new Date(r.scheduled_at).toLocaleDateString() : 'Today',
+              price: `₹ ${r.final_price || r.estimated_price || 400}`,
+              dist: '1.2 km',
+              desc: r.description || 'Service request via ShramNexus platform.',
+              address: r.address || 'Customer location',
+              otp: getBookingOtp(r.id),
+            }))
+        );
+      }
+      if (res.activeJobs) {
+        setActiveJobs(
+          res.activeJobs.map((j: any) => ({
+            id: j.id,
+            name: j.customers?.full_name || 'Cooperative Customer',
+            service: j.service_categories?.name || 'Maintenance',
+            date: j.scheduled_at ? new Date(j.scheduled_at).toLocaleDateString() : 'Today',
+            price: `₹ ${j.final_price || j.estimated_price || 400}`,
+            address: j.address || 'Customer location',
+            status: j.status,
+            otp: getBookingOtp(j.id),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error('Realtime refetch error:', err);
+    }
+  }, []);
+
+  const { isConnected: realtimeConnected } = useRealtimeBookings({
+    workerId: getWorkerId(),
+    onNewBooking: (event) => {
+      showToast(`🔔 New job request! ${event.booking_type === 'emergency' ? '🚨 EMERGENCY' : 'Booking'} — ₹${event.estimated_price || 'TBD'}`);
+      realtimeRefetch();
+    },
+    onBookingUpdate: (event) => {
+      if (event.status === 'cancelled') {
+        showToast('⚠️ A booking has been cancelled.');
+      } else if (event.status === 'completed') {
+        showToast('✅ Job completed & payment released!');
+      }
+      realtimeRefetch();
+    },
+    enabled: true,
+  });
+
+  const handleOpenReviews = async () => {
+    setActiveView('view-reviews');
+    setSidebarOpen(false);
+    if (unreadReviewsCount > 0) {
+      setUnreadReviewsCount(0);
+      setNotifications((prev) =>
+        prev.map((n) => (n.type === 'rating' ? { ...n, is_read: true } : n))
+      );
+      const wId = getWorkerId();
+      if (wId) {
+        try {
+          await markAllReviewsAsRead(wId);
+        } catch (e) {}
+      }
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    if (unreadNotifsCount === 0 || isMarkingNotifs) return;
+    setIsMarkingNotifs(true);
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setUnreadNotifsCount(0);
+    setUnreadReviewsCount(0);
+    showToast('✓ All notifications marked as read');
+    const wId = getWorkerId();
+    if (wId) {
+      try {
+        await markAllNotificationsAsRead(wId);
+      } catch (err) {
+        console.error('Error marking all notifications read:', err);
+      } finally {
+        setIsMarkingNotifs(false);
+      }
+    } else {
+      setIsMarkingNotifs(false);
+    }
+  };
+
+  const handleMarkSingleNotificationRead = async (notifId: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => {
+        if (n.id === notifId) {
+          if (!n.is_read) {
+            setUnreadNotifsCount((c) => Math.max(0, c - 1));
+            if (n.type === 'rating') {
+              setUnreadReviewsCount((rc) => Math.max(0, rc - 1));
+            }
+          }
+          return { ...n, is_read: true };
+        }
+        return n;
+      })
+    );
+    try {
+      await markNotificationAsRead(notifId);
+    } catch (err) {
+      console.error('Error marking notification read:', err);
+    }
+  };
+
+  const handleMarkAllReviewsRead = async () => {
+    if (unreadReviewsCount === 0 || isMarkingReviews) return;
+    setIsMarkingReviews(true);
+    setUnreadReviewsCount(0);
+    setNotifications((prev) =>
+      prev.map((n) => {
+        if (n.type === 'rating') {
+          if (!n.is_read) {
+            setUnreadNotifsCount((c) => Math.max(0, c - 1));
+          }
+          return { ...n, is_read: true };
+        }
+        return n;
+      })
+    );
+    showToast('✓ All customer reviews marked as read');
+    const wId = getWorkerId();
+    if (wId) {
+      try {
+        await markAllReviewsAsRead(wId);
+      } catch (err) {
+        console.error('Error marking all reviews read:', err);
+      } finally {
+        setIsMarkingReviews(false);
+      }
+    } else {
+      setIsMarkingReviews(false);
+    }
+  };
+
+  const handleMarkSingleReviewRead = async (ratingId: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => {
+        if (n.type === 'rating' && n.data?.source_id === ratingId) {
+          if (!n.is_read) {
+            setUnreadNotifsCount((c) => Math.max(0, c - 1));
+            setUnreadReviewsCount((rc) => Math.max(0, rc - 1));
+          }
+          return { ...n, is_read: true };
+        }
+        return n;
+      })
+    );
+    const wId = getWorkerId();
+    if (wId) {
+      try {
+        await markReviewAsRead(wId, ratingId);
+      } catch (err) {
+        console.error('Error marking review read:', err);
+      }
+    }
   };
 
   const handleLanguageChange = (newLang: Lang) => {
@@ -432,45 +604,102 @@ export function WorkerDashboardClient() {
     const newVal = e.target.checked;
     setIsAvailable(newVal);
     try {
-      const auth = JSON.parse(localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth') || '{}');
-      if (auth?.id) {
-        await updateWorkerAvailability(auth.id, newVal);
+      const res = await updateWorkerAvailability(newVal);
+      if (res?.error) {
+        setIsAvailable(!newVal);
+        showToast(`❌ Could not update availability: ${res.error}`);
+        return;
       }
-    } catch (err) {}
-    showToast(newVal ? 'You are now Online & Available' : 'You are now Offline');
-  };
-
-  const handleAcceptRequest = async (id: string) => {
-    const found = jobRequests.find((r) => r.id === id);
-    if (found) {
-      setJobRequests((prev) => prev.filter((r) => r.id !== id));
-      setActiveJobs((prev) => [
-        ...prev,
-        {
-          id: id.startsWith('REQ') ? `JOB-${id}` : id,
-          name: found.name,
-          service: found.service,
-          date: found.date,
-          price: found.price,
-          address: found.address || 'Address provided via cooperative dispatch',
-          otp: found.otp,
-        },
-      ]);
-      try {
-        if (!id.startsWith('REQ') && !id.startsWith('SN-')) {
-          await updateBookingStatus(id, 'assigned');
-        }
-      } catch (err) {}
-      try {
-        useBookingStore.getState().updateBookingStatus(id, 'assigned');
-      } catch (err) {}
-      showToast('Job Accepted successfully!');
+      showToast(newVal ? 'You are now Online & Available' : 'You are now Offline');
+    } catch (err: any) {
+      setIsAvailable(!newVal);
+      showToast(`❌ Error: ${err?.message || 'Failed to update'}`);
     }
   };
 
-  const handleRejectRequest = (id: string) => {
+  const handleAcceptRequest = async (id: string) => {
+    setIsAcceptingId(id);
+    try {
+      await updateBookingStatus(id, 'accepted');
+      try {
+        useBookingStore.getState().updateBookingStatus(id, 'accepted');
+      } catch (err) {}
+      const found = jobRequests.find((r) => r.id === id);
+      if (found) {
+        setJobRequests((prev) => prev.filter((r) => r.id !== id));
+        setActiveJobs((prev) => [
+          {
+            id: found.id,
+            name: found.name,
+            service: found.service,
+            date: found.date,
+            price: found.price,
+            address: found.address || 'Address provided via cooperative dispatch',
+            status: 'accepted',
+            otp: found.otp,
+          },
+          ...prev.filter((j) => j.id !== id),
+        ]);
+      } else {
+        setActiveJobs((prev) =>
+          prev.map((j) => (j.id === id ? { ...j, status: 'accepted' } : j))
+        );
+      }
+      showToast('✅ Job Accepted successfully! Confirmed appointment.');
+    } catch (err: any) {
+      console.error('Accept job error:', err);
+      showToast(`❌ Could not accept job: ${err?.message || 'Server error'}`);
+    } finally {
+      setIsAcceptingId(null);
+    }
+  };
+
+  const handleStartJob = async (id: string) => {
+    try {
+      await updateBookingStatus(id, 'in_progress');
+      try {
+        useBookingStore.getState().updateBookingStatus(id, 'in_progress');
+      } catch (err) {}
+      setActiveJobs((prev) =>
+        prev.map((j) => (j.id === id ? { ...j, status: 'in_progress' } : j))
+      );
+      showToast('🚗 You are now marked On the Way / Started!');
+    } catch (err: any) {
+      console.error('Start job error:', err);
+      showToast(`❌ Could not update status: ${err?.message || 'Server error'}`);
+    }
+  };
+
+  const handleRejectRequest = async (id: string) => {
+    setIsRejectingId(id);
+    // 1. Immediately remove from local state
     setJobRequests((prev) => prev.filter((r) => r.id !== id));
-    showToast('Job Request rejected.');
+    setActiveJobs((prev) => prev.filter((j) => j.id !== id));
+
+    // 2. Persist in localStorage so polling or refresh never restores it
+    try {
+      const stored: string[] = JSON.parse(localStorage.getItem('shramnexus-rejected-requests') || '[]');
+      if (!stored.includes(id)) {
+        stored.push(id);
+        localStorage.setItem('shramnexus-rejected-requests', JSON.stringify(stored));
+      }
+    } catch (e) {}
+
+    // 3. Update Zustand bookingStore
+    try {
+      useBookingStore.getState().updateBookingStatus(id, 'cancelled');
+    } catch (err) {}
+
+    // 4. Update Supabase backend
+    try {
+      await rejectJobRequest(id);
+      showToast('❌ Job Request rejected.');
+    } catch (err: any) {
+      console.error('Error rejecting job request:', err);
+      showToast('Job Request rejected.');
+    } finally {
+      setIsRejectingId(null);
+    }
   };
 
   const handleInitiateCompleteJob = (job: ActiveJob) => {
@@ -504,31 +733,32 @@ export function WorkerDashboardClient() {
     const workerEarning = Math.round(numPrice * 0.85);
 
     try {
-      if (!completingJob.id.startsWith('JOB-REQ') && !completingJob.id.startsWith('JOB0')) {
-        await updateBookingStatus(completingJob.id, 'completed');
-      }
-    } catch (err) {}
+      await updateBookingStatus(completingJob.id, 'completed');
+      try {
+        useBookingStore.getState().updateBookingStatus(completingJob.id, 'completed');
+      } catch (err) {}
 
-    try {
-      useBookingStore.getState().updateBookingStatus(completingJob.id, 'completed');
-    } catch (err) {}
+      setActiveJobs((prev) => prev.filter((j) => j.id !== completingJob.id));
+      setCompletedJobs((prev) => [
+        {
+          id: completingJob.id,
+          name: completingJob.name,
+          service: completingJob.service,
+          date: 'Just now',
+          price: completingJob.price,
+        },
+        ...prev,
+      ]);
 
-    setActiveJobs((prev) => prev.filter((j) => j.id !== completingJob.id));
-    setCompletedJobs((prev) => [
-      {
-        id: completingJob.id,
-        name: completingJob.name,
-        service: completingJob.service,
-        date: 'Today',
-        price: completingJob.price,
-      },
-      ...prev,
-    ]);
-
-    setIsSubmittingCompletion(false);
-    setCompletingJob(null);
-    setJobsTab('completed');
-    showToast(`🎉 Verified! Job completed. ₹${workerEarning} credited to your Cooperative Passbook.`);
+      setCompletingJob(null);
+      setJobsTab('completed');
+      showToast(`🎉 Verified! Job completed. ₹${workerEarning} credited to your Cooperative Passbook.`);
+    } catch (err: any) {
+      console.error('Error completing job:', err);
+      showToast(`❌ Could not complete job: ${err?.message || 'Database error'}`);
+    } finally {
+      setIsSubmittingCompletion(false);
+    }
   };
 
   const handleOpenChat = (customerName: string) => {
@@ -574,6 +804,27 @@ export function WorkerDashboardClient() {
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS['en'];
 
+  const paidCompletedJobs = completedJobs.filter((j) => j.paymentStatus === 'paid');
+  const totalEarningsPaid = paidCompletedJobs.reduce(
+    (acc, j) => acc + (j.workerPayout || Math.round((j.amount || 0) * 0.85)),
+    0
+  );
+  const pendingEarnings = completedJobs
+    .filter((j) => j.paymentStatus !== 'paid')
+    .reduce((acc, j) => acc + (j.workerPayout || Math.round((j.amount || 0) * 0.85)), 0);
+  const totalGrossPaid = paidCompletedJobs.reduce((acc, j) => acc + (j.amount || 0), 0);
+  const welfareFund = Math.round(totalGrossPaid * 0.05);
+
+  const averageRating = workerReviews.length > 0
+    ? (workerReviews.reduce((acc, r) => acc + r.score, 0) / workerReviews.length).toFixed(1)
+    : '4.8';
+  const filteredNotifications = notifications.filter((n) => {
+    if (notifFilter === 'unread') return !n.is_read;
+    if (notifFilter === 'payment') return n.type === 'payment';
+    if (notifFilter === 'rating') return n.type === 'rating';
+    return true;
+  });
+
   return (
     <div className="worker-dashboard-container">
       {/* Sidebar */}
@@ -615,10 +866,11 @@ export function WorkerDashboardClient() {
           </button>
           <button
             type="button"
-            onClick={() => { setActiveView('view-reviews'); setSidebarOpen(false); }}
+            onClick={handleOpenReviews}
             className={`nav-item ${activeView === 'view-reviews' ? 'active' : ''}`}
           >
             <span>{t.nav_rev}</span>
+            {unreadReviewsCount > 0 && <span className="badge" style={{ background: '#f59e0b', color: '#fff' }}>{unreadReviewsCount}</span>}
           </button>
           <button
             type="button"
@@ -626,7 +878,7 @@ export function WorkerDashboardClient() {
             className={`nav-item ${activeView === 'view-notifications' ? 'active' : ''}`}
           >
             <span>{t.nav_notif}</span>
-            <span className="badge badge-red">1</span>
+            {unreadNotifsCount > 0 && <span className="badge" style={{ background: '#3b82f6', color: '#fff' }}>{unreadNotifsCount}</span>}
           </button>
           <button
             type="button"
@@ -667,6 +919,21 @@ export function WorkerDashboardClient() {
           </button>
 
           <div className="worker-topbar-right">
+            {/* Authenticated Worker Profile Badge */}
+            <div className="worker-profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div className="worker-profile-avatar" style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#b85435', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', flexShrink: 0 }}>
+                {workerName ? workerName.charAt(0).toUpperCase() : 'W'}
+              </div>
+              <div className="worker-profile-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                <span className="worker-profile-name" style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>
+                  {workerName}
+                </span>
+                <span className="worker-profile-skill" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                  {workerSkill.split('&')[0].trim()}
+                </span>
+              </div>
+            </div>
+
             {/* Language Selector */}
             <select
               value={lang}
@@ -684,10 +951,10 @@ export function WorkerDashboardClient() {
 
             {/* Availability switch */}
             <div className="worker-availability-toggle">
-              <span className={isAvailable ? 'worker-status-active' : 'worker-status-inactive'}>
+              <span className={`worker-avail-text ${isAvailable ? 'worker-status-active' : 'worker-status-inactive'}`}>
                 {isAvailable ? t.avail_online : t.avail_offline}
               </span>
-              <label className="worker-switch">
+              <label className="worker-switch" title={isAvailable ? 'Available for Work' : 'Offline'}>
                 <input
                   type="checkbox"
                   checked={isAvailable}
@@ -696,6 +963,51 @@ export function WorkerDashboardClient() {
                 <span className="worker-slider" />
               </label>
             </div>
+
+            {/* Notification Bell Button */}
+            <button
+              type="button"
+              onClick={() => setActiveView('view-notifications')}
+              style={{
+                position: 'relative',
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                transition: 'all 0.15s ease',
+              }}
+              title="View Notifications"
+              aria-label="View notifications"
+            >
+              🔔
+              {unreadNotifsCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-5px',
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    borderRadius: '9999px',
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    padding: '1px 5px',
+                    minWidth: '16px',
+                    textAlign: 'center',
+                    lineHeight: '1.2',
+                    boxShadow: '0 2px 4px rgba(239, 68, 68, 0.4)',
+                  }}
+                >
+                  {unreadNotifsCount}
+                </span>
+              )}
+            </button>
 
             <div className="worker-topbar-user">
               <div className="worker-user-avatar">
@@ -713,7 +1025,7 @@ export function WorkerDashboardClient() {
                 <h1>Welcome back, {workerName.split(' ')[0]}!</h1>
                 <p className="text-muted">Here is your live cooperative dispatch and earnings status for today.</p>
                 <span className="text-xs font-bold text-gray-500 mt-1 inline-block">
-                  🏛️ Member of: <strong>Patna District Labour Cooperative Society</strong> (Reg #PDLS-BR-01)
+                  🏛️ Member of: <strong>{workerSociety}</strong>
                 </span>
               </div>
               <div className="worker-verification-badge verified">
@@ -724,17 +1036,17 @@ export function WorkerDashboardClient() {
             <div className="worker-stats-grid">
               <div className="worker-stat-card">
                 <h3>Customer Rating</h3>
-                <div className="worker-stat-val">★ 4.8</div>
+                <div className="worker-stat-val">★ {averageRating}</div>
               </div>
               <div className="worker-stat-card">
                 <h3>Completed Jobs</h3>
                 <div className="worker-stat-val">
-                  {126 + completedJobs.length}
+                  {completedJobs.length}
                 </div>
               </div>
               <div className="worker-stat-card">
-                <h3>Today&apos;s Earnings (85%)</h3>
-                <div className="worker-stat-val text-green">₹ 1,450</div>
+                <h3>Earnings Received (85%)</h3>
+                <div className="worker-stat-val text-green">₹ {totalEarningsPaid.toLocaleString()}</div>
               </div>
             </div>
 
@@ -742,7 +1054,9 @@ export function WorkerDashboardClient() {
               Recent Incoming Requests
             </h2>
             <div className="worker-requests-grid mt-2">
-              {jobRequests.length === 0 ? (
+              {isLoadingJobs && jobRequests.length === 0 ? (
+                <p className="text-muted">Connecting to cooperative dispatch network...</p>
+              ) : jobRequests.length === 0 ? (
                 <p className="text-muted">No pending job requests right now. You are ready to accept new work.</p>
               ) : (
                 jobRequests.map((req, idx) => (
@@ -760,22 +1074,117 @@ export function WorkerDashboardClient() {
                       <button
                         type="button"
                         className="worker-btn worker-btn-outline"
+                        disabled={isRejectingId === req.id || isAcceptingId === req.id}
                         onClick={() => handleRejectRequest(req.id)}
                       >
-                        Reject
+                        {isRejectingId === req.id ? 'Rejecting...' : 'Reject'}
                       </button>
                       <button
                         type="button"
                         className="worker-btn worker-btn-gold"
+                        disabled={isAcceptingId === req.id}
                         onClick={() => handleAcceptRequest(req.id)}
                       >
-                        Accept Job
+                        {isAcceptingId === req.id ? 'Accepting...' : 'Accept Job'}
                       </button>
                     </div>
                   </div>
                 ))
               )}
             </div>
+
+            {activeJobs.length > 0 && (
+              <>
+                <h2 className="worker-page-title mt-6" style={{ fontSize: '1.4rem' }}>
+                  Current Active Jobs ({activeJobs.length})
+                </h2>
+                <div className="worker-requests-grid mt-2">
+                  {activeJobs.map((job, idx) => (
+                    <div key={`dash-${job.id}-${idx}`} className="worker-req-card">
+                      <div className="worker-req-head">
+                        <div>
+                          <h3>{job.service}</h3>
+                          <span>{job.name}</span>
+                        </div>
+                        <span
+                          className="badge"
+                          style={{
+                            background:
+                              job.status === 'in_progress'
+                                ? '#fef3c7'
+                                : job.status === 'accepted'
+                                ? '#e0f2fe'
+                                : 'var(--mint)',
+                            color:
+                              job.status === 'in_progress'
+                                ? '#b45309'
+                                : job.status === 'accepted'
+                                ? '#0369a1'
+                                : 'var(--green)',
+                          }}
+                        >
+                          {job.status === 'in_progress'
+                            ? '🚗 On the Way / Started'
+                            : job.status === 'accepted'
+                            ? '✓ Accepted'
+                            : '📋 Assigned'}
+                        </span>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+                        📍 {job.address}<br />📅 {job.date}
+                      </p>
+                      <div className="worker-req-price">{job.price}</div>
+                      <div className="worker-req-actions">
+                        <button
+                          type="button"
+                          className="worker-btn worker-btn-outline"
+                          onClick={() => handleOpenChat(job.name)}
+                        >
+                          Message
+                        </button>
+                        {job.status === 'assigned' && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-gold"
+                            onClick={() => handleAcceptRequest(job.id)}
+                          >
+                            Accept Job
+                          </button>
+                        )}
+                        {job.status === 'accepted' && (
+                          <button
+                            type="button"
+                            className="worker-btn"
+                            style={{ background: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }}
+                            onClick={() => handleStartJob(job.id)}
+                          >
+                            On the Way / Start
+                          </button>
+                        )}
+                        {job.status === 'in_progress' && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-dark"
+                            onClick={() => handleInitiateCompleteJob(job)}
+                          >
+                            Complete (Enter PIN)
+                          </button>
+                        )}
+                        {(!job.status || (job.status !== 'assigned' && job.status !== 'accepted' && job.status !== 'in_progress')) && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-dark"
+                            onClick={() => handleInitiateCompleteJob(job)}
+                          >
+                            Complete Job
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -785,7 +1194,9 @@ export function WorkerDashboardClient() {
             <h1 className="worker-page-title">Incoming Job Requests</h1>
             <p className="worker-page-subtitle">Review, accept, and schedule requests from your district cooperative cluster.</p>
             <div className="worker-requests-grid mt-4">
-              {jobRequests.length === 0 ? (
+              {isLoadingJobs && jobRequests.length === 0 ? (
+                <p className="text-muted">Loading incoming job requests from cooperative dispatch...</p>
+              ) : jobRequests.length === 0 ? (
                 <p className="text-muted">No new requests at the moment.</p>
               ) : (
                 jobRequests.map((req, idx) => (
@@ -803,16 +1214,18 @@ export function WorkerDashboardClient() {
                       <button
                         type="button"
                         className="worker-btn worker-btn-outline"
+                        disabled={isRejectingId === req.id || isAcceptingId === req.id}
                         onClick={() => handleRejectRequest(req.id)}
                       >
-                        Reject
+                        {isRejectingId === req.id ? 'Rejecting...' : 'Reject'}
                       </button>
                       <button
                         type="button"
                         className="worker-btn worker-btn-gold"
+                        disabled={isAcceptingId === req.id}
                         onClick={() => handleAcceptRequest(req.id)}
                       >
-                        Accept Job
+                        {isAcceptingId === req.id ? 'Accepting...' : 'Accept Job'}
                       </button>
                     </div>
                   </div>
@@ -839,7 +1252,7 @@ export function WorkerDashboardClient() {
                 className={`worker-tab-btn ${jobsTab === 'pending' ? 'active' : ''}`}
                 onClick={() => setJobsTab('pending')}
               >
-                Pending (0)
+                Pending ({jobRequests.length})
               </button>
               <button
                 type="button"
@@ -862,8 +1275,28 @@ export function WorkerDashboardClient() {
                           <h3>{job.service}</h3>
                           <span>{job.name}</span>
                         </div>
-                        <span className="badge" style={{ background: 'var(--mint)', color: 'var(--green)' }}>
-                          Active
+                        <span
+                          className="badge"
+                          style={{
+                            background:
+                              job.status === 'in_progress'
+                                ? '#fef3c7'
+                                : job.status === 'accepted'
+                                ? '#e0f2fe'
+                                : 'var(--mint)',
+                            color:
+                              job.status === 'in_progress'
+                                ? '#b45309'
+                                : job.status === 'accepted'
+                                ? '#0369a1'
+                                : 'var(--green)',
+                          }}
+                        >
+                          {job.status === 'in_progress'
+                            ? '🚗 On the Way / Started'
+                            : job.status === 'accepted'
+                            ? '✓ Accepted'
+                            : '📋 Assigned'}
                         </span>
                       </div>
                       <p className="text-muted" style={{ fontSize: '0.85rem' }}>
@@ -878,13 +1311,43 @@ export function WorkerDashboardClient() {
                         >
                           Message
                         </button>
-                        <button
-                          type="button"
-                          className="worker-btn worker-btn-dark"
-                          onClick={() => handleInitiateCompleteJob(job)}
-                        >
-                          Complete Job
-                        </button>
+                        {job.status === 'assigned' && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-gold"
+                            onClick={() => handleAcceptRequest(job.id)}
+                          >
+                            Accept Job
+                          </button>
+                        )}
+                        {job.status === 'accepted' && (
+                          <button
+                            type="button"
+                            className="worker-btn"
+                            style={{ background: '#2563eb', color: '#ffffff', borderColor: '#2563eb' }}
+                            onClick={() => handleStartJob(job.id)}
+                          >
+                            On the Way / Start
+                          </button>
+                        )}
+                        {job.status === 'in_progress' && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-dark"
+                            onClick={() => handleInitiateCompleteJob(job)}
+                          >
+                            Complete (Enter PIN)
+                          </button>
+                        )}
+                        {(!job.status || (job.status !== 'assigned' && job.status !== 'accepted' && job.status !== 'in_progress')) && (
+                          <button
+                            type="button"
+                            className="worker-btn worker-btn-dark"
+                            onClick={() => handleInitiateCompleteJob(job)}
+                          >
+                            Complete Job
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -893,7 +1356,43 @@ export function WorkerDashboardClient() {
             )}
 
             {jobsTab === 'pending' && (
-              <p className="text-muted">No pending jobs awaiting confirmation.</p>
+              <div className="worker-requests-grid">
+                {jobRequests.length === 0 ? (
+                  <p className="text-muted">No pending jobs awaiting confirmation.</p>
+                ) : (
+                  jobRequests.map((req, idx) => (
+                    <div key={`pending-tab-${req.id}-${idx}`} className="worker-req-card">
+                      <div className="worker-req-head">
+                        <div>
+                          <h3>{req.service}</h3>
+                          <span>{req.name} • ⌖ {req.dist}</span>
+                        </div>
+                        <span className="badge">{req.date}</span>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>{req.desc}</p>
+                      <div className="worker-req-price">{req.price}</div>
+                      <div className="worker-req-actions">
+                        <button
+                          type="button"
+                          className="worker-btn worker-btn-outline"
+                          disabled={isRejectingId === req.id || isAcceptingId === req.id}
+                          onClick={() => handleRejectRequest(req.id)}
+                        >
+                          {isRejectingId === req.id ? 'Rejecting...' : 'Reject'}
+                        </button>
+                        <button
+                          type="button"
+                          className="worker-btn worker-btn-gold"
+                          disabled={isAcceptingId === req.id}
+                          onClick={() => handleAcceptRequest(req.id)}
+                        >
+                          {isAcceptingId === req.id ? 'Accepting...' : 'Accept Job'}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             )}
 
             {jobsTab === 'completed' && (
@@ -922,16 +1421,20 @@ export function WorkerDashboardClient() {
             <p className="worker-page-subtitle">Guaranteed 85% fair wage payout + 5% collective welfare fund.</p>
             <div className="worker-stats-grid mt-4">
               <div className="worker-stat-card">
-                <h3>This Week (85%)</h3>
-                <div className="worker-stat-val">₹ 4,200</div>
+                <h3>Total Paid Out (85%)</h3>
+                <div className="worker-stat-val">₹ {totalEarningsPaid.toLocaleString()}</div>
+                <small className="text-muted">{paidCompletedJobs.length} settled job{paidCompletedJobs.length === 1 ? '' : 's'}</small>
               </div>
               <div className="worker-stat-card">
-                <h3>This Month (85%)</h3>
-                <div className="worker-stat-val">₹ 18,450</div>
+                <h3>Pending Settlement</h3>
+                <div className="worker-stat-val" style={{ color: '#d97706' }}>
+                  ₹ {pendingEarnings.toLocaleString()}
+                </div>
+                <small className="text-muted">Awaiting customer payment</small>
               </div>
               <div className="worker-stat-card">
                 <h3>Welfare Pool (5%)</h3>
-                <div className="worker-stat-val text-green">₹ 1,085</div>
+                <div className="worker-stat-val text-green">₹ {welfareFund.toLocaleString()}</div>
                 <small className="text-muted">Cooperative health & tool fund</small>
               </div>
             </div>
@@ -940,40 +1443,46 @@ export function WorkerDashboardClient() {
               Recent Transactions
             </h2>
             <div className="worker-table-container mt-2">
-              <table className="worker-data-table">
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Service</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Priya Sharma</td>
-                    <td>Plumbing Repair</td>
-                    <td>Today</td>
-                    <td>₹ 450</td>
-                    <td><span className="worker-status-badge success">Paid</span></td>
-                  </tr>
-                  <tr>
-                    <td>Rahul Verma</td>
-                    <td>Pipe Fitting</td>
-                    <td>Yesterday</td>
-                    <td>₹ 1,000</td>
-                    <td><span className="worker-status-badge success">Paid</span></td>
-                  </tr>
-                  <tr>
-                    <td>Amit Singh</td>
-                    <td>Water Leak Inspection</td>
-                    <td>Aug 22</td>
-                    <td>₹ 850</td>
-                    <td><span className="worker-status-badge warning">Pending</span></td>
-                  </tr>
-                </tbody>
-              </table>
+              {completedJobs.length === 0 ? (
+                <div style={{ padding: '2.5rem', textAlign: 'center', background: '#fff', borderRadius: '12px' }}>
+                  <p className="text-muted">No service transactions recorded yet. Completed jobs and payments will appear here.</p>
+                </div>
+              ) : (
+                <table className="worker-data-table">
+                  <thead>
+                    <tr>
+                      <th>Customer</th>
+                      <th>Service</th>
+                      <th>Date</th>
+                      <th>Total Bill</th>
+                      <th>Net Payout (85%)</th>
+                      <th>Payment Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completedJobs.map((txn) => {
+                      const netPayout = txn.workerPayout || Math.round((txn.amount || 0) * 0.85);
+                      const isPaid = txn.paymentStatus === 'paid';
+                      return (
+                        <tr key={txn.id}>
+                          <td><strong>{txn.name}</strong></td>
+                          <td>{txn.service}</td>
+                          <td>{txn.date}</td>
+                          <td>{txn.price}</td>
+                          <td style={{ color: 'var(--green, #10b981)', fontWeight: 700 }}>
+                            ₹ {netPayout.toLocaleString()}
+                          </td>
+                          <td>
+                            <span className={`worker-status-badge ${isPaid ? 'success' : 'warning'}`}>
+                              {isPaid ? `✓ Paid (${txn.paymentMethod || 'Settled'})` : '⏳ Awaiting Payment'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -1065,30 +1574,73 @@ export function WorkerDashboardClient() {
         {/* ================= 6. VIEW: REVIEWS ================= */}
         {activeView === 'view-reviews' && (
           <div className="worker-dashboard-view active">
-            <h1 className="worker-page-title">Customer Reviews</h1>
-            <div className="worker-card mt-4 text-center py-6">
-              <h2 style={{ fontSize: '2.5rem', color: 'var(--gold)' }}>⭐ 4.8 / 5</h2>
-              <p className="text-muted">Based on 126 completed cooperative services</p>
+            <div className="notif-header-container">
+              <div>
+                <h1 className="worker-page-title" style={{ marginBottom: '0.2rem' }}>Customer Reviews & Ratings</h1>
+                <p className="worker-page-subtitle">Verified customer feedback and ratings submitted after completed jobs.</p>
+              </div>
+              {unreadReviewsCount > 0 && (
+                <button
+                  type="button"
+                  className="notif-mark-all-btn"
+                  onClick={handleMarkAllReviewsRead}
+                  disabled={isMarkingReviews}
+                >
+                  <span>✓</span> Mark all reviews as read
+                </button>
+              )}
             </div>
 
-            <div className="mt-4">
-              <div className="worker-review-card">
-                <div className="worker-review-head">
-                  <strong>Priya Sharma</strong>
-                  <span style={{ color: 'var(--gold)' }}>★★★★★</span>
-                </div>
-                <small className="text-muted">Plumbing Repair • 2 days ago</small>
-                <p className="mt-2 text-sm text-gray-700">Excellent work, very professional and arrived on time with complete tool kit.</p>
-              </div>
+            <div className="worker-card mt-4 text-center py-6">
+              <h2 style={{ fontSize: '2.5rem', color: 'var(--gold, #e6aa3b)' }}>★ {averageRating} / 5</h2>
+              <p className="text-muted">
+                Based on {workerReviews.length} verified review{workerReviews.length === 1 ? '' : 's'}
+              </p>
+            </div>
 
-              <div className="worker-review-card">
-                <div className="worker-review-head">
-                  <strong>Rahul Verma</strong>
-                  <span style={{ color: 'var(--gold)' }}>★★★★☆</span>
+            <div className="mt-4 space-y-3">
+              {workerReviews.length === 0 ? (
+                <div style={{ padding: '2.5rem', textAlign: 'center', background: '#fff', borderRadius: '12px' }}>
+                  <p className="text-muted">No customer reviews yet. Ratings and testimonials left after completed jobs will appear here.</p>
                 </div>
-                <small className="text-muted">Pipe Fitting • 1 week ago</small>
-                <p className="mt-2 text-sm text-gray-700">Good job fixing the pipes. Cleaned up thoroughly afterwards.</p>
-              </div>
+              ) : (
+                workerReviews.map((rev) => {
+                  const matchingNotif = notifications.find(
+                    (n) => n.type === 'rating' && (n.data?.source_id === rev.id || n.id === rev.id)
+                  );
+                  const isUnread = matchingNotif ? !matchingNotif.is_read : false;
+
+                  return (
+                    <div
+                      key={rev.id}
+                      className={`worker-review-card ${isUnread ? 'unread' : ''}`}
+                    >
+                      <div className="worker-review-head">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <strong>{rev.customerName}</strong>
+                          {isUnread && <span className="worker-notif-badge-new">New</span>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ color: 'var(--gold, #e6aa3b)', fontSize: '1.1rem' }}>
+                            {'★'.repeat(rev.score)}{'☆'.repeat(Math.max(0, 5 - rev.score))}
+                          </span>
+                          {isUnread && (
+                            <button
+                              type="button"
+                              className="worker-notif-read-btn"
+                              onClick={() => handleMarkSingleReviewRead(rev.id)}
+                            >
+                              ✓ Mark read
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <small className="text-muted">{rev.service} • {rev.date}</small>
+                      <p className="mt-2 text-sm text-gray-700">&ldquo;{rev.review}&rdquo;</p>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
@@ -1096,25 +1648,124 @@ export function WorkerDashboardClient() {
         {/* ================= 7. VIEW: NOTIFICATIONS ================= */}
         {activeView === 'view-notifications' && (
           <div className="worker-dashboard-view active">
-            <h1 className="worker-page-title">Notifications</h1>
-            <div className="mt-4">
-              <div className="worker-notification-card unread">
-                <div className="worker-notif-icon">💰</div>
-                <div>
-                  <strong>Payment Received</strong>
-                  <p className="text-sm text-gray-600">You received ₹450 from Priya Sharma for #SNX-992.</p>
-                  <small className="text-muted">2 hours ago</small>
-                </div>
+            <div className="notif-header-container">
+              <div className="notif-header-left">
+                <h1 className="worker-page-title" style={{ margin: 0 }}>Notifications</h1>
+                {unreadNotifsCount > 0 && (
+                  <span className="notif-unread-pill">{unreadNotifsCount} Unread</span>
+                )}
               </div>
+              <button
+                type="button"
+                className="notif-mark-all-btn"
+                onClick={handleMarkAllNotificationsRead}
+                disabled={unreadNotifsCount === 0 || isMarkingNotifs}
+              >
+                <span>✓✓</span> Mark all as read
+              </button>
+            </div>
 
-              <div className="worker-notification-card">
-                <div className="worker-notif-icon">⭐</div>
-                <div>
-                  <strong>New 5-Star Review</strong>
-                  <p className="text-sm text-gray-600">Rahul Verma left a 4-star review for Pipe Fitting.</p>
-                  <small className="text-muted">1 day ago</small>
+            {/* Filter Tabs */}
+            <div className="notif-filter-tabs">
+              <button
+                type="button"
+                className={`notif-tab-btn ${notifFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setNotifFilter('all')}
+              >
+                All <span className="notif-tab-count">{notifications.length}</span>
+              </button>
+              <button
+                type="button"
+                className={`notif-tab-btn ${notifFilter === 'unread' ? 'active' : ''}`}
+                onClick={() => setNotifFilter('unread')}
+              >
+                Unread <span className="notif-tab-count">{unreadNotifsCount}</span>
+              </button>
+              <button
+                type="button"
+                className={`notif-tab-btn ${notifFilter === 'payment' ? 'active' : ''}`}
+                onClick={() => setNotifFilter('payment')}
+              >
+                💰 Payments <span className="notif-tab-count">{notifications.filter((n) => n.type === 'payment').length}</span>
+              </button>
+              <button
+                type="button"
+                className={`notif-tab-btn ${notifFilter === 'rating' ? 'active' : ''}`}
+                onClick={() => setNotifFilter('rating')}
+              >
+                ⭐ Ratings <span className="notif-tab-count">{notifications.filter((n) => n.type === 'rating').length}</span>
+              </button>
+            </div>
+
+            <div className="mt-3">
+              {filteredNotifications.length === 0 ? (
+                <div className="worker-notif-empty">
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+                    {notifFilter === 'unread' ? '🎉' : '🔔'}
+                  </div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
+                    {notifFilter === 'unread' ? "You're all caught up!" : 'No notifications found'}
+                  </h3>
+                  <p className="text-muted text-sm mt-1" style={{ maxWidth: '400px', margin: '0.5rem auto 0' }}>
+                    {notifFilter === 'unread'
+                      ? 'All payment receipts, ratings, and service updates have been marked as read.'
+                      : 'New customer ratings, booking dispatches, and cooperative settlement receipts will appear here.'}
+                  </p>
                 </div>
-              </div>
+              ) : (
+                filteredNotifications.map((notif) => {
+                  const isPayment = notif.type === 'payment';
+                  const isRating = notif.type === 'rating';
+                  const iconEmoji = isPayment ? '💰' : isRating ? '⭐' : '🔔';
+                  const iconClass = isPayment ? 'payment' : isRating ? 'rating' : 'request';
+                  const formattedDate = notif.created_at
+                    ? new Date(notif.created_at).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : 'Recent';
+
+                  return (
+                    <div
+                      key={notif.id}
+                      className={`worker-notification-card ${!notif.is_read ? 'unread' : ''} ${isPayment ? 'payment-type' : ''}`}
+                    >
+                      <div className="worker-notif-main">
+                        <div className={`worker-notif-icon-wrap ${iconClass}`}>
+                          {iconEmoji}
+                        </div>
+                        <div className="worker-notif-content">
+                          <div className="worker-notif-title-row">
+                            <span className="worker-notif-title">{notif.title}</span>
+                            {!notif.is_read && (
+                              <span className="worker-notif-badge-new">New</span>
+                            )}
+                          </div>
+                          <p className="worker-notif-desc">{notif.body}</p>
+                          <span className="worker-notif-meta">📅 {formattedDate}</span>
+                        </div>
+                      </div>
+                      <div className="worker-notif-actions">
+                        {!notif.is_read ? (
+                          <button
+                            type="button"
+                            className="worker-notif-read-btn"
+                            onClick={() => handleMarkSingleNotificationRead(notif.id)}
+                            title="Mark as read"
+                          >
+                            <span>✓</span> Mark read
+                          </button>
+                        ) : (
+                          <span className="worker-notif-read-btn is-read">
+                            ✓ Read
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}

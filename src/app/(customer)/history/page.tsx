@@ -21,6 +21,7 @@ import { submitRating, getCustomerBookings } from '@/app/actions/bookings';
 import { updateBookingStatus as updateBookingStatusAction } from '@/app/actions/worker-jobs';
 import { RazorpayPaymentButton } from '@/components/customer/RazorpayPaymentButton';
 import { CooperativeReceiptModal } from '@/components/customer/CooperativeReceiptModal';
+import { CancelBookingModal } from '@/components/customer/CancelBookingModal';
 import {
   CalendarClock,
   ArrowRight,
@@ -51,8 +52,28 @@ export default function HistoryPage() {
   useEffect(() => {
     async function checkAuth() {
       const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
+      let hasValidCustomerAuth = false;
+      if (localAuth) {
+        try {
+          const parsed = JSON.parse(localAuth);
+          if (parsed.role === 'admin' || parsed.name === 'Super Admin' || parsed.email === 'admin@shramnexus.com') {
+            localStorage.removeItem('shramnexus-auth');
+            localStorage.removeItem('sharmnexus-auth');
+          } else if (parsed.isLoggedIn) {
+            hasValidCustomerAuth = true;
+          }
+        } catch (e) {}
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user || localAuth) {
+      const isAdm = session?.user && (
+        session.user.user_metadata?.user_type === 'admin' ||
+        session.user.user_metadata?.role === 'admin' ||
+        session.user.user_metadata?.full_name === 'Super Admin' ||
+        session.user.email === 'admin@shramnexus.com'
+      );
+
+      if ((session?.user && !isAdm) || hasValidCustomerAuth) {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
@@ -63,15 +84,19 @@ export default function HistoryPage() {
 
   useEffect(() => {
     setMounted(true);
+    let isMounted = true;
+
     async function loadDbBookings() {
       try {
         const { data } = await getCustomerBookings();
-        if (data && data.length > 0) {
+        if (data && data.length > 0 && isMounted) {
           const mapped: (Booking & { payment_id?: string; payment_record?: any })[] = data.map((b: any) => {
             const hasCompletedPayment =
               (b.payments && b.payments.some((p: any) => p.status === 'completed')) ||
               b.payment_status === 'completed';
             const latestPayment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
+
+            const userRating = (b.ratings && b.ratings.length > 0) ? b.ratings[0] : null;
 
             return {
               id: b.id,
@@ -113,6 +138,8 @@ export default function HistoryPage() {
               estimated_price: b.estimated_price || 350,
               final_price: b.final_price || b.estimated_price || 350,
               otp: getBookingOtp(b.id),
+              rating: userRating?.score,
+              review: userRating?.review,
               payment_status: hasCompletedPayment ? 'completed' : 'pending',
               payment_method: hasCompletedPayment
                 ? (latestPayment?.method ? `Online (${latestPayment.method.toUpperCase()})` : 'Online Razorpay / UPI')
@@ -122,14 +149,39 @@ export default function HistoryPage() {
               created_at: b.created_at,
             };
           });
+
           setDbBookings(mapped);
+
+          // Synchronize each booking status to store
+          mapped.forEach((b) => {
+            updateBookingStatus(b.id, b.status as any);
+          });
         }
       } catch (err) {
         console.warn('Could not fetch Supabase bookings:', err);
       }
     }
+
     loadDbBookings();
-  }, []);
+    const interval = setInterval(loadDbBookings, 3000);
+
+    const channel = supabase
+      .channel('customer-history-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => {
+          loadDbBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, updateBookingStatus, bookings]);
 
   function formatSchedule(str: string) {
     if (!str) return 'Scheduled Soon';
@@ -151,6 +203,10 @@ export default function HistoryPage() {
   const [ratingBooking, setRatingBooking] = useState<Booking | null>(null);
   const [userStars, setUserStars] = useState(5);
   const [userReviewText, setUserReviewText] = useState('');
+
+  // Cancel Disclaimer Modal state
+  const [cancellingBooking, setCancellingBooking] = useState<Booking | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Combine DB bookings with local store bookings (avoid duplicate IDs)
   const allBookings = [
@@ -175,16 +231,25 @@ export default function HistoryPage() {
   const handleRateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (ratingBooking) {
-      rateBooking(ratingBooking.id, userStars, userReviewText);
+      const score = userStars;
+      const review = userReviewText;
+      rateBooking(ratingBooking.id, score, review);
+      setDbBookings((prev) =>
+        prev.map((item) =>
+          item.id === ratingBooking.id
+            ? { ...item, rating: score, review: review }
+            : item
+        )
+      );
       try {
         await submitRating({
           bookingId: ratingBooking.id,
           workerId: ratingBooking.worker_id,
-          score: userStars,
-          review: userReviewText,
+          score: score,
+          review: review,
         });
       } catch (err) {
-        // Fallback gracefully for local mock IDs
+        console.warn('submitRating error:', err);
       }
       toast.success('Thank you! Your verified rating was submitted to the cooperative.');
       setRatingBooking(null);
@@ -192,16 +257,28 @@ export default function HistoryPage() {
     }
   };
 
-  const handleCancelBooking = async (bookingId: string) => {
-    if (confirm('Are you sure you want to cancel this booking?')) {
-      updateBookingStatus(bookingId, 'cancelled');
-      try {
-        await updateBookingStatusAction(bookingId, 'cancelled');
-      } catch (err) {
-        // Fallback gracefully for local mock IDs
-      }
-      toast.info('Booking has been cancelled.');
+  const handleConfirmCancel = async () => {
+    if (!cancellingBooking) return;
+    setIsCancelling(true);
+    const bId = cancellingBooking.id;
+    updateBookingStatus(bId, 'cancelled');
+    setDbBookings((prev) =>
+      prev.map((item) =>
+        item.id === bId
+          ? { ...item, status: 'cancelled' }
+          : item
+      )
+    );
+    try {
+      await updateBookingStatusAction(bId, 'cancelled');
+    } catch (err) {
+      console.warn('Cancel action error:', err);
+    } finally {
+      setIsCancelling(false);
+      setCancellingBooking(null);
     }
+    toast.info('Booking has been cancelled.');
+    setActiveTab('cancelled');
   };
 
   if (!mounted) {
@@ -466,8 +543,8 @@ export default function HistoryPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleCancelBooking(booking.id)}
-                        className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-1 transition-colors"
+                        onClick={() => setCancellingBooking(booking)}
+                        className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-1 transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -580,13 +657,22 @@ export default function HistoryPage() {
                   )}
 
                   {booking.status === 'cancelled' && (
-                    <Link
-                      href={`/booking/${booking.service_category_id}`}
-                      className="bg-[#24172f] hover:bg-[#3d2b48] text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Rebook</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/track/${booking.id}`}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs h-9 px-3 rounded-xl flex items-center gap-1 transition-colors"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-gray-500" />
+                        <span>Timeline</span>
+                      </Link>
+                      <Link
+                        href="/services"
+                        className="bg-[#d96f4d] hover:bg-[#b85435] text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Book Another Worker</span>
+                      </Link>
+                    </div>
                   )}
                 </div>
               </div>
@@ -676,6 +762,17 @@ export default function HistoryPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Cancel Booking Disclaimer Modal */}
+      <CancelBookingModal
+        isOpen={Boolean(cancellingBooking)}
+        onClose={() => setCancellingBooking(null)}
+        onConfirm={handleConfirmCancel}
+        bookingId={cancellingBooking?.id}
+        serviceName={cancellingBooking?.service_name}
+        workerName={cancellingBooking?.worker?.full_name}
+        isCancelling={isCancelling}
+      />
 
       {/* Official Cooperative Receipt & Invoice Modal */}
       <CooperativeReceiptModal

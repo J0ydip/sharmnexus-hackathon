@@ -31,14 +31,23 @@ export default function WorkerJobsPage() {
     try {
       await updateBookingStatus(id, status);
       setJobs(jobs.map(j => j.id === id ? { ...j, status } : j));
-      toast.success(`Job ${status} successfully`);
+      if (status === 'cancelled') {
+        try {
+          const stored: string[] = JSON.parse(localStorage.getItem('shramnexus-rejected-requests') || '[]');
+          if (!stored.includes(id)) {
+            stored.push(id);
+            localStorage.setItem('shramnexus-rejected-requests', JSON.stringify(stored));
+          }
+        } catch (e) {}
+      }
+      toast.success(`Job ${status === 'cancelled' ? 'declined' : status} successfully`);
     } catch (err) {
       toast.error('Failed to update job status');
     }
   };
 
-  const pendingJobs = jobs.filter(j => j.status === 'requested' || j.status === 'pending');
-  const activeJobs = jobs.filter(j => j.status === 'confirmed' || j.status === 'in_progress');
+  const pendingJobs = jobs.filter(j => j.status === 'requested' || j.status === 'assigned' || j.status === 'pending');
+  const activeJobs = jobs.filter(j => j.status === 'accepted' || j.status === 'confirmed' || j.status === 'in_progress');
   const completedJobs = jobs.filter(j => j.status === 'completed');
 
   if (loading) return <div className="p-8 text-center text-gray-500 font-medium">Loading jobs...</div>;
@@ -67,7 +76,7 @@ export default function WorkerJobsPage() {
                   {job.address}
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleStatusChange(job.id, 'confirmed')} className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700">
+                  <button onClick={() => handleStatusChange(job.id, 'accepted')} className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700">
                     Accept
                   </button>
                   <button onClick={() => handleStatusChange(job.id, 'cancelled')} className="flex-1 bg-red-100 text-red-700 py-2 rounded-lg font-medium hover:bg-red-200">
@@ -101,9 +110,9 @@ export default function WorkerJobsPage() {
                   <span className="font-semibold block">Address:</span>
                   {job.address}
                 </div>
-                {job.status === 'confirmed' && (
+                {(job.status === 'accepted' || job.status === 'confirmed') && (
                   <button onClick={() => handleStatusChange(job.id, 'in_progress')} className="w-full bg-orange-500 text-white py-2 rounded-lg font-medium hover:bg-orange-600">
-                    Start Work
+                    On the Way / Start Work
                   </button>
                 )}
                 {job.status === 'in_progress' && (

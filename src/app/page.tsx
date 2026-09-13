@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Script from 'next/script';
+import { Languages, Compass, MousePointerClick, Mic, Shapes, ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
 import { HelpSupportSection } from '@/components/common/HelpSupportSection';
@@ -9,6 +10,7 @@ import './landing.css';
 
 export default function LandingPage() {
   const [lang, setLang] = useState('en');
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
   const supabase = createClient();
@@ -20,7 +22,12 @@ export default function LandingPage() {
         if (localAuth) {
           try {
             const parsed = JSON.parse(localAuth);
-            if (parsed.isLoggedIn) {
+            if (parsed.role === 'admin' || parsed.name === 'Super Admin' || parsed.email === 'admin@shramnexus.com') {
+              localStorage.removeItem('shramnexus-auth');
+              localStorage.removeItem('sharmnexus-auth');
+              setIsAuthenticated(false);
+              setUserType(null);
+            } else if (parsed.isLoggedIn) {
               setIsAuthenticated(true);
               const type = parsed.role || 'customer';
               setUserType(type);
@@ -34,10 +41,18 @@ export default function LandingPage() {
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          const type = session.user.user_metadata?.user_type || session.user.user_metadata?.role;
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+          const email = session.user.email;
+          if (type === 'admin' || fullName === 'Super Admin' || email === 'admin@shramnexus.com') {
+            setIsAuthenticated(false);
+            setUserType(null);
+            return;
+          }
           setIsAuthenticated(true);
-          const type = session.user.user_metadata?.user_type || 'customer';
-          setUserType(type);
-          if (type === 'worker') {
+          const customerOrWorker = type || 'customer';
+          setUserType(customerOrWorker);
+          if (customerOrWorker === 'worker') {
             window.location.href = '/worker-dashboard';
           }
         } else {
@@ -49,8 +64,40 @@ export default function LandingPage() {
     }
     checkAuth();
 
+    // Read saved language preference
+    const saved = (() => {
+      try { return localStorage.getItem('shramnexus-lang'); } catch { return null; }
+    })();
     const match = document.cookie.match(/googtrans=\/en\/([a-z]{2})/);
-    if (match) setLang(match[1]);
+    const initialLang = saved || (match ? match[1] : null) || 'en';
+    setLang(initialLang);
+
+    // If a non-English language was saved, trigger Google Translate once the widget loads
+    if (initialLang !== 'en') {
+      const applyTranslation = () => {
+        const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
+        if (gtCombo) {
+          gtCombo.value = initialLang;
+          gtCombo.dispatchEvent(new Event('change'));
+          // Hide the Google Translate toolbar
+          setTimeout(() => {
+            const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
+            if (bar) bar.style.display = 'none';
+            document.body.style.top = '0px';
+          }, 500);
+        }
+      };
+      // Try immediately, then retry after a short delay (widget may still be loading)
+      setTimeout(applyTranslation, 1000);
+      setTimeout(applyTranslation, 2500);
+    }
+
+    // Always hide the GT toolbar on mount if present
+    setTimeout(() => {
+      const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
+      if (bar) bar.style.display = 'none';
+      document.body.style.top = '0px';
+    }, 2000);
   }, []);
 
   // When logged in as a customer, render the rich Customer Dashboard & Service Discovery Experience
@@ -71,33 +118,76 @@ export default function LandingPage() {
     <>
 
     <div className="cursor-dot" aria-hidden="true"></div>
-    <nav className="navbar" aria-label="Main navigation">
-      <a className="brand" href="#home" aria-label="ShramNexus home">
+    <nav className={`navbar ${isNavOpen ? 'nav-open' : ''}`} aria-label="Main navigation">
+      <a className="brand" href="#home" aria-label="ShramNexus home" onClick={() => setIsNavOpen(false)}>
         <img src="/logo.png" alt="ShramNexus" className="nav-logo-img" />
         <span className="brand-text">Shram<span>Nexus</span></span>
       </a>
-      <div className="nav-links">
-        <a href="#how-it-works" data-i18n="nav_how">How it works</a>
-        <a href="#services" data-i18n="nav_services">Services</a>
-        <a href="#communities" data-i18n="nav_communities">For communities</a>
-        <a href="#cooperatives" data-i18n="nav_cooperatives">For cooperatives</a>
-        <a href="#support" data-i18n="nav_support">Help &amp; Support</a>
+      <div className="nav-collapse">
+        <div className="nav-links">
+          <a href="#how-it-works" data-i18n="nav_how" onClick={() => setIsNavOpen(false)}>How it works</a>
+          <a href="#services" data-i18n="nav_services" onClick={() => setIsNavOpen(false)}>Services</a>
+          <a href="#communities" data-i18n="nav_communities" onClick={() => setIsNavOpen(false)}>For communities</a>
+          <a href="#cooperatives" data-i18n="nav_cooperatives" onClick={() => setIsNavOpen(false)}>For cooperatives</a>
+          <a href="#support" data-i18n="nav_support" onClick={() => setIsNavOpen(false)}>Help &amp; Support</a>
+        </div>
+        <div className="nav-actions">
+          <select
+            id="nav-language-select"
+            aria-label="Choose language"
+            value={lang}
+            onChange={(e) => {
+              const newLang = e.target.value;
+              setLang(newLang);
+
+              // Smooth fade transition
+              document.body.style.transition = 'opacity 0.25s ease';
+              document.body.style.opacity = '0.6';
+
+              // Set cookies for Google Translate
+              document.cookie = `googtrans=/en/${newLang}; path=/`;
+              document.cookie = `googtrans=/en/${newLang}; path=/; domain=${window.location.hostname}`;
+
+              // Save preference
+              try { localStorage.setItem('shramnexus-lang', newLang); } catch (err) {}
+
+              // Trigger Google Translate
+              const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
+              if (gtCombo) {
+                gtCombo.value = newLang;
+                gtCombo.dispatchEvent(new Event('change'));
+                setTimeout(() => { document.body.style.opacity = '1'; }, 400);
+              } else {
+                window.location.reload();
+              }
+
+              // Hide Google Translate toolbar
+              setTimeout(() => {
+                const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
+                if (bar) bar.style.display = 'none';
+                document.body.style.top = '0px';
+              }, 500);
+            }}
+          >
+            <option value="en">EN</option>
+            <option value="hi">हिंदी</option>
+            <option value="bn">বাংলা</option>
+            <option value="mr">मराठी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
+          </select>
+          <a className="text-link" href="/auth/login" data-i18n="nav_login" onClick={() => setIsNavOpen(false)}>Log in</a>
+          <a className="button button-dark button-small" href="/auth/login" onClick={() => setIsNavOpen(false)}>
+            <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
+          </a>
+        </div>
       </div>
-      <div className="nav-actions">
-        <select id="nav-language-select" aria-label="Choose language" defaultValue="en">
-          <option value="en">EN</option>
-          <option value="hi">हिंदी</option>
-          <option value="bn">বাংলা</option>
-          <option value="mr">मराठी</option>
-          <option value="ta">தமிழ்</option>
-          <option value="te">తెలుగు</option>
-        </select>
-        <a className="text-link" href="/auth/login" data-i18n="nav_login">Log in</a>
-        <a className="button button-dark button-small" href="/auth/login">
-          <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
-        </a>
-      </div>
-      <button className="menu-toggle" aria-label="Open menu">
+      <button 
+        className={`menu-toggle ${isNavOpen ? 'is-active' : ''}`} 
+        aria-label={isNavOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isNavOpen}
+        onClick={() => setIsNavOpen(!isNavOpen)}
+      >
         <span></span>
         <span></span>
         <span></span>
@@ -151,9 +241,148 @@ export default function LandingPage() {
         <section className="trust-strip" aria-label="ShramNexus network statistics"><div className="metric-calculate"><strong><span className="count-up" data-target="5000">0</span>+</strong><span data-i18n="trust_workers">skilled workers</span></div><div className="metric-calculate"><strong><span className="count-up" data-target="25000">0</span>+</strong><span data-i18n="trust_services">services completed</span></div><div className="metric-calculate"><strong><span className="count-up" data-target="50">0</span>+</strong><span data-i18n="trust_coops">cooperatives</span></div><div className="metric-calculate"><strong><span className="count-up count-decimal" data-target="4.8">0</span><span>★</span></strong><span data-i18n="trust_rating">average rating</span></div><p data-i18n="trust_tagline">One network. Many ways to belong.</p></section>
 
         <section className="problem-solution section-pad" id="about">
-            <div className="section-kicker">WHY SHRAMNEXUS</div>
-            <div className="split-heading"><h2>Skilled workers are everywhere.<br /><em>Opportunity is not.</em></h2><p>Local talent should not stay invisible. We are building the digital layer that helps cooperative workers become easier to find, easier to trust, and better supported.</p></div>
-            <div className="transformation"><div className="before-card"><span className="card-tag">TODAY</span><h3>Great skills, disconnected</h3><ul><li>Unpredictable job opportunities</li><li>No portable digital reputation</li><li>Households unsure whom to trust</li><li>Limited access to welfare support</li></ul></div><div className="transform-arrow">→</div><div className="after-card"><span className="card-tag">WITH SHRAMNEXUS</span><h3>A stronger local network</h3><ul><li>Verified worker profiles and ratings</li><li>Fair, transparent bookings</li><li>Cooperative-owned workforce data</li><li>Training, insurance, and welfare access</li></ul></div></div>
+          <div className="section-kicker-row">
+            <span className="section-badge">
+              <span className="badge-dot pulse"></span> WHY SHRAMNEXUS • THE PARADIGM SHIFT
+            </span>
+          </div>
+
+          <div className="split-heading why-split-heading">
+            <div className="heading-copy">
+              <h2>
+                Skilled workers are everywhere.<br />
+                <em>Opportunity is not.</em>
+              </h2>
+            </div>
+            <div className="why-mission-card">
+              <div className="mission-header">
+                <span className="mission-tag">✦ COOPERATIVE DIGITAL INFRASTRUCTURE</span>
+              </div>
+              <p className="mission-text">
+                <strong>Local talent should not stay invisible.</strong> We are building the sovereign digital layer that transforms informal, precarious labour into verified, cooperative-backed local prosperity.
+              </p>
+              <div className="mission-badges">
+                <span className="mission-chip">⚡ 0% Middleman Cut</span>
+                <span className="mission-chip">🛡️ 100% Cooperative Owned</span>
+                <span className="mission-chip">⚖️ Fair Algorithm Guarantee</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="transformation">
+            {/* Before Card */}
+            <div className="before-card transform-module">
+              <div className="transform-card-header">
+                <span className="card-badge tag-today">
+                  <span className="tag-icon">⚠️</span> TODAY • THE INFORMAL REALITY
+                </span>
+                <span className="card-status-pill">Unorganized & Isolated</span>
+              </div>
+              <h3 className="transform-card-title">Great skills, disconnected</h3>
+              <p className="transform-card-subtitle">
+                Individual tradespeople navigating an erratic, fragmented market with zero institutional protection.
+              </p>
+
+              <div className="transform-items">
+                <div className="transform-item problem-item">
+                  <div className="item-icon-box danger-icon">✕</div>
+                  <div className="item-content">
+                    <strong>Unpredictable Job Opportunities</strong>
+                    <p>Erratic word-of-mouth reliance and seasonal income droughts with predatory cut-offs.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item problem-item">
+                  <div className="item-icon-box danger-icon">✕</div>
+                  <div className="item-content">
+                    <strong>No Portable Digital Reputation</strong>
+                    <p>Years of hard-earned craftsmanship vanish when shifting localities or neighborhoods.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item problem-item">
+                  <div className="item-icon-box danger-icon">✕</div>
+                  <div className="item-content">
+                    <strong>Households Unsure Whom to Trust</strong>
+                    <p>Unvetted strangers, arbitrary price haggling, and no verified background checks.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item problem-item">
+                  <div className="item-icon-box danger-icon">✕</div>
+                  <div className="item-content">
+                    <strong>Limited Access to Welfare Support</strong>
+                    <p>No health cover, emergency medical buffer, accidental insurance, or pension pool.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-impact-bar problem-footer">
+                <span className="impact-label">Market Friction</span>
+                <span className="impact-value">Up to 30% lost to commercial commission middlemen</span>
+              </div>
+            </div>
+
+            {/* Center Transformation Node */}
+            <div className="transform-connector">
+              <div className="connector-icon-glow" aria-label="Transformation forward">
+                <ArrowRight size={26} strokeWidth={2.5} />
+              </div>
+            </div>
+
+            {/* After Card */}
+            <div className="after-card transform-module">
+              <div className="transform-card-header">
+                <span className="card-badge tag-tomorrow">
+                  <span className="tag-icon">✦</span> WITH SHRAMNEXUS
+                </span>
+                <span className="card-status-pill success-pill">Verified Cooperative Network</span>
+              </div>
+              <h3 className="transform-card-title">A stronger local network</h3>
+              <p className="transform-card-subtitle">
+                A sovereign digital ecosystem empowering workers with equity, lifelong reputation, and collective security.
+              </p>
+
+              <div className="transform-items">
+                <div className="transform-item solution-item">
+                  <div className="item-icon-box success-icon">✓</div>
+                  <div className="item-content">
+                    <strong>Fair, Transparent Bookings</strong>
+                    <p>Dynamic job routing with 0% platform commission and guaranteed minimum wage tariffs.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item solution-item">
+                  <div className="item-icon-box success-icon">✓</div>
+                  <div className="item-content">
+                    <strong>Verified Worker Profiles & Ratings</strong>
+                    <p>Government ID & trade credential checks with permanent, verifiable customer reviews.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item solution-item">
+                  <div className="item-icon-box success-icon">✓</div>
+                  <div className="item-content">
+                    <strong>Cooperative-Owned Workforce Data</strong>
+                    <p>Workers own their own data and federation governance—never exploited by corporate algorithms.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item solution-item">
+                  <div className="item-icon-box success-icon">✓</div>
+                  <div className="item-content">
+                    <strong>Training, Insurance & Welfare Access</strong>
+                    <p>Automated welfare fund contributions, subsidized tool kits, skill certs, and healthcare safety nets.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-impact-bar solution-footer">
+                <span className="impact-label">Collective Empowerment</span>
+                <span className="impact-value">88% Fairness Score • 100% Cooperative Owned</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="services section-pad" id="services">
@@ -261,7 +490,98 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="service-map-section section-pad" id="nearby-services"><div className="map-heading"><div><div className="section-kicker" data-i18n="map_kicker">LIVE LOCAL NETWORK</div><h2 data-i18n="map_h2">Services around you.</h2><p data-i18n="map_p">Explore verified workers, active bookings, and areas with rising demand.</p></div><button className="map-location-button" id="use-location" type="button">⌖ <span data-i18n="map_locbtn">Use my location</span></button></div><div className="map-layout"><div className="map-card"><div id="service-map" aria-label="Interactive map showing ShramNexus services around Jaipur"></div><div className="map-attribution-note">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</div></div><div className="map-legend" aria-label="Map filters"><button className="legend-item is-active" data-category="worker" type="button"><i className="legend-dot dot-green"></i><span data-i18n="legend_workers">Available workers</span><b>12</b></button><button className="legend-item is-active" data-category="booking" type="button"><i className="legend-dot dot-terracotta"></i><span data-i18n="legend_bookings">Active bookings</span><b>8</b></button><button className="legend-item is-active" data-category="demand" type="button"><i className="legend-dot dot-red"></i><span data-i18n="legend_demand">High-demand zones</span><b>3</b></button><button className="legend-item is-active" data-category="request" type="button"><i className="legend-dot dot-orange"></i><span data-i18n="legend_requests">Customer requests</span><b>6</b></button></div></div><div className="demand-zone"><span>📍 <b>Zone A</b></span><div><strong>High Demand Zone</strong><small>Plumbing demand +23%</small></div><span>Available workers: <b>8</b></span></div></section>
+        <section className="service-map-section section-pad" id="nearby-services">
+          <div className="map-heading">
+            <div>
+              <div className="section-kicker" data-i18n="map_kicker">LIVE LOCAL NETWORK</div>
+              <h2 data-i18n="map_h2">Services around you.</h2>
+              <p data-i18n="map_p">Explore verified workers, active bookings, and areas with rising demand.</p>
+            </div>
+            <button className="map-location-button" id="use-location" type="button">
+              ⌖ <span data-i18n="map_locbtn">Use my location</span>
+            </button>
+          </div>
+
+          <div className="map-layout">
+            <div className="map-card">
+              <div id="service-map" aria-label="Interactive map showing ShramNexus services around Jaipur"></div>
+              <div className="map-attribution-note">
+                Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors
+              </div>
+            </div>
+            <div className="map-legend" aria-label="Map filters">
+              <button className="legend-item is-active" data-category="worker" type="button">
+                <i className="legend-dot dot-green"></i>
+                <span data-i18n="legend_workers">Available workers</span>
+                <b>12</b>
+              </button>
+              <button className="legend-item is-active" data-category="booking" type="button">
+                <i className="legend-dot dot-terracotta"></i>
+                <span data-i18n="legend_bookings">Active bookings</span>
+                <b>8</b>
+              </button>
+              <button className="legend-item is-active" data-category="demand" type="button">
+                <i className="legend-dot dot-red"></i>
+                <span data-i18n="legend_demand">High-demand zones</span>
+                <b>3</b>
+              </button>
+              <button className="legend-item is-active" data-category="request" type="button">
+                <i className="legend-dot dot-orange"></i>
+                <span data-i18n="legend_requests">Customer requests</span>
+                <b>6</b>
+              </button>
+            </div>
+          </div>
+
+          {/* Streamlined Live Demand Zones */}
+          <div className="demand-zones-wrap">
+            <div className="demand-zones-header">
+              <span className="live-pill">
+                <span className="pulse-dot"></span>
+                <span>Live Demand Zones</span>
+              </span>
+              <span className="demand-zones-note">Click a zone to view on map</span>
+            </div>
+
+            <div className="demand-zones-grid">
+              <div className="demand-card" data-lat="26.9120" data-lng="75.7700" role="button" tabIndex={0}>
+                <div className="demand-card-header">
+                  <span className="zone-tag">📍 Zone A · Central</span>
+                  <span className="surge-tag high">+23% demand</span>
+                </div>
+                <div className="demand-card-service">Plumbing &amp; Repairs</div>
+                <div className="demand-card-footer">
+                  <span><b>8</b> verified workers</span>
+                  <span className="arrow-icon">↗</span>
+                </div>
+              </div>
+
+              <div className="demand-card" data-lat="26.8850" data-lng="75.7750" role="button" tabIndex={0}>
+                <div className="demand-card-header">
+                  <span className="zone-tag">📍 Zone B · South</span>
+                  <span className="surge-tag peak">+17% demand</span>
+                </div>
+                <div className="demand-card-service">Electrical &amp; Wiring</div>
+                <div className="demand-card-footer">
+                  <span><b>6</b> verified workers</span>
+                  <span className="arrow-icon">↗</span>
+                </div>
+              </div>
+
+              <div className="demand-card" data-lat="26.9450" data-lng="75.8420" role="button" tabIndex={0}>
+                <div className="demand-card-header">
+                  <span className="zone-tag">📍 Zone C · North</span>
+                  <span className="surge-tag rising">+19% demand</span>
+                </div>
+                <div className="demand-card-service">Home Deep Cleaning</div>
+                <div className="demand-card-footer">
+                  <span><b>9</b> verified workers</span>
+                  <span className="arrow-icon">↗</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="platform-features section-pad" id="platform-features"><div className="section-kicker" data-i18n="features_kicker">THE SHRAMNEXUS DIFFERENCE</div><h2 data-i18n-html="features_h2">Everything you need.<br /><em>One simple platform.</em></h2><div className="feature-grid"><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">⌕</span><h3 data-i18n-html="feat_1">Find verified<br />professionals</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">⌖</span><h3 data-i18n-html="feat_2">Location-based<br />matching</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">▦</span><h3 data-i18n="feat_3">Easy scheduling</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">▣</span><h3 data-i18n-html="feat_4">Secure digital<br />payments</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">▤</span><h3 data-i18n="feat_5">Digital invoices</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">★</span><h3 data-i18n-html="feat_6">Ratings &amp;<br />reviews</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">⌁</span><h3 data-i18n="feat_7">Service tracking</h3><span className="feature-arrow">↗</span></a><a className="feature-card" href="/auth/login"><span className="feature-icon" aria-hidden="true">!</span><h3 data-i18n-html="feat_8">Emergency<br />booking</h3><span className="feature-arrow">↗</span></a></div></section>
 
@@ -269,26 +589,87 @@ export default function LandingPage() {
             <div className="section-kicker" data-i18n="access_kicker">DESIGNED FOR EVERYONE</div>
             <h2 data-i18n-html="access_h2">Technology that speaks<br /><em>your language.</em></h2>
             <div className="lang-pill-row" role="group" aria-label="Choose language">
-                <button className="lang-pill is-active" type="button" data-lang="en">English</button>
-                <button className="lang-pill" type="button" data-lang="hi">हिंदी</button>
-                <button className="lang-pill" type="button" data-lang="bn">বাংলা</button>
-                <button className="lang-pill" type="button" data-lang="mr">मराठी</button>
-                <button className="lang-pill" type="button" data-lang="ta">தமிழ்</button>
-                <button className="lang-pill" type="button" data-lang="te">తెలుగు</button>
+                <button className={`lang-pill ${lang === 'en' ? 'is-active' : ''}`} type="button" data-lang="en" onClick={() => setLang('en')}>English</button>
+                <button className={`lang-pill ${lang === 'hi' ? 'is-active' : ''}`} type="button" data-lang="hi" onClick={() => setLang('hi')}>हिंदी</button>
+                <button className={`lang-pill ${lang === 'bn' ? 'is-active' : ''}`} type="button" data-lang="bn" onClick={() => setLang('bn')}>বাংলা</button>
+                <button className={`lang-pill ${lang === 'mr' ? 'is-active' : ''}`} type="button" data-lang="mr" onClick={() => setLang('mr')}>मराठी</button>
+                <button className={`lang-pill ${lang === 'ta' ? 'is-active' : ''}`} type="button" data-lang="ta" onClick={() => setLang('ta')}>தமிழ்</button>
+                <button className={`lang-pill ${lang === 'te' ? 'is-active' : ''}`} type="button" data-lang="te" onClick={() => setLang('te')}>తెలుగు</button>
             </div>
             <div className="accessibility-grid">
-                <div className="accessibility-item"><span className="accessibility-icon">🌐</span><p>Multilingual interface</p></div>
-                <div className="accessibility-item"><span className="accessibility-icon">🧭</span><p>Simple navigation</p></div>
-                <div className="accessibility-item"><span className="accessibility-icon">👆</span><p>Large touch-friendly controls</p></div>
-                <div className="accessibility-item"><span className="accessibility-icon">🎤</span><p>Voice-assisted service search</p></div>
-                <div className="accessibility-item"><span className="accessibility-icon">🎯</span><p>Easy-to-understand icons</p></div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-lang" aria-hidden="true">
+                        <Languages size={26} strokeWidth={2} />
+                    </div>
+                    <p>Multilingual interface</p>
+                </div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-nav" aria-hidden="true">
+                        <Compass size={26} strokeWidth={2} />
+                    </div>
+                    <p>Simple navigation</p>
+                </div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-touch" aria-hidden="true">
+                        <MousePointerClick size={26} strokeWidth={2} />
+                    </div>
+                    <p>Large touch-friendly controls</p>
+                </div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-voice" aria-hidden="true">
+                        <Mic size={26} strokeWidth={2} />
+                    </div>
+                    <p>Voice-assisted service search</p>
+                </div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-visual" aria-hidden="true">
+                        <Shapes size={26} strokeWidth={2} />
+                    </div>
+                    <p>Easy-to-understand icons</p>
+                </div>
             </div>
             <a className="button button-dark" href="/auth/login"><span data-i18n="access_explore">Explore ShramNexus</span> <span>↗</span></a>
         </section>
 
         <section className="worker-opportunities section-pad" id="worker-opportunities"><div className="worker-opportunities-heading"><div className="section-kicker" data-i18n="worker_kicker">FOR SKILLED WORKERS</div><h2 data-i18n-html="worker_h2">Your skills deserve more<br /><em>opportunities.</em></h2><p data-i18n="worker_p">Build your professional identity, discover jobs, grow your reputation, and access cooperative welfare benefits — all from one platform.</p></div><div className="worker-platform"><div className="worker-profile-card"><div className="profile-top"><div className="profile-avatar">RK</div><div><h3>Raj Kumar</h3><p>✓ Verified Plumber</p><strong>★ 4.8 Rating</strong></div></div><div className="profile-divider"></div><div className="profile-stats"><div><strong>3</strong><span>Today’s Jobs</span></div><div><strong>₹18,450</strong><span>This Month</span></div><div><strong>327</strong><span>Completed</span></div></div><a className="profile-link" href="/auth/login">View professional profile <span>↗</span></a></div><div className="worker-benefits"><a href="/auth/login"><span>▤</span>Digital skill profile<i>↗</i></a><a href="/auth/login"><span>✓</span>Certification verification<i>↗</i></a><a href="/auth/login"><span>▣</span>Job opportunities<i>↗</i></a><a href="/auth/login"><span>₹</span>Earnings tracking<i>↗</i></a><a href="/auth/login"><span>▥</span>Work history<i>↗</i></a><a href="/auth/login"><span>★</span>Ratings &amp; reputation<i>↗</i></a><a href="/auth/login"><span>♧</span>Welfare benefits<i>↗</i></a><a href="/auth/login"><span>✦</span>Skills growth<i>↗</i></a></div></div></section>
 
-        <section className="how section-pad" id="how-it-works"><div className="section-kicker" data-i18n="how_kicker">SIMPLE BY DESIGN</div><h2 data-i18n-html="how_h2">From “I need help”<br /><em>to “all sorted.”</em></h2><div className="steps"><div className="step"><span>01</span><div><h3 data-i18n="step1_t">Tell us what you need</h3><p data-i18n="step1_d">Describe a service in your own words, in your own language.</p></div></div><div className="step"><span>02</span><div><h3 data-i18n="step2_t">Get intelligently matched</h3><p data-i18n="step2_d">We find verified nearby workers by skill, rating, location, and availability.</p></div></div><div className="step"><span>03</span><div><h3 data-i18n="step3_t">Book with confidence</h3><p data-i18n="step3_d">Choose a time, track the service, pay securely, and leave a rating.</p></div></div><div className="step"><span>04</span><div><h3 data-i18n="step4_t">Help the network grow</h3><p data-i18n="step4_d">Every booking supports local workers and strengthens the cooperative behind them.</p></div></div></div></section>
+        <section className="how section-pad" id="how-it-works">
+          <div className="section-kicker" data-i18n="how_kicker">SIMPLE BY DESIGN</div>
+          <h2 data-i18n-html="how_h2">From “I need help”<br /><em>to “all sorted.”</em></h2>
+          <div className="steps">
+            <div className="step">
+              <span>01</span>
+              <div>
+                <h3 data-i18n="step1_t">Tell us what you need</h3>
+                <p data-i18n="step1_d">Describe a service in your own words, in your own language.</p>
+              </div>
+            </div>
+
+            <div className="step">
+              <span>02</span>
+              <div>
+                <h3 data-i18n="step2_t">Get intelligently matched</h3>
+                <p data-i18n="step2_d">We find verified nearby workers by skill, rating, location, and availability.</p>
+              </div>
+            </div>
+
+            <div className="step">
+              <span>03</span>
+              <div>
+                <h3 data-i18n="step3_t">Book with confidence</h3>
+                <p data-i18n="step3_d">Choose a time, track the service, pay securely, and leave a rating.</p>
+              </div>
+            </div>
+
+            <div className="step">
+              <span>04</span>
+              <div>
+                <h3 data-i18n="step4_t">Help the network grow</h3>
+                <p data-i18n="step4_d">Every booking supports local workers and strengthens the cooperative behind them.</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="communities section-pad" id="communities"><div className="section-kicker" data-i18n="communities_kicker">ONE PLATFORM. THREE COMMUNITIES.</div><h2 data-i18n-html="communities_h2">Shared prosperity,<br /><em>designed into every booking.</em></h2><div className="community-grid"><article className="community-card customer"><div className="community-number" data-i18n="comm1_num">01 / FOR HOUSEHOLDS</div><div className="community-icon">⌕</div><h3 data-i18n="comm1_h3">Find trusted help nearby.</h3><p data-i18n="comm1_p">Book skilled professionals you can trust, with transparent ratings, secure payments, and support when you need it most.</p><a href="/services"><span data-i18n="comm1_link">Find a service</span> <span>↗</span></a></article><article className="community-card worker"><div className="community-number" data-i18n="comm2_num">02 / FOR WORKERS</div><div className="community-icon">✦</div><h3 data-i18n="comm2_h3">Turn your skills into opportunity.</h3><p data-i18n="comm2_p">Build a professional identity, discover better jobs, grow your reputation, and access cooperative welfare benefits.</p><a href="/auth/worker-register"><span data-i18n="comm2_link">Join as a worker</span> <span>↗</span></a></article><article className="community-card cooperative" id="cooperatives"><div className="community-number" data-i18n="comm3_num">03 / FOR COOPERATIVES</div><div className="community-icon">◒</div><h3 data-i18n="comm3_h3">Coordinate with intelligence.</h3><p data-i18n="comm3_p">Manage your workforce, anticipate demand, allocate jobs, and measure impact from one cooperative-owned platform.</p><a href="/auth/login?redirect=/cooperative"><span data-i18n="comm3_link">Explore cooperatives</span> <span>↗</span></a></article></div></section>
 
