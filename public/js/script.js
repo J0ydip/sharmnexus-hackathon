@@ -576,9 +576,9 @@ const initScript = () => {
 
   // Expose globally so React components can trigger dictionary translations directly
   if (typeof window !== 'undefined') {
-    (window as any).applyShramNexusLanguage = applyLanguage;
-    window.addEventListener('shramnexus-lang-change', (e: any) => {
-      if (e?.detail) {
+    window.applyShramNexusLanguage = applyLanguage;
+    window.addEventListener('shramnexus-lang-change', function(e) {
+      if (e && e.detail) {
         applyLanguage(e.detail);
       }
     });

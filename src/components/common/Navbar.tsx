@@ -238,8 +238,8 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200/80 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-2xs">
-      <div className="container mx-auto flex h-16 items-center justify-between px-2.5 sm:px-6">
+    <header className="fixed top-3 left-0 right-0 z-50 mx-auto w-[calc(100%-1.5rem)] max-w-7xl rounded-2xl border border-gray-200/80 bg-white/90 shadow-lg backdrop-blur-xl transition-all">
+      <div className="flex h-14 items-center justify-between px-3 sm:px-6">
         {/* Left: Mobile Menu & Brand */}
         <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Mobile Sheet Nav */}

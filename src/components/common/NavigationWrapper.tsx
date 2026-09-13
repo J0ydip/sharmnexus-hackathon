@@ -120,7 +120,7 @@ export function NavigationWrapper({ children }: { children: React.ReactNode }) {
   return (
     <>
       {!hideNav && <Navbar />}
-      <main className="flex-1 pb-16 sm:pb-0">
+      <main className={`flex-1 pb-16 sm:pb-0 ${!hideNav ? 'pt-18' : ''}`}>
         {children}
       </main>
       {!hideNav && <BottomNav />}
