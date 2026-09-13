@@ -10,6 +10,7 @@ import './landing.css';
 
 export default function LandingPage() {
   const [lang, setLang] = useState('en');
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
   const supabase = createClient();
@@ -85,33 +86,40 @@ export default function LandingPage() {
     <>
 
     <div className="cursor-dot" aria-hidden="true"></div>
-    <nav className="navbar" aria-label="Main navigation">
-      <a className="brand" href="#home" aria-label="ShramNexus home">
+    <nav className={`navbar ${isNavOpen ? 'nav-open' : ''}`} aria-label="Main navigation">
+      <a className="brand" href="#home" aria-label="ShramNexus home" onClick={() => setIsNavOpen(false)}>
         <img src="/logo.png" alt="ShramNexus" className="nav-logo-img" />
         <span className="brand-text">Shram<span>Nexus</span></span>
       </a>
-      <div className="nav-links">
-        <a href="#how-it-works" data-i18n="nav_how">How it works</a>
-        <a href="#services" data-i18n="nav_services">Services</a>
-        <a href="#communities" data-i18n="nav_communities">For communities</a>
-        <a href="#cooperatives" data-i18n="nav_cooperatives">For cooperatives</a>
-        <a href="#support" data-i18n="nav_support">Help &amp; Support</a>
+      <div className="nav-collapse">
+        <div className="nav-links">
+          <a href="#how-it-works" data-i18n="nav_how" onClick={() => setIsNavOpen(false)}>How it works</a>
+          <a href="#services" data-i18n="nav_services" onClick={() => setIsNavOpen(false)}>Services</a>
+          <a href="#communities" data-i18n="nav_communities" onClick={() => setIsNavOpen(false)}>For communities</a>
+          <a href="#cooperatives" data-i18n="nav_cooperatives" onClick={() => setIsNavOpen(false)}>For cooperatives</a>
+          <a href="#support" data-i18n="nav_support" onClick={() => setIsNavOpen(false)}>Help &amp; Support</a>
+        </div>
+        <div className="nav-actions">
+          <select id="nav-language-select" aria-label="Choose language" defaultValue="en">
+            <option value="en">EN</option>
+            <option value="hi">हिंदी</option>
+            <option value="bn">বাংলা</option>
+            <option value="mr">मराठी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
+          </select>
+          <a className="text-link" href="/auth/login" data-i18n="nav_login" onClick={() => setIsNavOpen(false)}>Log in</a>
+          <a className="button button-dark button-small" href="/auth/login" onClick={() => setIsNavOpen(false)}>
+            <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
+          </a>
+        </div>
       </div>
-      <div className="nav-actions">
-        <select id="nav-language-select" aria-label="Choose language" defaultValue="en">
-          <option value="en">EN</option>
-          <option value="hi">हिंदी</option>
-          <option value="bn">বাংলা</option>
-          <option value="mr">मराठी</option>
-          <option value="ta">தமிழ்</option>
-          <option value="te">తెలుగు</option>
-        </select>
-        <a className="text-link" href="/auth/login" data-i18n="nav_login">Log in</a>
-        <a className="button button-dark button-small" href="/auth/login">
-          <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
-        </a>
-      </div>
-      <button className="menu-toggle" aria-label="Open menu">
+      <button 
+        className={`menu-toggle ${isNavOpen ? 'is-active' : ''}`} 
+        aria-label={isNavOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isNavOpen}
+        onClick={() => setIsNavOpen(!isNavOpen)}
+      >
         <span></span>
         <span></span>
         <span></span>
