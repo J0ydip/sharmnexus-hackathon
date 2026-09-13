@@ -419,8 +419,6 @@ export default function LandingPage() {
             </div>
         </section>
 
-        <section className="trust-strip" aria-label="ShramNexus network statistics"><div className="metric-calculate"><strong><span className="count-up" data-target="5000">0</span>+</strong><span data-i18n="trust_workers">skilled workers</span></div><div className="metric-calculate"><strong><span className="count-up" data-target="25000">0</span>+</strong><span data-i18n="trust_services">services completed</span></div><div className="metric-calculate"><strong><span className="count-up" data-target="50">0</span>+</strong><span data-i18n="trust_coops">cooperatives</span></div><div className="metric-calculate"><strong><span className="count-up count-decimal" data-target="4.8">0</span><span>★</span></strong><span data-i18n="trust_rating">average rating</span></div><p data-i18n="trust_tagline">One network. Many ways to belong.</p></section>
-
         <section className="problem-solution section-pad" id="about">
           <div className="section-kicker-row">
             <span className="section-badge">

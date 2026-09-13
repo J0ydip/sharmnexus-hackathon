@@ -523,8 +523,8 @@ body:has(.hero) em {
   position: relative;
   max-width: 1400px;
   margin: auto;
-  min-height: 720px;
-  padding: 4.5rem 4.5rem 6.5rem;
+  min-height: auto;
+  padding: 4.5rem 4.5rem 2rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3rem;
@@ -1011,6 +1011,10 @@ body:has(.hero) em {
 #about,
 .problem-solution {
   scroll-margin-top: 100px;
+}
+.problem-solution.section-pad {
+  padding-top: 2rem;
+  padding-bottom: 5.5rem;
 }
 
 .section-kicker-row {

@@ -416,8 +416,8 @@ em {
   position: relative;
   max-width: 1400px;
   margin: auto;
-  min-height: 760px;
-  padding: 8rem 4.5rem 7rem;
+  min-height: auto;
+  padding: 7rem 4.5rem 2rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3rem;
@@ -899,8 +899,17 @@ em {
 }
 
 /* =========================================
-   Transformations
+   Why ShramNexus & Transformations
 ========================================= */
+#about,
+.problem-solution {
+  scroll-margin-top: 100px;
+}
+.problem-solution.section-pad {
+  padding-top: 2rem;
+  padding-bottom: 5.5rem;
+}
+
 .transformation {
   display: grid;
   grid-template-columns: 1fr 80px 1fr;
