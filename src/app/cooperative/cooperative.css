@@ -370,11 +370,14 @@
 /* Tables */
 .coop-table-responsive {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   width: 100%;
+  scrollbar-width: thin;
 }
 
 .coop-data-table {
   width: 100%;
+  min-width: 660px;
   border-collapse: collapse;
   text-align: left;
 }

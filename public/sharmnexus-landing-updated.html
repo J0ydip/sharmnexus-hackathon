@@ -63,10 +63,28 @@
                         <div class="product-greeting"><div><small>GOOD MORNING, PRIYA</small><h2>Who can we help you find?</h2></div><span class="mini-avatar">PS</span></div>
                         <div class="search-preview"><span>⌕</span><span>Try “plumber for leaking tap”</span><b>⌘ K</b></div>
                         <div class="product-label-row"><span>RECOMMENDED NEAR YOU</span><a href="premium-auth.html">View all ↗</a></div>
-                        <div class="match-card">
-                            <div class="match-head"><div class="worker-avatar">RK</div><div><h3>Raj Kumar</h3><p>Verified Plumber</p></div><span class="verified-badge">✓ Verified</span></div>
-                            <div class="match-details"><span>★ <b>4.8</b> rating</span><span>⌖ 1.8 km away</span><span class="available"><i></i> Available today</span></div>
-                            <div class="match-foot"><div><small>MATCH SCORE</small><strong>94%</strong></div><a class="button button-dark button-small" href="premium-auth.html">Book now <span>↗</span></a></div>
+                        <!-- Pure Photo Slider - Auto-sliding the provided worker photos, no writing or text -->
+                        <div class="match-card hero-photo-slider" id="heroPhotoSlider" style="position: relative; height: 215px; border-radius: 16px; overflow: hidden; padding: 0; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 28px rgba(20, 12, 28, 0.16); background: #150d1e;">
+                            <div id="heroPhotoTrack" style="display: flex; width: 500%; height: 100%; transform: translateX(0%); transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);">
+                                <div style="width: 20%; height: 100%; flex-shrink: 0;"><img src="images/hero-workers/plumber.jpg" alt="Worker" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>
+                                <div style="width: 20%; height: 100%; flex-shrink: 0;"><img src="images/hero-workers/logistics.jpg" alt="Worker" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>
+                                <div style="width: 20%; height: 100%; flex-shrink: 0;"><img src="images/hero-workers/healthcare.jpg" alt="Worker" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>
+                                <div style="width: 20%; height: 100%; flex-shrink: 0;"><img src="images/hero-workers/delivery.jpg" alt="Worker" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>
+                                <div style="width: 20%; height: 100%; flex-shrink: 0;"><img src="images/hero-workers/carpenter.jpg" alt="Worker" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>
+                            </div>
+
+                            <!-- Subtle arrow navigation on hover -->
+                            <button type="button" id="prevHeroPhoto" aria-label="Previous" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: rgba(20, 12, 28, 0.55); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.25); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; cursor: pointer; z-index: 3; opacity: 0; transition: opacity 0.25s ease;">‹</button>
+                            <button type="button" id="nextHeroPhoto" aria-label="Next" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: rgba(20, 12, 28, 0.55); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.25); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; cursor: pointer; z-index: 3; opacity: 0; transition: opacity 0.25s ease;">›</button>
+
+                            <!-- Minimal sleek pagination dots -->
+                            <div id="heroDots" style="position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 6px; z-index: 3;">
+                                <span class="h-dot active" style="width: 20px; height: 5px; border-radius: 999px; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.5); transition: all 0.35s ease; cursor: pointer;"></span>
+                                <span class="h-dot" style="width: 6px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.45); transition: all 0.35s ease; cursor: pointer;"></span>
+                                <span class="h-dot" style="width: 6px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.45); transition: all 0.35s ease; cursor: pointer;"></span>
+                                <span class="h-dot" style="width: 6px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.45); transition: all 0.35s ease; cursor: pointer;"></span>
+                                <span class="h-dot" style="width: 6px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.45); transition: all 0.35s ease; cursor: pointer;"></span>
+                            </div>
                         </div>
                         <div class="mini-stats"><div><small>NETWORK RATING</small><strong>4.8 <span>★</span></strong></div><div><small>SERVICES COMPLETED</small><strong>25k<span>+</span></strong></div><div><small>COOPERATIVES</small><strong>50<span>+</span></strong></div></div>
                     </div>
@@ -383,5 +401,73 @@
     </footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="script.js" defer></script>
+<script>
+  (function() {
+    const slider = document.getElementById('heroPhotoSlider');
+    if (!slider) return;
+    const track = document.getElementById('heroPhotoTrack');
+    const dots = document.querySelectorAll('#heroDots .h-dot');
+    const prevBtn = document.getElementById('prevHeroPhoto');
+    const nextBtn = document.getElementById('nextHeroPhoto');
+    const total = 5;
+    let current = 0;
+    let isPaused = false;
+
+    function goTo(idx) {
+      current = (idx + total) % total;
+      if (track) {
+        track.style.transform = `translateX(-${current * 20}%)`;
+      }
+      dots.forEach((dot, i) => {
+        if (i === current) {
+          dot.style.width = '20px';
+          dot.style.background = '#ffffff';
+          dot.style.boxShadow = '0 1px 4px rgba(0,0,0,0.5)';
+        } else {
+          dot.style.width = '6px';
+          dot.style.background = 'rgba(255, 255, 255, 0.45)';
+          dot.style.boxShadow = 'none';
+        }
+      });
+    }
+
+    dots.forEach((dot, idx) => {
+      dot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        goTo(idx);
+      });
+    });
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        goTo(current - 1);
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        goTo(current + 1);
+      });
+    }
+
+    slider.addEventListener('mouseenter', () => {
+      isPaused = true;
+      if (prevBtn) prevBtn.style.opacity = '1';
+      if (nextBtn) nextBtn.style.opacity = '1';
+    });
+    slider.addEventListener('mouseleave', () => {
+      isPaused = false;
+      if (prevBtn) prevBtn.style.opacity = '0';
+      if (nextBtn) nextBtn.style.opacity = '0';
+    });
+
+    setInterval(() => {
+      if (!isPaused) {
+        goTo(current + 1);
+      }
+    }, 3500);
+  })();
+</script>
 </body>
 </html>

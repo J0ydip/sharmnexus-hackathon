@@ -356,11 +356,14 @@
 /* Admin Tables */
 .admin-content-area .table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-top: 1rem;
+  scrollbar-width: thin;
 }
 
 .admin-table {
   width: 100%;
+  min-width: 680px;
   border-collapse: collapse;
   text-align: left;
 }

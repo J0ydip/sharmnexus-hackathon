@@ -8,12 +8,31 @@ import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
 import { HelpSupportSection } from '@/components/common/HelpSupportSection';
 import './landing.css';
 
+const HERO_PHOTOS = [
+  '/images/hero-workers/plumber.jpg',
+  '/images/hero-workers/logistics.jpg',
+  '/images/hero-workers/healthcare.jpg',
+  '/images/hero-workers/delivery.jpg',
+  '/images/hero-workers/carpenter.jpg',
+];
+
 export default function LandingPage() {
   const [lang, setLang] = useState('en');
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [isPhotoHovered, setIsPhotoHovered] = useState(false);
   const supabase = createClient();
+
+  // Auto-slide hero photos smoothly
+  useEffect(() => {
+    if (isPhotoHovered) return;
+    const interval = setInterval(() => {
+      setActivePhotoIndex((prev) => (prev + 1) % HERO_PHOTOS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [isPhotoHovered]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -209,18 +228,158 @@ export default function LandingPage() {
                         <div className="product-greeting"><div><small>GOOD MORNING, PRIYA</small><h2>Who can we help you find?</h2></div><span className="mini-avatar">PS</span></div>
                         <div className="search-preview"><span>⌕</span><span>Try “plumber for leaking tap”</span><b>⌘ K</b></div>
                         <div className="product-label-row"><span>RECOMMENDED NEAR YOU</span><a href="/auth/login">View all ↗</a></div>
-                        <div className="match-card">
-                            <div className="match-head"><div className="worker-avatar">RK</div><div><h3>Raj Kumar</h3><p>Verified Plumber</p></div><span className="verified-badge">✓ Verified</span></div>
-                            <div className="match-details"><span>★ <b>4.8</b> rating</span><span>⌖ 1.8 km away</span><span className="available"><i></i> Available today</span></div>
-                            <div className="match-foot">
-                              <div><small>MATCH SCORE</small><strong>94%</strong></div>
-                              <a
-                                href="/services?q=Plumber"
-                                className="button button-dark button-small"
+                        {/* Pure Photo Slider - Auto-sliding the provided worker photos, no writing or text */}
+                        <div
+                          className="match-card hero-photo-slider"
+                          onMouseEnter={() => setIsPhotoHovered(true)}
+                          onMouseLeave={() => setIsPhotoHovered(false)}
+                          style={{
+                            position: 'relative',
+                            height: '215px',
+                            borderRadius: '16px',
+                            overflow: 'hidden',
+                            padding: 0,
+                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                            boxShadow: '0 10px 28px rgba(20, 12, 28, 0.16)',
+                            background: '#150d1e',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              width: `${HERO_PHOTOS.length * 100}%`,
+                              height: '100%',
+                              transform: `translateX(-${activePhotoIndex * (100 / HERO_PHOTOS.length)}%)`,
+                              transition: 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)',
+                            }}
+                          >
+                            {HERO_PHOTOS.map((src, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  width: `${100 / HERO_PHOTOS.length}%`,
+                                  height: '100%',
+                                  flexShrink: 0,
+                                  position: 'relative',
+                                }}
                               >
-                                Explore & Book <span>↗</span>
-                              </a>
-                            </div>
+                                <img
+                                  src={src}
+                                  alt={`Slide ${idx + 1}`}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Subtle arrow navigation on hover */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePhotoIndex((prev) => (prev - 1 + HERO_PHOTOS.length) % HERO_PHOTOS.length);
+                            }}
+                            aria-label="Previous"
+                            style={{
+                              position: 'absolute',
+                              left: '8px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              background: 'rgba(20, 12, 28, 0.55)',
+                              backdropFilter: 'blur(6px)',
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.85rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              zIndex: 3,
+                              opacity: isPhotoHovered ? 1 : 0,
+                              transition: 'opacity 0.25s ease, background 0.2s ease',
+                            }}
+                          >
+                            ‹
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePhotoIndex((prev) => (prev + 1) % HERO_PHOTOS.length);
+                            }}
+                            aria-label="Next"
+                            style={{
+                              position: 'absolute',
+                              right: '8px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              background: 'rgba(20, 12, 28, 0.55)',
+                              backdropFilter: 'blur(6px)',
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.85rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              zIndex: 3,
+                              opacity: isPhotoHovered ? 1 : 0,
+                              transition: 'opacity 0.25s ease, background 0.2s ease',
+                            }}
+                          >
+                            ›
+                          </button>
+
+                          {/* Minimal sleek pagination dots */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: '10px',
+                              left: 0,
+                              right: 0,
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              gap: '6px',
+                              zIndex: 3,
+                            }}
+                          >
+                            {HERO_PHOTOS.map((_, dotIdx) => (
+                              <button
+                                key={dotIdx}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActivePhotoIndex(dotIdx);
+                                }}
+                                aria-label={`Slide dot ${dotIdx + 1}`}
+                                style={{
+                                  width: dotIdx === activePhotoIndex ? '20px' : '6px',
+                                  height: '5px',
+                                  borderRadius: '999px',
+                                  background: dotIdx === activePhotoIndex ? '#ffffff' : 'rgba(255, 255, 255, 0.45)',
+                                  boxShadow: dotIdx === activePhotoIndex ? '0 1px 4px rgba(0,0,0,0.5)' : 'none',
+                                  border: 'none',
+                                  padding: 0,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.35s ease',
+                                }}
+                              />
+                            ))}
+                          </div>
                         </div>
                         <div className="mini-stats"><div><small>NETWORK RATING</small><strong>4.8 <span>★</span></strong></div><div><small>SERVICES COMPLETED</small><strong>25k<span>+</span></strong></div><div><small>COOPERATIVES</small><strong>50<span>+</span></strong></div></div>
                     </div>
