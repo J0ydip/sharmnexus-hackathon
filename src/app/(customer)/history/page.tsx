@@ -52,8 +52,28 @@ export default function HistoryPage() {
   useEffect(() => {
     async function checkAuth() {
       const localAuth = typeof window !== 'undefined' ? (localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth')) : null;
+      let hasValidCustomerAuth = false;
+      if (localAuth) {
+        try {
+          const parsed = JSON.parse(localAuth);
+          if (parsed.role === 'admin' || parsed.name === 'Super Admin' || parsed.email === 'admin@shramnexus.com') {
+            localStorage.removeItem('shramnexus-auth');
+            localStorage.removeItem('sharmnexus-auth');
+          } else if (parsed.isLoggedIn) {
+            hasValidCustomerAuth = true;
+          }
+        } catch (e) {}
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user || localAuth) {
+      const isAdm = session?.user && (
+        session.user.user_metadata?.user_type === 'admin' ||
+        session.user.user_metadata?.role === 'admin' ||
+        session.user.user_metadata?.full_name === 'Super Admin' ||
+        session.user.email === 'admin@shramnexus.com'
+      );
+
+      if ((session?.user && !isAdm) || hasValidCustomerAuth) {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);

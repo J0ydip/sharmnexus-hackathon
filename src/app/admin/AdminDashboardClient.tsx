@@ -316,6 +316,17 @@ export function AdminDashboardClient() {
       localStorage.getItem('shramnexus-admin-auth') ||
       localStorage.getItem('sharmnexus-admin-auth');
     if (auth === 'true') {
+      // Ensure customer-facing storage is clean and never contaminated by admin session
+      try {
+        const cust = localStorage.getItem('shramnexus-auth') || localStorage.getItem('sharmnexus-auth');
+        if (cust) {
+          const parsed = JSON.parse(cust);
+          if (parsed.role === 'admin' || parsed.name === 'Super Admin' || parsed.email === 'admin@shramnexus.com') {
+            localStorage.removeItem('shramnexus-auth');
+            localStorage.removeItem('sharmnexus-auth');
+          }
+        }
+      } catch (e) {}
       setIsAuthorized(true);
       fetchAllData();
     } else {
@@ -717,11 +728,20 @@ export function AdminDashboardClient() {
             )}
           </button>
 
+          <Link
+            href="/"
+            className="nav-item"
+            style={{ marginTop: 'auto', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <span>🏠</span>
+            <span>Back to Public Site</span>
+          </Link>
+
           <button
             type="button"
             onClick={handleLogout}
             className="nav-item text-red"
-            style={{ marginTop: 'auto' }}
+            style={{ marginTop: '6px' }}
           >
             🚪 Secure Logout
           </button>
@@ -765,6 +785,23 @@ export function AdminDashboardClient() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Link
+              href="/"
+              className="btn btn-outline"
+              title="Return to Public Customer Landing Page"
+              style={{
+                padding: '0.45rem 0.85rem',
+                fontSize: '0.78rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: 'inherit',
+              }}
+            >
+              ← Back to Public Site
+            </Link>
             <button
               type="button"
               onClick={handleRefreshAll}

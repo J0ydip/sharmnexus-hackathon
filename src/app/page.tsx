@@ -20,7 +20,12 @@ export default function LandingPage() {
         if (localAuth) {
           try {
             const parsed = JSON.parse(localAuth);
-            if (parsed.isLoggedIn) {
+            if (parsed.role === 'admin' || parsed.name === 'Super Admin' || parsed.email === 'admin@shramnexus.com') {
+              localStorage.removeItem('shramnexus-auth');
+              localStorage.removeItem('sharmnexus-auth');
+              setIsAuthenticated(false);
+              setUserType(null);
+            } else if (parsed.isLoggedIn) {
               setIsAuthenticated(true);
               const type = parsed.role || 'customer';
               setUserType(type);
@@ -34,10 +39,18 @@ export default function LandingPage() {
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          const type = session.user.user_metadata?.user_type || session.user.user_metadata?.role;
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+          const email = session.user.email;
+          if (type === 'admin' || fullName === 'Super Admin' || email === 'admin@shramnexus.com') {
+            setIsAuthenticated(false);
+            setUserType(null);
+            return;
+          }
           setIsAuthenticated(true);
-          const type = session.user.user_metadata?.user_type || 'customer';
-          setUserType(type);
-          if (type === 'worker') {
+          const customerOrWorker = type || 'customer';
+          setUserType(customerOrWorker);
+          if (customerOrWorker === 'worker') {
             window.location.href = '/worker-dashboard';
           }
         } else {

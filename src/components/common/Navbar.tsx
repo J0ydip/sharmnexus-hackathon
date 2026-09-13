@@ -64,15 +64,27 @@ export function Navbar() {
         if (localAuth) {
           try {
             const p = JSON.parse(localAuth);
-            initialUser = {
-              email: p.email,
-              user_metadata: { full_name: p.name }
-            };
-            setUser(initialUser);
+            if (p.role === 'admin' || p.name === 'Super Admin' || p.email === 'admin@shramnexus.com') {
+              localStorage.removeItem('shramnexus-auth');
+              localStorage.removeItem('sharmnexus-auth');
+            } else {
+              initialUser = {
+                email: p.email,
+                user_metadata: { full_name: p.name }
+              };
+              setUser(initialUser);
+            }
           } catch (e) {}
         }
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          const userRole = session.user.user_metadata?.user_type || session.user.user_metadata?.role;
+          const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+          const userEmail = session.user.email;
+          if (userRole === 'admin' || userName === 'Super Admin' || userEmail === 'admin@shramnexus.com') {
+            setUser(null);
+            return;
+          }
           setUser(session.user);
           const { data: bList } = await supabase
             .from('bookings')
