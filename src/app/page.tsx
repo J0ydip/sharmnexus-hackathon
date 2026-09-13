@@ -164,9 +164,154 @@ export default function LandingPage() {
         <section className="trust-strip" aria-label="ShramNexus network statistics"><div className="metric-calculate"><strong><span className="count-up" data-target="5000">0</span>+</strong><span data-i18n="trust_workers">skilled workers</span></div><div className="metric-calculate"><strong><span className="count-up" data-target="25000">0</span>+</strong><span data-i18n="trust_services">services completed</span></div><div className="metric-calculate"><strong><span className="count-up" data-target="50">0</span>+</strong><span data-i18n="trust_coops">cooperatives</span></div><div className="metric-calculate"><strong><span className="count-up count-decimal" data-target="4.8">0</span><span>★</span></strong><span data-i18n="trust_rating">average rating</span></div><p data-i18n="trust_tagline">One network. Many ways to belong.</p></section>
 
         <section className="problem-solution section-pad" id="about">
-            <div className="section-kicker">WHY SHRAMNEXUS</div>
-            <div className="split-heading"><h2>Skilled workers are everywhere.<br /><em>Opportunity is not.</em></h2><p>Local talent should not stay invisible. We are building the digital layer that helps cooperative workers become easier to find, easier to trust, and better supported.</p></div>
-            <div className="transformation"><div className="before-card"><span className="card-tag">TODAY</span><h3>Great skills, disconnected</h3><ul><li>Unpredictable job opportunities</li><li>No portable digital reputation</li><li>Households unsure whom to trust</li><li>Limited access to welfare support</li></ul></div><div className="transform-arrow">→</div><div className="after-card"><span className="card-tag">WITH SHRAMNEXUS</span><h3>A stronger local network</h3><ul><li>Verified worker profiles and ratings</li><li>Fair, transparent bookings</li><li>Cooperative-owned workforce data</li><li>Training, insurance, and welfare access</li></ul></div></div>
+          <div className="section-kicker-row">
+            <span className="section-badge">
+              <span className="badge-dot pulse"></span> WHY SHRAMNEXUS • THE PARADIGM SHIFT
+            </span>
+          </div>
+
+          <div className="split-heading why-split-heading">
+            <div className="heading-copy">
+              <h2>
+                Skilled workers are everywhere.<br />
+                <em>Opportunity is not.</em>
+              </h2>
+            </div>
+            <div className="why-mission-card">
+              <div className="mission-header">
+                <span className="mission-tag">✦ COOPERATIVE DIGITAL INFRASTRUCTURE</span>
+              </div>
+              <p className="mission-text">
+                <strong>Local talent should not stay invisible.</strong> We are building the sovereign digital layer that transforms informal, precarious labour into verified, cooperative-backed local prosperity.
+              </p>
+              <div className="mission-badges">
+                <span className="mission-chip">⚡ 0% Middleman Cut</span>
+                <span className="mission-chip">🛡️ 100% Cooperative Owned</span>
+                <span className="mission-chip">⚖️ Fair Algorithm Guarantee</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="transformation">
+            {/* Before Card */}
+            <div className="before-card transform-module">
+              <div className="transform-card-header">
+                <span className="card-badge tag-today">
+                  <span className="tag-icon">⚠️</span> TODAY • THE INFORMAL REALITY
+                </span>
+                <span className="card-status-pill">Unorganized & Isolated</span>
+              </div>
+              <h3 className="transform-card-title">Great skills, disconnected</h3>
+              <p className="transform-card-subtitle">
+                Individual tradespeople navigating an erratic, fragmented market with zero institutional protection.
+              </p>
+
+              <div className="transform-items">
+                <div className="transform-item problem-item">
+                  <div className="item-icon-box danger-icon">✕</div>
+                  <div className="item-content">
+                    <strong>Unpredictable Job Opportunities</strong>
+                    <p>Erratic word-of-mouth reliance and seasonal income droughts with predatory cut-offs.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item problem-item">
+                  <div className="item-icon-box danger-icon">✕</div>
+                  <div className="item-content">
+                    <strong>No Portable Digital Reputation</strong>
+                    <p>Years of hard-earned craftsmanship vanish when shifting localities or neighborhoods.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item problem-item">
+                  <div className="item-icon-box danger-icon">✕</div>
+                  <div className="item-content">
+                    <strong>Households Unsure Whom to Trust</strong>
+                    <p>Unvetted strangers, arbitrary price haggling, and no verified background checks.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item problem-item">
+                  <div className="item-icon-box danger-icon">✕</div>
+                  <div className="item-content">
+                    <strong>Limited Access to Welfare Support</strong>
+                    <p>No health cover, emergency medical buffer, accidental insurance, or pension pool.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-impact-bar problem-footer">
+                <span className="impact-label">Market Friction</span>
+                <span className="impact-value">Up to 30% lost to commercial commission middlemen</span>
+              </div>
+            </div>
+
+            {/* Center Transformation Node */}
+            <div className="transform-connector">
+              <div className="connector-ring-outer">
+                <div className="connector-icon-glow">
+                  <span className="connector-arrow">→</span>
+                </div>
+              </div>
+              <div className="connector-caption">
+                TRANSFORMED BY<br />
+                <strong>SHRAMNEXUS</strong>
+              </div>
+            </div>
+
+            {/* After Card */}
+            <div className="after-card transform-module">
+              <div className="transform-card-header">
+                <span className="card-badge tag-tomorrow">
+                  <span className="tag-icon">✦</span> WITH SHRAMNEXUS
+                </span>
+                <span className="card-status-pill success-pill">Verified Cooperative Network</span>
+              </div>
+              <h3 className="transform-card-title">A stronger local network</h3>
+              <p className="transform-card-subtitle">
+                A sovereign digital ecosystem empowering workers with equity, lifelong reputation, and collective security.
+              </p>
+
+              <div className="transform-items">
+                <div className="transform-item solution-item">
+                  <div className="item-icon-box success-icon">✓</div>
+                  <div className="item-content">
+                    <strong>Fair, Transparent Bookings</strong>
+                    <p>Dynamic job routing with 0% platform commission and guaranteed minimum wage tariffs.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item solution-item">
+                  <div className="item-icon-box success-icon">✓</div>
+                  <div className="item-content">
+                    <strong>Verified Worker Profiles & Ratings</strong>
+                    <p>Government ID & trade credential checks with permanent, verifiable customer reviews.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item solution-item">
+                  <div className="item-icon-box success-icon">✓</div>
+                  <div className="item-content">
+                    <strong>Cooperative-Owned Workforce Data</strong>
+                    <p>Workers own their own data and federation governance—never exploited by corporate algorithms.</p>
+                  </div>
+                </div>
+
+                <div className="transform-item solution-item">
+                  <div className="item-icon-box success-icon">✓</div>
+                  <div className="item-content">
+                    <strong>Training, Insurance & Welfare Access</strong>
+                    <p>Automated welfare fund contributions, subsidized tool kits, skill certs, and healthcare safety nets.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-impact-bar solution-footer">
+                <span className="impact-label">Collective Empowerment</span>
+                <span className="impact-value">88% Fairness Score • 100% Cooperative Owned</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="services section-pad" id="services">
