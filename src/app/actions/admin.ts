@@ -146,7 +146,7 @@ export interface AdminEarningsData {
   societies: AdminSocietyEarnings[];
 }
 
-export const SEED_TRANSACTIONS: AdminTransactionItem[] = [
+const SEED_TRANSACTIONS: AdminTransactionItem[] = [
   {
     id: 'pay_SNX992148',
     bookingId: '#SNX-992',
@@ -462,7 +462,7 @@ export interface AdminCustomerItem {
   date: string;
 }
 
-export const SEED_CUSTOMERS: AdminCustomerItem[] = [
+const SEED_CUSTOMERS: AdminCustomerItem[] = [
   { id: 'sc-1', name: 'Priya Sharma', email: 'priya.s@example.com', bookings: 4, spent: '₹ 1,850', status: 'Active', date: 'Oct 14, 2024' },
   { id: 'sc-2', name: 'Rahul Verma', email: 'rahul.v@example.com', bookings: 2, spent: '₹ 800', status: 'Active', date: 'Oct 12, 2024' },
   { id: 'sc-3', name: 'Anita Desai', email: 'anita.d@example.com', bookings: 5, spent: '₹ 2,400', status: 'Active', date: 'Oct 11, 2024' },
@@ -526,7 +526,7 @@ export interface AdminBookingItem {
   bc: string;
 }
 
-export const SEED_BOOKINGS: AdminBookingItem[] = [
+const SEED_BOOKINGS: AdminBookingItem[] = [
   { id: '#SNX-992', c: 'Priya Sharma', w: 'Raj Kumar', s: 'Plumbing & Sanitation', d: 'Today, 10:30 AM', a: '₹ 450', st: 'Ongoing', bc: 'badge-ongoing' },
   { id: '#SNX-991', c: 'Rahul Verma', w: 'Sunita Sharma', s: 'Deep Home Cleaning', d: 'Today, 02:00 PM', a: '₹ 800', st: 'Pending', bc: 'badge-pending' },
   { id: '#SNX-990', c: 'Anita Desai', w: 'Meena Devi', s: 'Electrical Switchboard', d: 'Yesterday', a: '₹ 350', st: 'Completed', bc: 'badge-success' },
@@ -589,7 +589,7 @@ export async function getAdminBookings(): Promise<AdminBookingItem[]> {
   }
 }
 
-export const SEED_REVIEWS: AdminReviewItem[] = [
+const SEED_REVIEWS: AdminReviewItem[] = [
   { id: 'rev-1', c: 'Priya Sharma', w: 'Raj Kumar', s: 'Plumbing & Sanitation', r: '★★★★★', rev: 'Excellent work, arrived on time with cooperative tools. Highly professional!', d: 'Today, 11:00 AM' },
   { id: 'rev-2', c: 'Rahul Verma', w: 'Meena Devi', s: 'Electrical', r: '★★★★☆', rev: 'Good job fixing the main circuit board, clean and neat work.', d: 'Yesterday' },
   { id: 'rev-3', c: 'Anita Desai', w: 'Sunita Sharma', s: 'Cleaning', r: '★★★★★', rev: 'Spotless deep cleaning! Highly recommend ShramNexus cooperative team.', d: 'Oct 12' },
