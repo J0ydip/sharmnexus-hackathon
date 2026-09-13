@@ -560,20 +560,24 @@ export function WorkerDashboardClient() {
     }
   }, []);
 
+  const handleRealtimeNewBooking = useCallback((event: any) => {
+    showToast(`🔔 New job request! ${event.booking_type === 'emergency' ? '🚨 EMERGENCY' : 'Booking'} — ₹${event.estimated_price || 'TBD'}`);
+    realtimeRefetch();
+  }, [realtimeRefetch]);
+
+  const handleRealtimeBookingUpdate = useCallback((event: any) => {
+    if (event.status === 'cancelled') {
+      showToast('⚠️ A booking has been cancelled.');
+    } else if (event.status === 'completed') {
+      showToast('✅ Job completed & payment released!');
+    }
+    realtimeRefetch();
+  }, [realtimeRefetch]);
+
   const { isConnected: realtimeConnected } = useRealtimeBookings({
     workerId: getWorkerId(),
-    onNewBooking: (event) => {
-      showToast(`🔔 New job request! ${event.booking_type === 'emergency' ? '🚨 EMERGENCY' : 'Booking'} — ₹${event.estimated_price || 'TBD'}`);
-      realtimeRefetch();
-    },
-    onBookingUpdate: (event) => {
-      if (event.status === 'cancelled') {
-        showToast('⚠️ A booking has been cancelled.');
-      } else if (event.status === 'completed') {
-        showToast('✅ Job completed & payment released!');
-      }
-      realtimeRefetch();
-    },
+    onNewBooking: handleRealtimeNewBooking,
+    onBookingUpdate: handleRealtimeBookingUpdate,
     enabled: true,
   });
 

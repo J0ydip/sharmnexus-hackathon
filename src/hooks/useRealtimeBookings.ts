@@ -46,8 +46,22 @@ export function useRealtimeBookings({
   const [isConnected, setIsConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<RealtimeBookingEvent | null>(null);
 
-  const handlePayload = useCallback(
-    (payload: any) => {
+  // Store latest callbacks in refs so changes to function references never trigger re-subscription
+  const onNewBookingRef = useRef(onNewBooking);
+  onNewBookingRef.current = onNewBooking;
+
+  const onBookingUpdateRef = useRef(onBookingUpdate);
+  onBookingUpdateRef.current = onBookingUpdate;
+
+  useEffect(() => {
+    if (!enabled) {
+      setIsConnected((prev) => (prev ? false : prev));
+      return;
+    }
+
+    const supabase = createClient();
+
+    const handlePayload = (payload: any) => {
       const eventType = payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE';
       const record = payload.new as any;
 
@@ -70,18 +84,11 @@ export function useRealtimeBookings({
       setLastEvent(event);
 
       if (eventType === 'INSERT') {
-        onNewBooking?.(event);
+        onNewBookingRef.current?.(event);
       } else if (eventType === 'UPDATE') {
-        onBookingUpdate?.(event);
+        onBookingUpdateRef.current?.(event);
       }
-    },
-    [onNewBooking, onBookingUpdate]
-  );
-
-  useEffect(() => {
-    if (!enabled) return;
-
-    const supabase = createClient();
+    };
 
     // Subscribe to all bookings — filter by worker_id if provided
     // For new job requests: worker_id might be null (unassigned) or matching
@@ -111,7 +118,10 @@ export function useRealtimeBookings({
         (payload) => handlePayload({ ...payload, eventType: 'UPDATE' })
       )
       .subscribe((status) => {
-        setIsConnected(status === 'SUBSCRIBED');
+        setIsConnected((prev) => {
+          const next = status === 'SUBSCRIBED';
+          return prev === next ? prev : next;
+        });
       });
 
     channelRef.current = channel;
@@ -120,10 +130,9 @@ export function useRealtimeBookings({
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
-        setIsConnected(false);
       }
     };
-  }, [workerId, enabled, handlePayload]);
+  }, [workerId, enabled]);
 
   return { isConnected, lastEvent };
 }
