@@ -157,16 +157,37 @@ export function Navbar() {
     document.body.style.transition = 'opacity 0.25s ease';
     document.body.style.opacity = '0.6';
 
-    // Set cookies for Google Translate
-    document.cookie = `googtrans=/en/${newLang}; path=/`;
-    document.cookie = `googtrans=/en/${newLang}; path=/; domain=${window.location.hostname}`;
+    const hostname = window.location.hostname;
+    // Helper to set or clear cookies across domains
+    const setGtCookie = (val: string, clear: boolean = false) => {
+      const exp = clear ? '; expires=Thu, 01 Jan 1970 00:00:00 UTC' : '; max-age=31536000';
+      // Path=/
+      document.cookie = `googtrans=${val}; path=/${exp}`;
+      // Domain-specific if not localhost
+      if (hostname !== 'localhost' && !hostname.endsWith('.localhost')) {
+        document.cookie = `googtrans=${val}; path=/; domain=${hostname}${exp}`;
+        // Also root domain if subdomain
+        const parts = hostname.split('.');
+        if (parts.length > 2) {
+          const rootDomain = parts.slice(-2).join('.');
+          document.cookie = `googtrans=${val}; path=/; domain=.${rootDomain}${exp}`;
+        }
+      }
+    };
+
+    if (newLang === 'en') {
+      // Clearing the translation cookie restores English cleanly
+      setGtCookie('', true);
+      setGtCookie('/en/en', false);
+    } else {
+      setGtCookie(`/en/${newLang}`, false);
+    }
 
     // Programmatically trigger Google Translate via its hidden <select>
     const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
     if (gtCombo) {
       gtCombo.value = newLang;
       gtCombo.dispatchEvent(new Event('change'));
-      // Restore opacity after translation settles
       setTimeout(() => {
         document.body.style.opacity = '1';
       }, 400);
