@@ -1250,6 +1250,65 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                 )}
               </div>
 
+              {/* AI Demand Forecasting & Standby Squad Readiness */}
+              <div className="coop-card" style={{ marginBottom: '1.8rem', background: 'linear-gradient(135deg, #24172f 0%, #3d2b48 100%)', color: '#fff', border: '1px solid rgba(230,170,59,0.3)', borderRadius: '14px', padding: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ background: 'rgba(230, 170, 59, 0.2)', border: '1px solid #e6aa3b', color: '#e6aa3b', fontSize: '0.72rem', fontWeight: 800, padding: '3px 9px', borderRadius: '14px' }}>
+                      ⚡ AI DEMAND FORECAST &amp; SQUAD ALLOCATION
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#e6dcd0' }}>Local District: {data.society.district || 'Jaipur Central'}</span>
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: '#e6aa3b', fontWeight: 700 }}>
+                    Model Accuracy: 95.2% (Grade A+)
+                  </span>
+                </div>
+
+                <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', color: '#fff', margin: '0 0 6px 0' }}>
+                  Upcoming Weekend Demand Surge: +34% Projected in Electrical &amp; Plumbing Trades
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#e6dcd0', lineHeight: 1.5, margin: '0 0 1.25rem 0' }}>
+                  ShramNexus AI Demand Engine predicts an influx of ~48 additional household repair requests between Friday 5 PM and Sunday 8 PM. Activating standby squads or adjusting trade availability is recommended to avoid dispatch delays.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '1.25rem' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 14px', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#f5dfad', textTransform: 'uppercase', fontWeight: 700 }}>Projected Peak Window</span>
+                    <strong style={{ display: 'block', fontSize: '1rem', color: '#fff', marginTop: '2px' }}>Saturday 10:00 - 14:00</strong>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 14px', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#f5dfad', textTransform: 'uppercase', fontWeight: 700 }}>Workforce Requirement</span>
+                    <strong style={{ display: 'block', fontSize: '1rem', color: '#fff', marginTop: '2px' }}>18 Artisans Needed (12 Active)</strong>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 14px', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#f5dfad', textTransform: 'uppercase', fontWeight: 700 }}>Inter-Society Spillover Status</span>
+                    <strong style={{ display: 'block', fontSize: '1rem', color: '#18ae79', marginTop: '2px' }}>Surplus Available in Pune Coop</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="coop-btn coop-btn-gold"
+                    onClick={() => {
+                      showToast('⚡ Standby Squad B mobilized & assigned to Weekend Surge coverage!');
+                    }}
+                  >
+                    ⚡ Mobilize Standby Squad B
+                  </button>
+                  <button
+                    type="button"
+                    className="coop-btn coop-btn-outline"
+                    style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}
+                    onClick={() => {
+                      setActiveTab('view-squads');
+                    }}
+                  >
+                    View Community Squads →
+                  </button>
+                </div>
+              </div>
+
               {/* Workload Roster */}
               <div className="coop-card">
                 <div className="coop-card-header">

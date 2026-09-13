@@ -529,3 +529,435 @@
   animation: spin 1s linear infinite;
 }
 
+/* =========================================================
+   AI DEMAND FORECASTING & WORKFORCE ALLOCATION STYLES
+   ========================================================= */
+
+.ai-briefing-card {
+  background: linear-gradient(135deg, #24172f 0%, #3d2b48 60%, #2f1d3e 100%);
+  border: 1px solid rgba(230, 170, 59, 0.3);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(36, 23, 47, 0.15);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-briefing-card::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(230, 170, 59, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ai-briefing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-badge-live {
+  background: rgba(230, 170, 59, 0.2);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-badge-live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.6; }
+}
+
+.ai-briefing-headline {
+  font-family: var(--display);
+  font-size: 1.25rem;
+  color: #fff;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.ai-briefing-summary {
+  font-size: 0.88rem;
+  color: #e6dcd0;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+.ai-briefing-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .ai-briefing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-briefing-box {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.ai-briefing-box h4 {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.75rem 0;
+  color: var(--gold-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-briefing-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-briefing-list li {
+  font-size: 0.82rem;
+  color: #f4f2f7;
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ai-briefing-list li::before {
+  content: '▸';
+  color: var(--gold);
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+/* Time-Series Prediction Chart */
+.ai-forecast-chart-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.ai-chart-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.ai-select-pill {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fdfbf7;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none;
+}
+
+.ai-forecast-bars-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  height: 240px;
+  padding: 20px 10px 10px;
+  background: #faf8f5;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  position: relative;
+}
+
+.ai-forecast-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.ai-forecast-bar-outer {
+  width: 100%;
+  max-width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+}
+
+.ai-forecast-confidence-band {
+  width: 24px;
+  background: rgba(230, 170, 59, 0.2);
+  border-radius: 6px;
+  position: absolute;
+  bottom: 0;
+  z-index: 1;
+  border-top: 1px dashed var(--gold);
+}
+
+.ai-forecast-bar-actual {
+  width: 14px;
+  background: var(--ink);
+  border-radius: 4px 4px 0 0;
+  position: absolute;
+  bottom: 0;
+  z-index: 2;
+  transition: height 0.4s ease;
+}
+
+.ai-forecast-bar-predicted {
+  width: 28px;
+  background: linear-gradient(180deg, var(--gold) 0%, #d49526 100%);
+  border-radius: 6px 6px 0 0;
+  position: absolute;
+  bottom: 0;
+  z-index: 3;
+  transition: height 0.4s ease;
+  box-shadow: 0 4px 10px rgba(230, 170, 59, 0.3);
+}
+
+.ai-forecast-bar-predicted:hover {
+  background: linear-gradient(180deg, #ffc457 0%, var(--gold) 100%);
+  transform: translateY(-2px);
+}
+
+.ai-bar-label {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ai-bar-val {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.ai-surge-tag {
+  position: absolute;
+  top: -24px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--red);
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* Regional Trade Matrix Heatmap */
+.ai-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.ai-heatmap-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-heatmap-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.ai-heatmap-card.deficit {
+  border-left: 5px solid var(--red);
+}
+
+.ai-heatmap-card.surplus {
+  border-left: 5px solid var(--green);
+}
+
+.ai-heatmap-card.optimal {
+  border-left: 5px solid var(--gold);
+}
+
+.ai-gap-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-gap-badge.deficit {
+  background: #fee8e6;
+  color: var(--red);
+}
+
+.ai-gap-badge.surplus {
+  background: var(--mint);
+  color: var(--green);
+}
+
+.ai-gap-badge.optimal {
+  background: #fbf7ef;
+  color: #8c6310;
+  border: 1px solid var(--gold-soft);
+}
+
+/* Rebalancing Proposal Card */
+.ai-rebalance-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ai-rebalance-path {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ai-node-box {
+  background: #f7f5fa;
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 10px;
+}
+
+.ai-arrow-dispatch {
+  font-size: 1.2rem;
+  color: var(--gold);
+  font-weight: bold;
+}
+
+/* Any Location Search & Dynamic Quick Selection */
+.ai-loc-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 14px;
+  box-shadow: 0 2px 8px rgba(36, 23, 47, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.ai-loc-search-bar:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(230, 170, 59, 0.15);
+}
+
+.ai-loc-chips-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.ai-loc-chip {
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: #f8f6f2;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ai-loc-chip:hover {
+  background: #eee8dc;
+  border-color: var(--gold);
+}
+
+.ai-loc-chip.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+.ai-loc-chip.custom {
+  background: #fef7e6;
+  border-color: var(--gold);
+  color: #925f05;
+}
+
+.ai-heatmap-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  background: #faf8f5;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+
