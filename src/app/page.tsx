@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Script from 'next/script';
-import { Languages, Compass, MousePointerClick, Mic, Shapes } from 'lucide-react';
+import { Languages, Compass, MousePointerClick, Mic, Shapes, ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
 import { HelpSupportSection } from '@/components/common/HelpSupportSection';
@@ -250,7 +250,7 @@ export default function LandingPage() {
             {/* Center Transformation Node */}
             <div className="transform-connector">
               <div className="connector-icon-glow" aria-label="Transformation forward">
-                <span className="connector-arrow">→</span>
+                <ArrowRight size={26} strokeWidth={2.5} />
               </div>
             </div>
 
