@@ -153,20 +153,22 @@ export function Navbar() {
   const switchLanguage = (newLang: CustomerLanguage) => {
     changeLang(newLang);
 
-    // Smooth fade transition during language switch
-    document.body.style.transition = 'opacity 0.25s ease';
-    document.body.style.opacity = '0.6';
+    // 1. Direct dictionary translation for marketing/landing elements
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem('shramnexus-lang', newLang); } catch (e) {}
+      if (typeof (window as any).applyShramNexusLanguage === 'function') {
+        (window as any).applyShramNexusLanguage(newLang);
+      }
+      window.dispatchEvent(new CustomEvent('shramnexus-lang-change', { detail: newLang }));
+    }
 
+    // 2. Set cookies for Google Translate across domains
     const hostname = window.location.hostname;
-    // Helper to set or clear cookies across domains
     const setGtCookie = (val: string, clear: boolean = false) => {
       const exp = clear ? '; expires=Thu, 01 Jan 1970 00:00:00 UTC' : '; max-age=31536000';
-      // Path=/
       document.cookie = `googtrans=${val}; path=/${exp}`;
-      // Domain-specific if not localhost
       if (hostname !== 'localhost' && !hostname.endsWith('.localhost')) {
         document.cookie = `googtrans=${val}; path=/; domain=${hostname}${exp}`;
-        // Also root domain if subdomain
         const parts = hostname.split('.');
         if (parts.length > 2) {
           const rootDomain = parts.slice(-2).join('.');
@@ -176,24 +178,17 @@ export function Navbar() {
     };
 
     if (newLang === 'en') {
-      // Clearing the translation cookie restores English cleanly
       setGtCookie('', true);
       setGtCookie('/en/en', false);
     } else {
       setGtCookie(`/en/${newLang}`, false);
     }
 
-    // Programmatically trigger Google Translate via its hidden <select>
+    // 3. Trigger Google Translate if available (non-blocking)
     const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
-    if (gtCombo) {
+    if (gtCombo && gtCombo.value !== newLang) {
       gtCombo.value = newLang;
       gtCombo.dispatchEvent(new Event('change'));
-      setTimeout(() => {
-        document.body.style.opacity = '1';
-      }, 400);
-    } else {
-      // Google Translate widget not loaded yet — reload to apply cookie
-      window.location.reload();
     }
 
     // Hide the Google Translate toolbar if it appears
@@ -203,7 +198,7 @@ export function Navbar() {
         bar.style.display = 'none';
       }
       document.body.style.top = '0px';
-    }, 500);
+    }, 400);
   };
 
   const navLinks: Array<{

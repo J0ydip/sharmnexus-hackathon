@@ -140,25 +140,20 @@ export default function LandingPage() {
               const newLang = e.target.value;
               setLang(newLang);
 
-              // Smooth fade transition
-              document.body.style.transition = 'opacity 0.25s ease';
-              document.body.style.opacity = '0.6';
+              // 1. Instant client-side dictionary translation
+              if (typeof window !== 'undefined') {
+                try { localStorage.setItem('shramnexus-lang', newLang); } catch (err) {}
+                if (typeof (window as any).applyShramNexusLanguage === 'function') {
+                  (window as any).applyShramNexusLanguage(newLang);
+                }
+                window.dispatchEvent(new CustomEvent('shramnexus-lang-change', { detail: newLang }));
+              }
 
-              // Set cookies for Google Translate
-              document.cookie = `googtrans=/en/${newLang}; path=/`;
-              document.cookie = `googtrans=/en/${newLang}; path=/; domain=${window.location.hostname}`;
-
-              // Save preference
-              try { localStorage.setItem('shramnexus-lang', newLang); } catch (err) {}
-
-              // Trigger Google Translate
+              // 2. Optional Google Translate fallback/cookie sync
               const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
-              if (gtCombo) {
+              if (gtCombo && gtCombo.value !== newLang) {
                 gtCombo.value = newLang;
                 gtCombo.dispatchEvent(new Event('change'));
-                setTimeout(() => { document.body.style.opacity = '1'; }, 400);
-              } else {
-                window.location.reload();
               }
 
               // Hide Google Translate toolbar
@@ -166,7 +161,7 @@ export default function LandingPage() {
                 const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
                 if (bar) bar.style.display = 'none';
                 document.body.style.top = '0px';
-              }, 500);
+              }, 400);
             }}
           >
             <option value="en">EN</option>
@@ -750,7 +745,6 @@ export default function LandingPage() {
 
 
 
-      <div id="google_translate_element" style={{ display: 'none' }}></div>
       <Script src="/js/script.js" strategy="afterInteractive" />
     </>
   );

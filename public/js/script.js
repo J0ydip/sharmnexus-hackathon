@@ -574,6 +574,16 @@ const initScript = () => {
     try { localStorage.setItem(STORAGE_KEY, lang); } catch (e) { /* ignore */ }
   }
 
+  // Expose globally so React components can trigger dictionary translations directly
+  if (typeof window !== 'undefined') {
+    (window as any).applyShramNexusLanguage = applyLanguage;
+    window.addEventListener('shramnexus-lang-change', (e: any) => {
+      if (e?.detail) {
+        applyLanguage(e.detail);
+      }
+    });
+  }
+
   document.querySelectorAll('.lang-pill').forEach(btn => {
     btn.addEventListener('click', () => applyLanguage(btn.dataset.lang));
   });
