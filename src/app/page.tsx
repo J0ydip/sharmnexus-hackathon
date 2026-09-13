@@ -189,7 +189,7 @@ export default function LandingPage() {
             <option value="ta">தமிழ்</option>
             <option value="te">తెలుగు</option>
           </select>
-          <a className="text-link" href="/auth/login" data-i18n="nav_login" onClick={() => setIsNavOpen(false)}>Log in</a>
+          <a className="button button-dark nav-login-btn" href="/auth/login" data-i18n="nav_login" onClick={() => setIsNavOpen(false)}>Log in</a>
         </div>
       </div>
       <button 
@@ -248,6 +248,34 @@ export default function LandingPage() {
                             background: '#150d1e',
                           }}
                         >
+                          {/* Slide Index Counter Badge on Right */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '14px',
+                              right: '14px',
+                              padding: '4px 10px',
+                              borderRadius: '999px',
+                              background: 'rgba(20, 12, 28, 0.7)',
+                              backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)',
+                              border: '1px solid rgba(255, 255, 255, 0.22)',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              letterSpacing: '0.04em',
+                              zIndex: 5,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                              pointerEvents: 'none',
+                            }}
+                          >
+                            <span style={{ color: '#fbbf24' }}>{String(activePhotoIndex + 1).padStart(2, '0')}</span>
+                            <span style={{ opacity: 0.45 }}>/</span>
+                            <span style={{ opacity: 0.75 }}>{String(HERO_PHOTOS.length).padStart(2, '0')}</span>
+                          </div>
                           <div
                             style={{
                               display: 'flex',

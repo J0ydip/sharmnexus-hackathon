@@ -238,7 +238,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="fixed top-3 left-0 right-0 z-50 mx-auto w-[calc(100%-1.5rem)] max-w-7xl rounded-2xl border border-gray-200/80 bg-white/90 shadow-lg backdrop-blur-xl transition-all">
+    <header className="fixed top-3 left-0 right-0 z-[10000] mx-auto w-[calc(100%-1.5rem)] max-w-7xl rounded-2xl border border-gray-200/80 bg-white/90 shadow-lg backdrop-blur-xl transition-all">
       <div className="flex h-14 items-center justify-between px-3 sm:px-6">
         {/* Left: Mobile Menu & Brand */}
         <div className="flex items-center gap-1.5 sm:gap-3">
