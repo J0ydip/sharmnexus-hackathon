@@ -2068,24 +2068,14 @@ em {
 ========================================= */
 .platform-features {
   position: relative;
-  overflow: hidden;
-  background: #f7f8f6;
+  background: var(--cream);
   max-width: none;
   padding-left: max(2rem, calc((100% - 1240px) / 2));
   padding-right: max(2rem, calc((100% - 1240px) / 2));
 }
 
 .platform-features:before {
-  content: "";
-  position: absolute;
-  width: 520px;
-  height: 520px;
-  top: -260px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(230, 170, 59, 0.13), transparent 68%);
-  pointer-events: none;
+  display: none;
 }
 
 .platform-features > * { position: relative; z-index: 1; }
