@@ -1981,6 +1981,7 @@ export function WorkerDashboardClient() {
                   const yesPct = totalVotes > 0 ? Math.round((prop.yesVotes / totalVotes) * 100) : 0;
                   const myVote = workerVotes[prop.id];
                   const isVoting = isVotingProposalId === prop.id;
+                  const isClosed = prop.status === 'Archived' || prop.status === 'Closed';
 
                   return (
                     <div
@@ -2010,7 +2011,7 @@ export function WorkerDashboardClient() {
                                 color: prop.status === 'Approved' ? '#15803d' : prop.status === 'Rejected' ? '#b91c1c' : '#b45309',
                               }}
                             >
-                              {prop.status}
+                              {prop.status === 'Approved' ? 'Approved (Quorum Met)' : prop.status}
                             </span>
                             {myVote && (
                               <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: myVote === 'yes' ? '#dcfce7' : '#fee2e2', color: myVote === 'yes' ? '#15803d' : '#b91c1c' }}>
@@ -2071,8 +2072,9 @@ export function WorkerDashboardClient() {
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button
                           type="button"
-                          disabled={isVoting || prop.status !== 'Active'}
+                          disabled={isVoting || isClosed}
                           onClick={() => handleWorkerVote(prop.id, 'yes')}
+                          title={isClosed ? 'Voting is closed for this resolution' : (myVote === 'yes' ? 'You already voted YES' : 'Click to vote YES')}
                           style={{
                             flex: 1,
                             minWidth: '130px',
@@ -2080,8 +2082,8 @@ export function WorkerDashboardClient() {
                             borderRadius: '8px',
                             fontWeight: 700,
                             fontSize: '0.88rem',
-                            cursor: prop.status === 'Active' ? 'pointer' : 'not-allowed',
-                            opacity: prop.status !== 'Active' ? 0.6 : 1,
+                            cursor: isClosed ? 'not-allowed' : 'pointer',
+                            opacity: isClosed ? 0.5 : 1,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -2097,8 +2099,9 @@ export function WorkerDashboardClient() {
                         </button>
                         <button
                           type="button"
-                          disabled={isVoting || prop.status !== 'Active'}
+                          disabled={isVoting || isClosed}
                           onClick={() => handleWorkerVote(prop.id, 'no')}
+                          title={isClosed ? 'Voting is closed for this resolution' : (myVote === 'no' ? 'You already voted NO' : 'Click to vote NO')}
                           style={{
                             flex: 1,
                             minWidth: '130px',
@@ -2106,8 +2109,8 @@ export function WorkerDashboardClient() {
                             borderRadius: '8px',
                             fontWeight: 700,
                             fontSize: '0.88rem',
-                            cursor: prop.status === 'Active' ? 'pointer' : 'not-allowed',
-                            opacity: prop.status !== 'Active' ? 0.6 : 1,
+                            cursor: isClosed ? 'not-allowed' : 'pointer',
+                            opacity: isClosed ? 0.5 : 1,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',

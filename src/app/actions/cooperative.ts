@@ -80,7 +80,7 @@ export interface AssemblyProposalItem {
   cost: number;
   yesVotes: number;
   noVotes: number;
-  status: 'Active' | 'Approved' | 'Rejected';
+  status: 'Active' | 'Approved' | 'Rejected' | 'Archived' | 'Closed';
   badgeClass: string;
 }
 
@@ -1056,10 +1056,10 @@ export async function getWorkerProposalsAction(societyId?: string): Promise<Asse
     if (data && data.length > 0) {
       return data.map((p: any, idx: number) => ({
         id: p.id,
-        number: p.number || (idx + 101),
+        number: p.proposal_number || p.number || (idx + 101),
         title: p.title,
         description: p.description,
-        cost: Number(p.budget_impact) || 45000,
+        cost: Number(p.cost || p.budget_impact) || 45000,
         yesVotes: p.yes_votes || 0,
         noVotes: p.no_votes || 0,
         status: p.status || 'Active',
@@ -1102,8 +1102,8 @@ export async function getWorkerProposalsAction(societyId?: string): Promise<Asse
       cost: 30000,
       yesVotes: 49,
       noVotes: 1,
-      status: 'Approved',
-      badgeClass: 'badge-ongoing',
+      status: 'Active',
+      badgeClass: 'badge-completed',
     },
   ];
 }
