@@ -58,6 +58,24 @@ export default function RootLayout({
         <div id="google_translate_element" style={{ display: 'none', position: 'absolute' }}></div>
         <Toaster />
         <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" strategy="afterInteractive" />
+
+        {/* Google Translate Script */}
+        <Script id="google-translate-init" strategy="afterInteractive" dangerouslySetInnerHTML={{
+          __html: `
+            function googleTranslateElementInit() {
+              new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,hi,bn,mr,te,ta',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+              }, 'google_translate_element');
+            }
+          `
+        }} />
+        <Script 
+          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" 
+          strategy="afterInteractive" 
+        />
       </body>
 
     </html>
