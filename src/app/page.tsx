@@ -784,7 +784,25 @@ export default function LandingPage() {
             <a className="button button-dark" href="/auth/login"><span data-i18n="access_explore">Explore ShramNexus</span> <span>↗</span></a>
         </section>
 
-        <section className="worker-opportunities section-pad" id="worker-opportunities"><div className="worker-opportunities-heading"><div className="section-kicker" data-i18n="worker_kicker">FOR SKILLED WORKERS</div><h2 data-i18n-html="worker_h2">Your skills deserve more<br /><em>opportunities.</em></h2><p data-i18n="worker_p">Build your professional identity, discover jobs, grow your reputation, and access cooperative welfare benefits — all from one platform.</p></div><div className="worker-platform"><div className="worker-profile-card"><div className="profile-top"><div className="profile-avatar">RK</div><div><h3>Raj Kumar</h3><p>✓ Verified Plumber</p><strong>★ 4.8 Rating</strong></div></div><div className="profile-divider"></div><div className="profile-stats"><div><strong>3</strong><span>Today’s Jobs</span></div><div><strong>₹18,450</strong><span>This Month</span></div><div><strong>327</strong><span>Completed</span></div></div><a className="profile-link" href="/auth/login">View professional profile <span>↗</span></a></div><div className="worker-benefits"><a href="/auth/login"><span>▤</span>Digital skill profile<i>↗</i></a><a href="/auth/login"><span>✓</span>Certification verification<i>↗</i></a><a href="/auth/login"><span>▣</span>Job opportunities<i>↗</i></a><a href="/auth/login"><span>₹</span>Earnings tracking<i>↗</i></a><a href="/auth/login"><span>▥</span>Work history<i>↗</i></a><a href="/auth/login"><span>★</span>Ratings &amp; reputation<i>↗</i></a><a href="/auth/login"><span>♧</span>Welfare benefits<i>↗</i></a><a href="/auth/login"><span>✦</span>Skills growth<i>↗</i></a></div></div></section>
+        <section className="worker-opportunities section-pad" id="worker-opportunities">
+          <div className="worker-opportunities-heading">
+            <div className="section-kicker" data-i18n="worker_kicker">FOR SKILLED WORKERS</div>
+            <h2 data-i18n-html="worker_h2">Your skills deserve more<br /><em>opportunities.</em></h2>
+            <p data-i18n="worker_p">Build your professional identity, discover jobs, grow your reputation, and access cooperative welfare benefits — all from one platform.</p>
+          </div>
+          <div className="worker-platform">
+            <div className="worker-benefits">
+              <a href="/auth/login"><span>▤</span>Digital skill profile<i>↗</i></a>
+              <a href="/auth/login"><span>✓</span>Certification verification<i>↗</i></a>
+              <a href="/auth/login"><span>▣</span>Job opportunities<i>↗</i></a>
+              <a href="/auth/login"><span>₹</span>Earnings tracking<i>↗</i></a>
+              <a href="/auth/login"><span>▥</span>Work history<i>↗</i></a>
+              <a href="/auth/login"><span>★</span>Ratings &amp; reputation<i>↗</i></a>
+              <a href="/auth/login"><span>♧</span>Welfare benefits<i>↗</i></a>
+              <a href="/auth/login"><span>✦</span>Skills growth<i>↗</i></a>
+            </div>
+          </div>
+        </section>
 
         <section className="how section-pad" id="how-it-works">
           <div className="section-kicker" data-i18n="how_kicker">SIMPLE BY DESIGN</div>
