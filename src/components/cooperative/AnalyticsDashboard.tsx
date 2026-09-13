@@ -185,9 +185,14 @@ export function AnalyticsDashboard({ societyId }: AnalyticsDashboardProps) {
 
         {activeChart === 'categories' && (
           <div>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#5a4a3a', marginBottom: 16 }}>
-              Service Category Distribution
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: '#5a4a3a', margin: 0 }}>
+                Service Category Distribution
+              </h3>
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#8b7355', background: '#faf6f0', padding: '4px 10px', borderRadius: '12px', border: '1px solid #e8dfd4' }}>
+                {data.categoryBreakdown.reduce((sum, c) => sum + c.value, 0)} Total Cooperative Dispatches
+              </span>
+            </div>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
@@ -209,9 +214,43 @@ export function AnalyticsDashboard({ societyId }: AnalyticsDashboardProps) {
                     background: '#fdf8f1', borderColor: '#e8dfd4', borderRadius: 8,
                     fontSize: 13,
                   }}
+                  formatter={(value: any) => [`${value} Jobs Completed`, 'Volume']}
                 />
+                <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>
+
+            {/* Category Breakdown Details */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: '10px',
+              marginTop: '20px',
+              paddingTop: '16px',
+              borderTop: '1px solid #e8dfd4',
+            }}>
+              {data.categoryBreakdown.map((cat, i) => {
+                const total = data.categoryBreakdown.reduce((sum, c) => sum + c.value, 0) || 1;
+                const pct = Math.round((cat.value / total) * 100);
+                return (
+                  <div key={i} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    background: '#faf6f0',
+                    border: '1px solid #e8dfd4',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: cat.fill, display: 'inline-block' }} />
+                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#4a3b2c' }}>{cat.name}</span>
+                    </div>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#d96f4d' }}>{cat.value} ({pct}%)</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
