@@ -25,14 +25,13 @@ export default function LandingPage() {
   const [isPhotoHovered, setIsPhotoHovered] = useState(false);
   const supabase = createClient();
 
-  // Auto-slide hero photos smoothly
+  // Auto-slide hero photos smoothly every 2.5s (continuous auto-scroll)
   useEffect(() => {
-    if (isPhotoHovered) return;
     const interval = setInterval(() => {
       setActivePhotoIndex((prev) => (prev + 1) % HERO_PHOTOS.length);
-    }, 3500);
+    }, 2500);
     return () => clearInterval(interval);
-  }, [isPhotoHovered]);
+  }, []);
 
   useEffect(() => {
     async function checkAuth() {
@@ -240,7 +239,7 @@ export default function LandingPage() {
                           onMouseLeave={() => setIsPhotoHovered(false)}
                           style={{
                             position: 'relative',
-                            height: '380px',
+                            height: '470px',
                             borderRadius: '16px',
                             overflow: 'hidden',
                             padding: 0,
@@ -255,7 +254,7 @@ export default function LandingPage() {
                               width: `${HERO_PHOTOS.length * 100}%`,
                               height: '100%',
                               transform: `translateX(-${activePhotoIndex * (100 / HERO_PHOTOS.length)}%)`,
-                              transition: 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)',
+                              transition: 'transform 0.75s cubic-bezier(0.25, 1, 0.5, 1)',
                             }}
                           >
                             {HERO_PHOTOS.map((src, idx) => (
@@ -275,6 +274,7 @@ export default function LandingPage() {
                                     width: '100%',
                                     height: '100%',
                                     objectFit: 'cover',
+                                    objectPosition: 'center 22%',
                                     display: 'block',
                                   }}
                                 />
