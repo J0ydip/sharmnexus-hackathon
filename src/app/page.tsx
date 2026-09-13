@@ -220,14 +220,19 @@ export default function LandingPage() {
                     <div><strong data-i18n="hero_proof_title">Built around local trust</strong><small data-i18n="hero_proof_sub">5,000+ skilled workers already in the network</small></div>
                 </div>
             </div>
-            <div className="hero-product" aria-label="ShramNexus service matching preview">
+            <div className="hero-product" aria-label="ShramNexus verified worker showcase">
                 <div className="product-glow"></div>
-                <div className="product-window">
-                    <div className="window-top"><span className="window-dots"><i></i><i></i><i></i></span><span className="window-title">ShramNexus / Find a professional</span><span>•••</span></div>
-                    <div className="window-body">
-                        <div className="product-greeting"><div><small>GOOD MORNING, PRIYA</small><h2>Who can we help you find?</h2></div><span className="mini-avatar">PS</span></div>
-                        <div className="search-preview"><span>⌕</span><span>Try “plumber for leaking tap”</span><b>⌘ K</b></div>
-                        <div className="product-label-row"><span>RECOMMENDED NEAR YOU</span><a href="/auth/login">View all ↗</a></div>
+                <div className="product-window" style={{ width: 'min(100%, 540px)', background: '#ffffff', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(36, 23, 47, 0.14)' }}>
+                    <div className="window-top" style={{ height: '40px', padding: '0 1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f5f2ee', color: '#9b929c', fontSize: '0.65rem' }}>
+                      <span className="window-dots" style={{ display: 'flex', gap: '5px' }}>
+                        <i style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f87171', display: 'inline-block' }}></i>
+                        <i style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', display: 'inline-block' }}></i>
+                        <i style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }}></i>
+                      </span>
+                      <span className="window-title" style={{ fontWeight: 600, letterSpacing: '0.02em', color: '#64748b' }}>ShramNexus</span>
+                      <span style={{ color: '#cbd5e1' }}>•••</span>
+                    </div>
+                    <div className="window-body" style={{ padding: '1.2rem' }}>
                         {/* Pure Photo Slider - Auto-sliding the provided worker photos, no writing or text */}
                         <div
                           className="match-card hero-photo-slider"
@@ -235,12 +240,12 @@ export default function LandingPage() {
                           onMouseLeave={() => setIsPhotoHovered(false)}
                           style={{
                             position: 'relative',
-                            height: '215px',
+                            height: '380px',
                             borderRadius: '16px',
                             overflow: 'hidden',
                             padding: 0,
-                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                            boxShadow: '0 10px 28px rgba(20, 12, 28, 0.16)',
+                            border: '1px solid rgba(0, 0, 0, 0.08)',
+                            boxShadow: '0 12px 32px rgba(20, 12, 28, 0.12)',
                             background: '#150d1e',
                           }}
                         >
@@ -265,7 +270,7 @@ export default function LandingPage() {
                               >
                                 <img
                                   src={src}
-                                  alt={`Slide ${idx + 1}`}
+                                  alt={`Worker ${idx + 1}`}
                                   style={{
                                     width: '100%',
                                     height: '100%',
@@ -287,11 +292,11 @@ export default function LandingPage() {
                             aria-label="Previous"
                             style={{
                               position: 'absolute',
-                              left: '8px',
+                              left: '10px',
                               top: '50%',
                               transform: 'translateY(-50%)',
-                              width: '28px',
-                              height: '28px',
+                              width: '32px',
+                              height: '32px',
                               borderRadius: '50%',
                               background: 'rgba(20, 12, 28, 0.55)',
                               backdropFilter: 'blur(6px)',
@@ -300,7 +305,7 @@ export default function LandingPage() {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '0.85rem',
+                              fontSize: '0.95rem',
                               fontWeight: 700,
                               cursor: 'pointer',
                               zIndex: 3,
@@ -319,11 +324,11 @@ export default function LandingPage() {
                             aria-label="Next"
                             style={{
                               position: 'absolute',
-                              right: '8px',
+                              right: '10px',
                               top: '50%',
                               transform: 'translateY(-50%)',
-                              width: '28px',
-                              height: '28px',
+                              width: '32px',
+                              height: '32px',
                               borderRadius: '50%',
                               background: 'rgba(20, 12, 28, 0.55)',
                               backdropFilter: 'blur(6px)',
@@ -332,7 +337,7 @@ export default function LandingPage() {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '0.85rem',
+                              fontSize: '0.95rem',
                               fontWeight: 700,
                               cursor: 'pointer',
                               zIndex: 3,
@@ -347,7 +352,7 @@ export default function LandingPage() {
                           <div
                             style={{
                               position: 'absolute',
-                              bottom: '10px',
+                              bottom: '12px',
                               left: 0,
                               right: 0,
                               display: 'flex',
@@ -365,9 +370,9 @@ export default function LandingPage() {
                                   e.stopPropagation();
                                   setActivePhotoIndex(dotIdx);
                                 }}
-                                aria-label={`Slide dot ${dotIdx + 1}`}
+                                aria-label={`Slide ${dotIdx + 1}`}
                                 style={{
-                                  width: dotIdx === activePhotoIndex ? '20px' : '6px',
+                                  width: dotIdx === activePhotoIndex ? '22px' : '6px',
                                   height: '5px',
                                   borderRadius: '999px',
                                   background: dotIdx === activePhotoIndex ? '#ffffff' : 'rgba(255, 255, 255, 0.45)',
@@ -381,10 +386,8 @@ export default function LandingPage() {
                             ))}
                           </div>
                         </div>
-                        <div className="mini-stats"><div><small>NETWORK RATING</small><strong>4.8 <span>★</span></strong></div><div><small>SERVICES COMPLETED</small><strong>25k<span>+</span></strong></div><div><small>COOPERATIVES</small><strong>50<span>+</span></strong></div></div>
                     </div>
                 </div>
-                <div className="floating-chip chip-two"><span className="chip-icon gold">↗</span><div><strong>Fairer work, locally</strong><small>Powered by cooperatives</small></div></div>
             </div>
         </section>
 
