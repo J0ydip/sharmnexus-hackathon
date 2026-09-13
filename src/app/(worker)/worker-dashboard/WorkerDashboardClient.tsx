@@ -16,9 +16,12 @@ import {
 import { getBookingOtp } from '@/lib/utils';
 import { useBookingStore } from '@/lib/store/bookingStore';
 import { createClient } from '@/lib/supabase/client';
+import {
+  getWorkerProposalsAction,
+  voteAssemblyProposalAction,
+  AssemblyProposalItem,
+} from '@/app/actions/cooperative';
 import './worker.css';
-
-
 
 type WorkerView =
   | 'view-dashboard'
@@ -28,7 +31,8 @@ type WorkerView =
   | 'view-reviews'
   | 'view-notifications'
   | 'view-profile'
-  | 'view-verification';
+  | 'view-verification'
+  | 'view-voting';
 
 type Lang = 'en' | 'hi' | 'bn' | 'mr' | 'ta' | 'te';
 
@@ -86,6 +90,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nav_notif: '🔔 Notifications',
     nav_prof: '👤 My Profile',
     nav_verif: '✅ Verification',
+    nav_vote: '🗳️ Coop Voting',
     nav_logout: '🚪 Logout',
     avail_online: '🟢 Available for Work',
     avail_offline: '🔴 Not Available',
@@ -99,6 +104,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nav_notif: '🔔 सूचनाएं',
     nav_prof: '👤 मेरी प्रोफ़ाइल',
     nav_verif: '✅ सत्यापन',
+    nav_vote: '🗳️ सहकारी मतदान',
     nav_logout: '🚪 लॉग आउट',
     avail_online: '🟢 काम के लिए उपलब्ध',
     avail_offline: '🔴 उपलब्ध नहीं',
@@ -112,6 +118,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nav_notif: '🔔 বিজ্ঞপ্তি',
     nav_prof: '👤 আমার প্রোফাইল',
     nav_verif: '✅ যাচাইকরণ',
+    nav_vote: '🗳️ সমবায় ভোটিং',
     nav_logout: '🚪 লগ আউট',
     avail_online: '🟢 কাজের জন্য উপলব্ধ',
     avail_offline: '🔴 উপলব্ধ নয়',
@@ -125,6 +132,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nav_notif: '🔔 सूचना',
     nav_prof: '👤 माझी प्रोफाइल',
     nav_verif: '✅ पडताळणी',
+    nav_vote: '🗳️ सहकारी मतदान',
     nav_logout: '🚪 लॉग आउट',
     avail_online: '🟢 कामासाठी उपलब्ध',
     avail_offline: '🔴 उपलब्ध नाही',
@@ -138,6 +146,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nav_notif: '🔔 அறிவிப்புகள்',
     nav_prof: '👤 எனது சுயவிவரம்',
     nav_verif: '✅ சரிபார்ப்பு',
+    nav_vote: '🗳️ கூட்டுறவு வாக்கு',
     nav_logout: '🚪 வெளியேறு',
     avail_online: '🟢 வேலைக்கு தயார்',
     avail_offline: '🔴 கிடைக்கவில்லை',
@@ -151,6 +160,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nav_notif: '🔔 నోటిఫికేషన్‌లు',
     nav_prof: '👤 నా ప్రొఫైల్',
     nav_verif: '✅ ధృవీకరణ',
+    nav_vote: '🗳️ సహకార ఓటింగ్',
     nav_logout: '🚪 లాగ్ అవుట్',
     avail_online: '🟢 పనికి అందుబాటులో',
     avail_offline: '🔴 అందుబాటులో లేదు',
@@ -214,6 +224,12 @@ export function WorkerDashboardClient() {
   const [completionNotes, setCompletionNotes] = useState('');
   const [paymentMode, setPaymentMode] = useState<'online' | 'cash'>('online');
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
+
+  // Cooperative Worker Assembly Voting State
+  const [proposals, setProposals] = useState<AssemblyProposalItem[]>([]);
+  const [workerVotes, setWorkerVotes] = useState<Record<string, 'yes' | 'no'>>({});
+  const [isVotingProposalId, setIsVotingProposalId] = useState<string | null>(null);
+  const [isLoadingProposals, setIsLoadingProposals] = useState<boolean>(false);
 
   // Hydrate auth data if present in localStorage & Supabase
   useEffect(() => {
@@ -390,12 +406,93 @@ export function WorkerDashboardClient() {
       }
     }
 
+    // Load stored worker votes from localStorage
+    try {
+      const storedVotes = JSON.parse(localStorage.getItem('shramnexus-worker-votes') || '{}');
+      if (storedVotes && typeof storedVotes === 'object') {
+        setWorkerVotes(storedVotes);
+      }
+    } catch (e) {}
+
+    // Fetch live cooperative proposals for voting
+    async function fetchProposals() {
+      setIsLoadingProposals(true);
+      try {
+        const data = await getWorkerProposalsAction();
+        if (data && data.length > 0) {
+          setProposals(data);
+        }
+      } catch (e) {
+        console.error('Error loading cooperative proposals:', e);
+      } finally {
+        setIsLoadingProposals(false);
+      }
+    }
+
     fetchDashboardData();
+    fetchProposals();
     // Relaxed polling (30s) as a fallback — Realtime handles instant updates
     const interval = setInterval(fetchDashboardData, 30000);
 
     return () => clearInterval(interval);
   }, []);
+
+  const handleWorkerVote = async (proposalId: string, vote: 'yes' | 'no') => {
+    const prevVote = workerVotes[proposalId];
+    if (prevVote === vote) {
+      showToast(`You have already voted ${vote.toUpperCase()} on this resolution.`);
+      return;
+    }
+
+    setIsVotingProposalId(proposalId);
+
+    // Optimistic UI update
+    setWorkerVotes((prev) => {
+      const updated = { ...prev, [proposalId]: vote };
+      try {
+        localStorage.setItem('shramnexus-worker-votes', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    setProposals((prev) =>
+      prev.map((p) => {
+        if (p.id === proposalId) {
+          let newYes = p.yesVotes;
+          let newNo = p.noVotes;
+          if (prevVote === 'yes') newYes = Math.max(0, newYes - 1);
+          if (prevVote === 'no') newNo = Math.max(0, newNo - 1);
+          if (vote === 'yes') newYes += 1;
+          if (vote === 'no') newNo += 1;
+
+          const total = newYes + newNo;
+          let newStatus = p.status;
+          if (total >= 30 && newYes / total >= 0.65) {
+            newStatus = 'Approved';
+          }
+          return {
+            ...p,
+            yesVotes: newYes,
+            noVotes: newNo,
+            status: newStatus,
+          };
+        }
+        return p;
+      })
+    );
+
+    try {
+      const res = await voteAssemblyProposalAction(proposalId, vote, prevVote);
+      if (res && res.success) {
+        showToast(`🗳️ Vote recorded! You voted ${vote.toUpperCase()}.`);
+      }
+    } catch (err) {
+      console.error('Failed to submit vote:', err);
+      showToast('⚠️ Could not record vote on server. Saved locally.');
+    } finally {
+      setIsVotingProposalId(null);
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -893,6 +990,14 @@ export function WorkerDashboardClient() {
             className={`nav-item ${activeView === 'view-verification' ? 'active' : ''}`}
           >
             <span>{t.nav_verif}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveView('view-voting'); setSidebarOpen(false); }}
+            className={`nav-item ${activeView === 'view-voting' ? 'active' : ''}`}
+          >
+            <span>{t.nav_vote || '🗳️ Coop Voting'}</span>
+            <span className="badge" style={{ background: '#10b981', color: '#fff', fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px' }}>Vote</span>
           </button>
           <button
             type="button"
@@ -1807,6 +1912,221 @@ export function WorkerDashboardClient() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ================= 9. VIEW: COOPERATIVE DEMOCRATIC VOTING ================= */}
+        {activeView === 'view-voting' && (
+          <div className="worker-dashboard-view active">
+            <div className="worker-page-header" style={{ marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h1 className="worker-page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🗳️</span> Member Assembly & Democratic Voting
+                  </h1>
+                  <p className="worker-page-subtitle" style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: '4px' }}>
+                    As a verified cooperative shareholder, you possess 1-member-1-vote on all society expenditures, welfare funds, and rate decisions.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '6px 14px', borderRadius: '20px' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#065f46' }}>
+                    ✓ Voting Member Pass Active
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Voting Info Banner */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(36,23,47,0.04) 0%, rgba(230,170,59,0.09) 100%)',
+              border: '1px solid rgba(230,170,59,0.3)',
+              borderRadius: '12px',
+              padding: '14px 18px',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '1.5rem' }}>⚖️</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--ink)' }}>
+                    Democratic Principle: One Worker, One Vote
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                    Quorum requires ≥ 30 member ballots with ≥ 65% affirmative votes for proposal approval and treasury disbursement.
+                  </div>
+                </div>
+              </div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#b45309', background: '#fef3c7', padding: '4px 10px', borderRadius: '6px' }}>
+                {Object.keys(workerVotes).length} / {proposals.length} Resolutions Voted
+              </div>
+            </div>
+
+            {/* Proposals List */}
+            {isLoadingProposals ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)' }}>
+                Loading cooperative resolutions...
+              </div>
+            ) : proposals.length === 0 ? (
+              <div className="worker-card" style={{ padding: '2.5rem', textAlign: 'center' }}>
+                <p style={{ color: 'var(--muted)' }}>No active member proposals up for voting right now.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {proposals.map((prop) => {
+                  const totalVotes = prop.yesVotes + prop.noVotes;
+                  const yesPct = totalVotes > 0 ? Math.round((prop.yesVotes / totalVotes) * 100) : 0;
+                  const myVote = workerVotes[prop.id];
+                  const isVoting = isVotingProposalId === prop.id;
+
+                  return (
+                    <div
+                      key={prop.id}
+                      className="worker-card"
+                      style={{
+                        padding: '1.4rem',
+                        border: myVote ? '1px solid #10b981' : '1px solid var(--border)',
+                        background: '#ffffff',
+                        position: 'relative',
+                      }}
+                    >
+                      {/* Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>
+                              RESOLUTION #{prop.number}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                background: prop.status === 'Approved' ? '#dcfce7' : prop.status === 'Rejected' ? '#fee2e2' : '#fef3c7',
+                                color: prop.status === 'Approved' ? '#15803d' : prop.status === 'Rejected' ? '#b91c1c' : '#b45309',
+                              }}
+                            >
+                              {prop.status}
+                            </span>
+                            {myVote && (
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: myVote === 'yes' ? '#dcfce7' : '#fee2e2', color: myVote === 'yes' ? '#15803d' : '#b91c1c' }}>
+                                ✓ You voted {myVote.toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--ink)' }}>
+                            {prop.title}
+                          </h3>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'block' }}>Treasury Impact</span>
+                          <strong style={{ fontSize: '0.95rem', color: 'var(--terracotta)' }}>
+                            ₹{prop.cost.toLocaleString('en-IN')}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: '8px 0 16px' }}>
+                        {prop.description}
+                      </p>
+
+                      {/* Vote Progress Bar */}
+                      <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px' }}>
+                          <span style={{ color: '#15803d' }}>
+                            👍 YES: {prop.yesVotes} ({yesPct}%)
+                          </span>
+                          <span style={{ color: '#b91c1c' }}>
+                            👎 NO: {prop.noVotes} ({100 - yesPct}%)
+                          </span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+                          <div
+                            style={{
+                              width: `${yesPct}%`,
+                              background: '#10b981',
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                          <div
+                            style={{
+                              width: `${100 - yesPct}%`,
+                              background: '#ef4444',
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '6px' }}>
+                          <span>Total Votes: {totalVotes} / 30 Quorum Target</span>
+                          <span>Approval threshold: 65% affirmative</span>
+                        </div>
+                      </div>
+
+                      {/* Worker Action Buttons */}
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          disabled={isVoting || prop.status !== 'Active'}
+                          onClick={() => handleWorkerVote(prop.id, 'yes')}
+                          style={{
+                            flex: 1,
+                            minWidth: '130px',
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            fontSize: '0.88rem',
+                            cursor: prop.status === 'Active' ? 'pointer' : 'not-allowed',
+                            opacity: prop.status !== 'Active' ? 0.6 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            border: myVote === 'yes' ? '2px solid #059669' : '1px solid #10b981',
+                            background: myVote === 'yes' ? '#10b981' : '#ecfdf5',
+                            color: myVote === 'yes' ? '#ffffff' : '#047857',
+                            boxShadow: myVote === 'yes' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span>👍</span> {myVote === 'yes' ? 'Voted YES' : 'Vote YES (Approve)'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isVoting || prop.status !== 'Active'}
+                          onClick={() => handleWorkerVote(prop.id, 'no')}
+                          style={{
+                            flex: 1,
+                            minWidth: '130px',
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            fontSize: '0.88rem',
+                            cursor: prop.status === 'Active' ? 'pointer' : 'not-allowed',
+                            opacity: prop.status !== 'Active' ? 0.6 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            border: myVote === 'no' ? '2px solid #dc2626' : '1px solid #ef4444',
+                            background: myVote === 'no' ? '#ef4444' : '#fef2f2',
+                            color: myVote === 'no' ? '#ffffff' : '#b91c1c',
+                            boxShadow: myVote === 'no' ? '0 2px 8px rgba(239, 68, 68, 0.3)' : 'none',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span>👎</span> {myVote === 'no' ? 'Voted NO' : 'Vote NO (Reject)'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </main>

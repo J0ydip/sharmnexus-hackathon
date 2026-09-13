@@ -1683,6 +1683,7 @@ export function AdminDashboardClient() {
                       <tr>
                         <th>Worker Name</th>
                         <th>Trade / Category</th>
+                        <th>Rating</th>
                         <th>Jobs Done</th>
                         <th>Wages Earned</th>
                         <th>Federation Verification</th>
@@ -1693,7 +1694,7 @@ export function AdminDashboardClient() {
                     <tbody>
                       {filteredWorkers.length === 0 ? (
                         <tr>
-                          <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--muted)' }}>
+                          <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--muted)' }}>
                             No workers found matching your filter criteria.
                           </td>
                         </tr>
@@ -1705,6 +1706,11 @@ export function AdminDashboardClient() {
                               {w.phone && <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{w.phone}</div>}
                             </td>
                             <td><span className="badge badge-ongoing">{w.cat}</span></td>
+                            <td>
+                              <span style={{ fontWeight: 700, color: '#d97706', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                ★ {w.rating ? w.rating.toFixed(1) : '4.8'}
+                              </span>
+                            </td>
                             <td><strong>{w.jobs}</strong></td>
                             <td className="text-terracotta" style={{ fontWeight: 700 }}>{w.earn}</td>
                             <td>

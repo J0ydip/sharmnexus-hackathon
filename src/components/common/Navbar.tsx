@@ -545,15 +545,9 @@ export function Navbar() {
             <div className="flex items-center gap-1.5">
               <Link
                 href="/auth/login"
-                className="text-xs font-bold text-gray-700 hover:text-[#24172f] px-3 py-2 rounded-xl transition-colors"
-              >
-                Log In
-              </Link>
-              <Link
-                href="/auth/login"
                 className="text-xs font-bold bg-[#24172f] hover:bg-[#1a1024] text-white px-3.5 py-2 rounded-xl shadow-xs transition-all hover:shadow-sm"
               >
-                Get Started
+                Log In
               </Link>
             </div>
           )}

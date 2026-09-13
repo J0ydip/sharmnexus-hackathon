@@ -172,9 +172,6 @@ export default function LandingPage() {
             <option value="te">తెలుగు</option>
           </select>
           <a className="text-link" href="/auth/login" data-i18n="nav_login" onClick={() => setIsNavOpen(false)}>Log in</a>
-          <a className="button button-dark button-small" href="/auth/login" onClick={() => setIsNavOpen(false)}>
-            <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
-          </a>
         </div>
       </div>
       <button 
@@ -228,7 +225,6 @@ export default function LandingPage() {
                         <div className="mini-stats"><div><small>NETWORK RATING</small><strong>4.8 <span>★</span></strong></div><div><small>SERVICES COMPLETED</small><strong>25k<span>+</span></strong></div><div><small>COOPERATIVES</small><strong>50<span>+</span></strong></div></div>
                     </div>
                 </div>
-                <div className="floating-chip chip-one"><span className="chip-icon">✓</span><div><strong>Identity verified</strong><small>Trust, before the first booking</small></div></div>
                 <div className="floating-chip chip-two"><span className="chip-icon gold">↗</span><div><strong>Fairer work, locally</strong><small>Powered by cooperatives</small></div></div>
             </div>
         </section>
