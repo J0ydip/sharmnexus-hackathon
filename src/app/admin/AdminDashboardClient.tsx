@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -48,12 +48,18 @@ import {
   getAIDemandForecastData,
   generateAndSaveAIDemandForecasts,
   executeAIWorkforceAllocation,
+  executeHotspotCorridorDispatch,
   generateForecastForCustomLocation,
   FullAIForecastPayload,
 } from '@/app/actions/forecasting';
 import {
   TradeZoneForecast,
   WorkforceRebalancingRecommendation,
+  generateTradeForecast,
+  computeHotspotDistributionPlan,
+  HotspotCluster,
+  CorridorAllocation,
+  OptimizationPolicy,
   FORECAST_REGIONS,
   FORECAST_TRADES,
 } from '@/lib/ai/demandForecasting';
@@ -228,40 +234,160 @@ export function AdminDashboardClient() {
   const [customLocationInput, setCustomLocationInput] = useState('');
   const [isAnalyzingLocation, setIsAnalyzingLocation] = useState(false);
   const [heatmapRegionFilter, setHeatmapRegionFilter] = useState('ALL');
+  const [isDetectingCurrentLocation, setIsDetectingCurrentLocation] = useState(false);
+  const [detectedCurrentCity, setDetectedCurrentCity] = useState<string | null>(null);
+  const [selectedHotspotPolicy, setSelectedHotspotPolicy] = useState<OptimizationPolicy>('SLA_PRIORITY');
+  const [mobilizingCorridorId, setMobilizingCorridorId] = useState<string | null>(null);
 
-  const handleAnalyzeCustomLocation = async (overrideLoc?: string) => {
-    const loc = (overrideLoc || customLocationInput).trim();
-    if (!loc) return;
-    setIsAnalyzingLocation(true);
+  const hotspotOptimization = useMemo(() => {
+    return computeHotspotDistributionPlan(forecastPayload?.forecasts || [], selectedHotspotPolicy);
+  }, [forecastPayload?.forecasts, selectedHotspotPolicy]);
+
+  const handleMobilizeCorridor = async (allocation: CorridorAllocation) => {
+    setMobilizingCorridorId(allocation.id);
     try {
-      const res = await generateForecastForCustomLocation(loc);
-      if (res.success && res.forecasts.length > 0) {
-        setCustomLocations((prev) => {
-          const exists = prev.some((l) => l.toLowerCase() === res.location.toLowerCase());
-          return exists ? prev : [res.location, ...prev];
-        });
-        setForecastPayload((prev) => {
-          if (!prev) return prev;
-          const filtered = prev.forecasts.filter(
-            (f) => f.region.toLowerCase() !== res.location.toLowerCase()
-          );
-          return {
-            ...prev,
-            forecasts: [...res.forecasts, ...filtered],
-          };
-        });
-        setSelectedForecastRegion(res.location);
-        setCustomLocationInput('');
-        showToast(`⚡ AI Demand Model calibrated for ${res.location}! 10 trade projections ready.`);
+      const res = await executeHotspotCorridorDispatch({
+        allocationId: allocation.id,
+        trade: allocation.trade,
+        fromRegion: allocation.fromRegion,
+        fromSocietyName: allocation.fromSocietyName,
+        fromSocietyId: allocation.fromSocietyId,
+        toRegion: allocation.toRegion,
+        toSocietyName: allocation.toSocietyName,
+        toSocietyId: allocation.toSocietyId,
+        workerCount: allocation.allocatedWorkers,
+        transitMinutes: allocation.transitMinutes,
+        distanceKm: allocation.distanceKm,
+        welfareStipend: allocation.welfareStipend,
+        rationale: allocation.rationale,
+      });
+
+      if (res.success) {
+        showToast(`🚀 Dispatched ${allocation.allocatedWorkers} ${allocation.trade}s to ${allocation.toRegion}! Est. SLA: ${allocation.transitMinutes} mins.`);
       } else {
-        showToast(res.message || 'Could not calibrate location.');
+        showToast(res.message);
       }
     } catch (err: any) {
-      console.error('Error analyzing custom location:', err);
-      showToast('Failed to analyze location demand.');
+      console.error('Failed to mobilize corridor squad:', err);
+      showToast('Failed to mobilize corridor squad');
     } finally {
-      setIsAnalyzingLocation(false);
+      setMobilizingCorridorId(null);
     }
+  };
+
+  const handleAnalyzeCustomLocation = (overrideLoc?: string) => {
+    const loc = (overrideLoc || customLocationInput).trim();
+    if (!loc) return;
+
+    // ⚡ 1. INSTANT CLIENT-SIDE ML GENERATION (0ms - 60 FPS instantaneous UI response!)
+    const instantForecasts = FORECAST_TRADES.map((trade) =>
+      generateTradeForecast(trade.name, loc)
+    );
+
+    // Immediately update state so chart, bars, and heatmap render with zero lag!
+    setCustomLocations((prev) => {
+      const exists = prev.some((l) => l.toLowerCase() === loc.toLowerCase());
+      return exists ? prev : [loc, ...prev];
+    });
+
+    setForecastPayload((prev) => {
+      if (!prev) return prev;
+      const filtered = prev.forecasts.filter(
+        (f) => f.region.toLowerCase() !== loc.toLowerCase()
+      );
+      return {
+        ...prev,
+        forecasts: [...instantForecasts, ...filtered],
+      };
+    });
+
+    setSelectedForecastRegion(loc);
+    setCustomLocationInput('');
+    setIsAnalyzingLocation(false);
+    showToast(`⚡ ${loc} calibrated instantly! (Zero-Latency ML)`);
+
+    // 🌐 2. Asynchronous background persistence (non-blocking)
+    generateForecastForCustomLocation(loc).catch((err) => {
+      console.warn('Background forecast sync notice:', err);
+    });
+  };
+
+  const handleDetectCurrentLocation = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      showToast('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsDetectingCurrentLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let detectedCity = '';
+
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en' }, signal: controller.signal }
+          );
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            detectedCity =
+              addr.city ||
+              addr.town ||
+              addr.suburb ||
+              addr.municipality ||
+              addr.state_district ||
+              addr.county ||
+              addr.state ||
+              '';
+          }
+        } catch (err) {
+          // Instant fallback
+        }
+
+        if (!detectedCity) {
+          const metros = [
+            { name: 'Kolkata Metro', lat: 22.5726, lon: 88.3639 },
+            { name: 'Delhi NCR', lat: 28.6139, lon: 77.209 },
+            { name: 'Mumbai South', lat: 18.922, lon: 72.8347 },
+            { name: 'Bangalore North', lat: 12.9716, lon: 77.5946 },
+            { name: 'Hyderabad Cyberabad', lat: 17.385, lon: 78.4867 },
+            { name: 'Chennai Central', lat: 13.0827, lon: 80.2707 },
+            { name: 'Pune Metro', lat: 18.5204, lon: 73.8567 },
+            { name: 'Jaipur Central', lat: 26.9124, lon: 75.7873 },
+            { name: 'Ahmedabad West', lat: 23.0225, lon: 72.5714 },
+            { name: 'Patna Urban', lat: 25.5941, lon: 85.1376 },
+            { name: 'Lucknow East', lat: 26.8467, lon: 80.9462 },
+          ];
+          let closest = metros[0];
+          let minDist = Infinity;
+          metros.forEach((m) => {
+            const dist = Math.hypot(m.lat - latitude, m.lon - longitude);
+            if (dist < minDist) {
+              minDist = dist;
+              closest = m;
+            }
+          });
+          detectedCity = closest.name;
+        }
+
+        const formattedCity = detectedCity.trim();
+        setDetectedCurrentCity(formattedCity);
+        setIsDetectingCurrentLocation(false);
+        showToast(`📍 Located: ${formattedCity}!`);
+        // Instant ML render in 0ms!
+        handleAnalyzeCustomLocation(formattedCity);
+      },
+      (err) => {
+        setIsDetectingCurrentLocation(false);
+        showToast(`GPS Access: ${err.message}. You can still type your city in the search bar!`);
+      },
+      { enableHighAccuracy: true, timeout: 3000, maximumAge: 60000 }
+    );
   };
 
   const fetchAllData = async () => {
@@ -3164,6 +3290,10 @@ export function AdminDashboardClient() {
                       value={selectedForecastRegion}
                       onChange={(e) => {
                         const val = e.target.value;
+                        if (val === '__CURRENT_LOCATION__') {
+                          handleDetectCurrentLocation();
+                          return;
+                        }
                         if (val === '__ADD_CUSTOM__') {
                           const el = document.getElementById('custom-location-ai-input');
                           if (el) el.focus();
@@ -3181,6 +3311,12 @@ export function AdminDashboardClient() {
                       style={{ minWidth: '190px', fontWeight: 700 }}
                       title="Select Region or Type Any Location"
                     >
+                      <option value="__CURRENT_LOCATION__">🎯 Auto-Detect My Current Location (GPS)</option>
+                      {detectedCurrentCity && (
+                        <option value={detectedCurrentCity}>
+                          📍 Current Location: {detectedCurrentCity}
+                        </option>
+                      )}
                       {customLocations.length > 0 && (
                         <optgroup label="📍 Custom / Searched Locations">
                           {customLocations.map((r) => (
@@ -3200,7 +3336,7 @@ export function AdminDashboardClient() {
                   </div>
                 </div>
 
-                {/* Dedicated Any Location Search Bar & Quick Chips */}
+                {/* Dedicated Any Location Search Bar with Current Location GPS & Quick Chips */}
                 <div style={{ marginBottom: '1.25rem' }}>
                   <div className="ai-loc-search-bar">
                     <span style={{ fontSize: '1.1rem' }}>📍</span>
@@ -3228,7 +3364,38 @@ export function AdminDashboardClient() {
                     />
                     <button
                       type="button"
-                      disabled={isAnalyzingLocation || !customLocationInput.trim()}
+                      disabled={isDetectingCurrentLocation || isAnalyzingLocation}
+                      onClick={handleDetectCurrentLocation}
+                      className="btn btn-sm"
+                      style={{
+                        background: '#24172f',
+                        color: '#ffffff',
+                        border: 'none',
+                        fontWeight: 700,
+                        padding: '6px 13px',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: isDetectingCurrentLocation ? 'wait' : 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title="Auto-detect current city via GPS coordinates"
+                    >
+                      {isDetectingCurrentLocation ? (
+                        <>
+                          <span className="spin">↻</span> Detecting GPS...
+                        </>
+                      ) : (
+                        <>
+                          <span>🎯</span> Use Current Location
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!customLocationInput.trim()}
                       onClick={() => handleAnalyzeCustomLocation()}
                       className="btn btn-sm"
                       style={{
@@ -3242,24 +3409,35 @@ export function AdminDashboardClient() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
-                        cursor: isAnalyzingLocation ? 'wait' : 'pointer',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      {isAnalyzingLocation ? (
-                        <>
-                          <span className="spin">↻</span> Calibrating ML...
-                        </>
-                      ) : (
-                        <>
-                          <span>⚡</span> Analyze Demand
-                        </>
-                      )}
+                      <span>⚡</span> Analyze Demand
                     </button>
                   </div>
 
-                  {/* Quick Preset Location Chips */}
+                  {/* Quick Preset Location Chips & Current Location GPS */}
                   <div className="ai-loc-chips-container">
-                    <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontWeight: 600, marginRight: '4px' }}>
+                    <button
+                      type="button"
+                      disabled={isDetectingCurrentLocation}
+                      onClick={handleDetectCurrentLocation}
+                      className={`ai-loc-chip ${detectedCurrentCity && selectedForecastRegion.toLowerCase() === detectedCurrentCity.toLowerCase() ? 'active' : ''}`}
+                      style={{
+                        background: detectedCurrentCity && selectedForecastRegion.toLowerCase() === detectedCurrentCity.toLowerCase()
+                          ? '#24172f'
+                          : 'linear-gradient(135deg, #fdf6e7 0%, #faedd3 100%)',
+                        color: detectedCurrentCity && selectedForecastRegion.toLowerCase() === detectedCurrentCity.toLowerCase()
+                          ? '#ffffff'
+                          : '#8a5e12',
+                        borderColor: 'var(--gold)',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {isDetectingCurrentLocation ? '↻ Locating GPS...' : detectedCurrentCity ? `🎯 My Location: ${detectedCurrentCity}` : '🎯 Use Current Location'}
+                    </button>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontWeight: 600, margin: '0 4px' }}>
                       Quick Cities:
                     </span>
                     {['Delhi NCR', 'Mumbai South', 'Bangalore North', 'Kolkata Metro', 'Pune Metro', 'Hyderabad Cyberabad', 'Jaipur Central', 'Ahmedabad West', 'Chandigarh Tricity', 'Lucknow East', 'Patna Urban'].map((c) => {
@@ -3314,7 +3492,7 @@ export function AdminDashboardClient() {
                   return (
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', background: '#fcfbfa', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', flexWrap: 'wrap', gap: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '1.2rem' }}>⚡</span>
                           <div>
                             <strong>{currentForecast?.tradeName || selectedForecastTrade}</strong> in <strong>{currentForecast?.region || selectedForecastRegion}</strong>
@@ -3322,6 +3500,11 @@ export function AdminDashboardClient() {
                               ({currentForecast?.societyName || `${selectedForecastRegion} Labour Cooperative`})
                             </span>
                           </div>
+                          {detectedCurrentCity && currentForecast?.region.toLowerCase() === detectedCurrentCity.toLowerCase() && (
+                            <span style={{ background: '#e6f7eb', color: '#167a3a', border: '1px solid #a3e0b8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700 }}>
+                              🎯 Live GPS Location
+                            </span>
+                          )}
                         </div>
                         <div style={{ display: 'flex', gap: '14px', fontSize: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
                           <span>Peak Window: <strong>{currentForecast?.peakWindow || 'Weekend Afternoon'}</strong></span>
@@ -3546,6 +3729,295 @@ export function AdminDashboardClient() {
                       );
                     })}
                 </div>
+              </div>
+
+              {/* ⚡ Urban & Suburban Hotspot Workforce Optimizer Hub */}
+              <div className="ai-hotspot-hub">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span className="badge badge-verified" style={{ background: '#5b3082', color: '#fff', fontSize: '0.72rem', fontWeight: 800 }}>
+                        METROPOLITAN TRANSIT ALGORITHM
+                      </span>
+                      <span className="badge badge-ongoing" style={{ background: 'var(--gold-soft)', color: '#24172f', fontSize: '0.72rem', fontWeight: 800 }}>
+                        0ms Zero-Latency Execution
+                      </span>
+                    </div>
+                    <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.35rem', margin: 0, color: 'var(--ink)' }}>
+                      ⚡ Urban &amp; Suburban Hotspot Workforce Optimizer
+                    </h3>
+                    <p className="text-muted" style={{ fontSize: '0.84rem', margin: '4px 0 0 0' }}>
+                      Dynamically channels artisans from suburban residential clusters into dense urban surge corridors, preventing SLA bottlenecks while ensuring fair travel stipends.
+                    </p>
+                  </div>
+
+                  {/* Multi-Objective Optimization Policy Selector */}
+                  <div className="ai-policy-selector">
+                    <button
+                      type="button"
+                      className={`ai-policy-btn ${selectedHotspotPolicy === 'SLA_PRIORITY' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedHotspotPolicy('SLA_PRIORITY');
+                        showToast('⚡ SLA Priority (<15m) policy applied!');
+                      }}
+                      title="SLA Priority: Routes workers to minimize wait times below 15 mins"
+                    >
+                      ⚡ SLA Priority (&lt;15m)
+                    </button>
+                    <button
+                      type="button"
+                      className={`ai-policy-btn ${selectedHotspotPolicy === 'WELFARE_PROXIMITY' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedHotspotPolicy('WELFARE_PROXIMITY');
+                        showToast('🛡️ Worker Welfare & Proximity policy applied!');
+                      }}
+                      title="Welfare & Proximity: Minimizes artisan travel distance and provides travel compensation"
+                    >
+                      🛡️ Welfare &amp; Proximity
+                    </button>
+                    <button
+                      type="button"
+                      className={`ai-policy-btn ${selectedHotspotPolicy === 'MAX_VOLUME' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedHotspotPolicy('MAX_VOLUME');
+                        showToast('📈 Maximum Volume Coverage policy applied!');
+                      }}
+                      title="Max Volume: Dispatches maximum artisan pools to resolve severe demand backlogs"
+                    >
+                      📈 Max Volume
+                    </button>
+                  </div>
+                </div>
+
+                {/* Summary Metrics Strip */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem', background: '#faf8f5', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      🔥 Surge Hotspots Identified
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>
+                      {hotspotOptimization.summary.totalSurgeHotspots} Zones
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--red)', fontWeight: 600 }}>
+                      High HSI Index Pressure
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      🏡 Suburban Feeders Active
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>
+                      {hotspotOptimization.summary.suburbanFeedersActive} Co-op Societies
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 600 }}>
+                      Surplus Artisans Ready
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      👷 Artisans Mobilized
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>
+                      {hotspotOptimization.summary.workersMobilized} Pros
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--blue)', fontWeight: 600 }}>
+                      Cross-Corridor Shift
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      ⚡ Est. SLA Delay Reduction
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--green)' }}>
+                      -{hotspotOptimization.summary.slaReductionPercent}%
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--ink-light)' }}>
+                      Avg Transit: 22 mins
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      💰 Travel Stipends Pooled
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--gold)' }}>
+                      ₹{hotspotOptimization.summary.welfareStipendsDistributed.toLocaleString('en-IN')}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--ink-light)' }}>
+                      Fair Worker Welfare Fund
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hotspot Severity Index (HSI) Zone Cards */}
+                <h4 style={{ fontSize: '0.92rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--ink-light)', marginBottom: '0.75rem' }}>
+                  🎯 Metropolitan Zones &amp; Hotspot Severity Index (HSI)
+                </h4>
+                <div className="ai-hotspot-grid">
+                  {hotspotOptimization.clusters.map((cluster) => {
+                    const severityClass = cluster.severityLevel.toLowerCase();
+                    const isSurge = cluster.avgSurgeMultiplier > 1;
+
+                    return (
+                      <div key={cluster.region} className={`ai-hotspot-card ${severityClass}`}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span className={`ai-topology-tag ${cluster.topology.includes('URBAN') ? 'urban' : 'suburban'}`}>
+                              {cluster.topology.replace('_', ' ')}
+                            </span>
+                            <span className={`ai-hsi-badge ${severityClass}`}>
+                              HSI: {cluster.hotspotSeverityIndex}/100 • {cluster.severityLevel}
+                            </span>
+                          </div>
+
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--ink)' }}>
+                            {cluster.region}
+                          </h4>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.8rem', marginBottom: '10px' }}>
+                            <div>
+                              <span className="text-muted">Demand Pressure:</span>{' '}
+                              <strong>{cluster.demandScore} orders</strong>
+                            </div>
+                            <div>
+                              <span className="text-muted">Local Artisan Pool:</span>{' '}
+                              <strong>{cluster.activeWorkers} artisans</strong>
+                            </div>
+                            <div>
+                              <span className="text-muted">Top Deficit Trade:</span>{' '}
+                              <strong style={{ color: 'var(--red)' }}>{cluster.primaryDeficitTrade}</strong>
+                            </div>
+                            <div>
+                              <span className="text-muted">Surge Multiplier:</span>{' '}
+                              <strong style={{ color: isSurge ? 'var(--gold)' : 'inherit' }}>{cluster.avgSurgeMultiplier.toFixed(2)}x</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '8px', fontSize: '0.75rem' }}>
+                          <span className="text-muted">Paired Suburban Feeders:</span>{' '}
+                          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                            {cluster.feederSuburbs.length > 0 ? cluster.feederSuburbs.join(', ') : 'Self-Sustaining Zone'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Suburban-to-Urban Rapid Transit Corridors */}
+                <h4 style={{ fontSize: '0.92rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--ink-light)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>🚀 Suburban-to-Urban Rapid Corridor Allocation Proposals</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gold)' }}>
+                    Policy Applied: {selectedHotspotPolicy.replace('_', ' ')}
+                  </span>
+                </h4>
+
+                {hotspotOptimization.allocations.length === 0 ? (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', background: '#faf8f5', borderRadius: '12px', border: '1px dashed var(--border)' }}>
+                    <p style={{ margin: 0, color: 'var(--ink-light)', fontSize: '0.88rem' }}>
+                      ✅ All urban hotspots currently balanced! No cross-boundary suburban corridor mobilization required under the <strong>{selectedHotspotPolicy}</strong> threshold.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    {hotspotOptimization.allocations.map((alloc) => {
+                      const isMobilizing = mobilizingCorridorId === alloc.id;
+
+                      return (
+                        <div key={alloc.id} className="ai-corridor-card">
+                          <div style={{ flex: 1, minWidth: '320px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                              <span className="badge badge-ongoing" style={{ background: 'var(--gold)', color: '#24172f', fontWeight: 800, fontSize: '0.74rem' }}>
+                                {alloc.trade}
+                              </span>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--ink-light)', fontWeight: 600 }}>
+                                Corridor Score: {alloc.policyScore}/100
+                              </span>
+                              <span className="badge" style={{ background: '#eef6f6', color: '#1a6f78', fontSize: '0.72rem', fontWeight: 700 }}>
+                                +₹{alloc.welfareStipend} Travel Stipend
+                              </span>
+                            </div>
+
+                            {/* Feeder & Destination Path */}
+                            <div className="ai-corridor-path">
+                              <div className="ai-feeder-node">
+                                <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--ink-light)', fontWeight: 700 }}>
+                                  Suburban Feeder (Surplus)
+                                </div>
+                                <div style={{ fontWeight: 800, color: 'var(--ink)' }}>
+                                  {alloc.fromRegion}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                                  {alloc.fromSociety}
+                                </div>
+                              </div>
+
+                              <div className="ai-corridor-arrow">
+                                <span>⟶</span>
+                                <span>{alloc.distanceKm} km • ~{alloc.transitMinutes}m</span>
+                              </div>
+
+                              <div className="ai-feeder-node" style={{ borderColor: 'var(--red)', background: '#fff9f9' }}>
+                                <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--red)', fontWeight: 700 }}>
+                                  Urban Core Hotspot (Surge)
+                                </div>
+                                <div style={{ fontWeight: 800, color: 'var(--ink)' }}>
+                                  {alloc.toRegion}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                                  ETA: &lt;{alloc.estimatedArrivalMinutes} mins
+                                </div>
+                              </div>
+                            </div>
+
+                            <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--ink-light)', fontStyle: 'italic' }}>
+                              💡 {alloc.rationale}
+                            </p>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', minWidth: '160px' }}>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)' }}>
+                                {alloc.allocatedWorkers} Artisans
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                                Staged for Rapid Deployment
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleMobilizeCorridor(alloc)}
+                              disabled={isMobilizing}
+                              className="btn btn-primary"
+                              style={{
+                                fontSize: '0.8rem',
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: isMobilizing ? '#888' : 'var(--ink)',
+                                color: '#fff',
+                              }}
+                            >
+                              {isMobilizing ? (
+                                <>
+                                  <span className="spinner spinner-sm" style={{ width: '12px', height: '12px' }} />
+                                  Mobilizing...
+                                </>
+                              ) : (
+                                <>
+                                  🚀 Mobilize Squad
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Autonomous Rebalancing Proposal Hub */}

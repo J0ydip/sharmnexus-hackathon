@@ -11,6 +11,11 @@ import {
   generateTradeForecast,
   computeWorkforceRebalancingPlans,
   generateAIStrategicBriefing,
+  computeHotspotDistributionPlan,
+  HotspotCluster,
+  CorridorAllocation,
+  HotspotOptimizationSummary,
+  OptimizationPolicy,
   FORECAST_TRADES,
   FORECAST_REGIONS,
 } from '@/lib/ai/demandForecasting';
@@ -29,9 +34,14 @@ export interface FullAIForecastPayload {
     confidenceGrade: string;
   };
   availableRegions?: string[];
+  hotspotPlan?: {
+    clusters: HotspotCluster[];
+    allocations: CorridorAllocation[];
+    summary: HotspotOptimizationSummary;
+  };
 }
 
-const AI_FORECAST_CACHE_KEY = 'ai:demand:forecast:v2';
+const AI_FORECAST_CACHE_KEY = 'ai:demand:forecast:v3';
 
 /**
  * Retrieves comprehensive AI Demand Forecast and Workforce Allocation payload.
@@ -134,6 +144,7 @@ export async function getAIDemandForecastData(): Promise<FullAIForecastPayload> 
           confidenceGrade: 'A+ (Production Grade)',
         },
         availableRegions: FORECAST_REGIONS.map((r) => r.name),
+        hotspotPlan: computeHotspotDistributionPlan(generatedForecasts, 'SLA_PRIORITY'),
       };
 
       return payload;
@@ -304,6 +315,83 @@ export async function executeAIWorkforceAllocation(params: {
     success: true,
     batchId,
     message: `Mobilized ${params.workerCount} verified ${params.trade} artisans from ${params.fromSocietyName} to ${params.toSocietyName} under Batch ${batchId}.`,
+  };
+}
+
+/**
+ * Executes a prioritized corridor mobilization of workers from a suburban feeder
+ * into an urban core surge hotspot.
+ */
+export async function executeHotspotCorridorDispatch(params: {
+  allocationId: string;
+  trade: string;
+  fromRegion: string;
+  fromSocietyName: string;
+  fromSocietyId: string;
+  toRegion: string;
+  toSocietyName: string;
+  toSocietyId: string;
+  workerCount: number;
+  transitMinutes: number;
+  distanceKm: number;
+  welfareStipend: string;
+  rationale: string;
+}) {
+  const isAdmin = await checkAdminSession();
+  if (!isAdmin) {
+    throw new Error('Unauthorized: Cooperative Federation Admin session required');
+  }
+
+  const supabase = await createClient();
+  const batchId = `CORRIDOR-AI-${Date.now().toString().slice(-6)}`;
+
+  try {
+    // 1. Permanent Audit Log
+    await supabase.from('admin_audit_logs').insert({
+      admin_email: 'admin@shramnexus.com',
+      target_type: 'hotspot_corridor_dispatch',
+      target_id: batchId,
+      target_name: `Hotspot Corridor: ${params.workerCount} ${params.trade}s to ${params.toRegion}`,
+      action: 'execute_hotspot_corridor_dispatch',
+      reason: `Suburban ➔ Urban Hotspot Dispatch: Mobilized ${params.workerCount} ${params.trade} artisans from ${params.fromSocietyName} (${params.fromRegion}) into ${params.toSocietyName} (${params.toRegion}). Est. Transit: ${params.transitMinutes}m (${params.distanceKm} km). Stipend: ${params.welfareStipend}. Justification: ${params.rationale}`,
+    });
+
+    // 2. Insert priority notifications into Supabase notifications table
+    const { data: workersInFromSociety } = await supabase
+      .from('workers')
+      .select('id')
+      .eq('society_id', params.fromSocietyId)
+      .limit(params.workerCount);
+
+    if (workersInFromSociety && workersInFromSociety.length > 0) {
+      const notifications = workersInFromSociety.map((w: any) => ({
+        user_id: w.id,
+        user_type: 'worker',
+        title: `⚡ Express Urban Hotspot Dispatch (${params.trade})`,
+        body: `Priority mobilization assigned to ${params.toRegion} (${params.toSocietyName}) along the rapid transit corridor (${params.transitMinutes} mins). Benefit: ${params.welfareStipend}.`,
+        type: 'workforce_allocation',
+        data: {
+          batchId,
+          targetRegion: params.toRegion,
+          targetSociety: params.toSocietyName,
+          welfareStipend: params.welfareStipend,
+          transitMinutes: params.transitMinutes,
+        },
+      }));
+
+      await supabase.from('notifications').insert(notifications);
+    }
+  } catch (e) {
+    console.error('Error executing corridor dispatch log:', e);
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/cooperative');
+
+  return {
+    success: true,
+    batchId,
+    message: `Mobilized ${params.workerCount} verified ${params.trade} artisans from ${params.fromRegion} along the express corridor to ${params.toRegion}. Batch ID: ${batchId}.`,
   };
 }
 

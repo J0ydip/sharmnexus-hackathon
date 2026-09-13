@@ -95,30 +95,218 @@ export const FORECAST_TRADES = [
   { name: 'Domestic Helper', icon: 'home', baseDaily: 30, weekendMult: 1.30, peakHours: '07:30 - 12:30' },
 ];
 
+export type ZoneTopologyType = 'URBAN_HOTSPOT' | 'SUBURBAN_RESIDENTIAL' | 'PERIURBAN_RESERVE' | 'EMERGING_CORRIDOR';
+
 export interface RegionMetadata {
   name: string;
   society: string;
   societyId: string;
   factor: number;
   state?: string;
+  topology: ZoneTopologyType;
+  feederRegion?: string;
+  feederSociety?: string;
+  feederSocietyId?: string;
+  avgTransitMinutes?: number;
+  distanceKm?: number;
 }
 
 export const FORECAST_REGIONS: RegionMetadata[] = [
-  { name: 'Jaipur Central', society: 'Shakti Labour Coop', societyId: 'f646a2c5-21b8-4538-ab2e-87aac9488506', factor: 1.2, state: 'Rajasthan' },
-  { name: 'Pune Metro', society: 'Pune Gig Workers Cooperative', societyId: 'c2222222-2222-2222-2222-222222222222', factor: 1.35, state: 'Maharashtra' },
-  { name: 'Patna Urban', society: 'Patna District Labour Society', societyId: 'c1111111-1111-1111-1111-111111111111', factor: 1.1, state: 'Bihar' },
-  { name: 'Lucknow East', society: 'Awadh Artisan Cooperative', societyId: 'c3333333-3333-3333-3333-333333333333', factor: 0.95, state: 'Uttar Pradesh' },
-  { name: 'Bangalore North', society: 'Karnataka Shramik Sahakari', societyId: 'c4444444-4444-4444-4444-444444444444', factor: 1.4, state: 'Karnataka' },
-  { name: 'Delhi NCR', society: 'Indraprastha Shramik Union', societyId: 'c5555555-5555-5555-5555-555555555555', factor: 1.45, state: 'Delhi' },
-  { name: 'Mumbai South', society: 'Maharashtra Kaushalya Sahakari', societyId: 'c6666666-6666-6666-6666-666666666666', factor: 1.5, state: 'Maharashtra' },
-  { name: 'Kolkata Metro', society: 'Bengal Karigar Shramik Society', societyId: 'c7777777-7777-7777-7777-777777777777', factor: 1.25, state: 'West Bengal' },
-  { name: 'Hyderabad Cyberabad', society: 'Telangana Artisan Federation', societyId: 'c8888888-8888-8888-8888-888888888888', factor: 1.38, state: 'Telangana' },
-  { name: 'Chennai Central', society: 'Tamil Nadu Labour Federation', societyId: 'c9999999-9999-9999-9999-999999999999', factor: 1.3, state: 'Tamil Nadu' },
-  { name: 'Ahmedabad West', society: 'Gujarat Shramik Vikas Mandal', societyId: 'caaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', factor: 1.22, state: 'Gujarat' },
-  { name: 'Chandigarh Tricity', society: 'Punjab-Haryana Cooperative Union', societyId: 'cbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', factor: 1.18, state: 'Punjab' },
-  { name: 'Indore City', society: 'Malwa Shramik Sahakari Samiti', societyId: 'cccccccc-cccc-cccc-cccc-cccccccccccc', factor: 1.12, state: 'Madhya Pradesh' },
-  { name: 'Kochi Urban', society: 'Kerala Worker Welfare Society', societyId: 'cddddddd-dddd-dddd-dddd-dddddddddddd', factor: 1.15, state: 'Kerala' },
-  { name: 'Guwahati Central', society: 'Pragjyotish Labour Cooperative', societyId: 'ceeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', factor: 1.05, state: 'Assam' },
+  {
+    name: 'Jaipur Central',
+    society: 'Shakti Labour Coop',
+    societyId: 'f646a2c5-21b8-4538-ab2e-87aac9488506',
+    factor: 1.2,
+    state: 'Rajasthan',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Jaipur Suburban (Mansarovar / Sanganer)',
+    feederSociety: 'Jaipur Outer Artisan Union',
+    feederSocietyId: 'feed-jpr-sub',
+    avgTransitMinutes: 18,
+    distanceKm: 12,
+  },
+  {
+    name: 'Pune Metro',
+    society: 'Pune Gig Workers Cooperative',
+    societyId: 'c2222222-2222-2222-2222-222222222222',
+    factor: 1.35,
+    state: 'Maharashtra',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Pune Suburban (Pimpri Chinchwad)',
+    feederSociety: 'PCMC Shramik Reserve Society',
+    feederSocietyId: 'feed-pne-sub',
+    avgTransitMinutes: 22,
+    distanceKm: 15,
+  },
+  {
+    name: 'Patna Urban',
+    society: 'Patna District Labour Society',
+    societyId: 'c1111111-1111-1111-1111-111111111111',
+    factor: 1.1,
+    state: 'Bihar',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Patna Periurban (Danapur Belt)',
+    feederSociety: 'Danapur Karigar Sahakari',
+    feederSocietyId: 'feed-pat-sub',
+    avgTransitMinutes: 24,
+    distanceKm: 14,
+  },
+  {
+    name: 'Lucknow East',
+    society: 'Awadh Artisan Cooperative',
+    societyId: 'c3333333-3333-3333-3333-333333333333',
+    factor: 0.95,
+    state: 'Uttar Pradesh',
+    topology: 'SUBURBAN_RESIDENTIAL',
+    feederRegion: 'Lucknow Suburban (Chinhat / BBD Belt)',
+    feederSociety: 'Gomti Labour Reserve',
+    feederSocietyId: 'feed-lko-sub',
+    avgTransitMinutes: 20,
+    distanceKm: 13,
+  },
+  {
+    name: 'Bangalore North',
+    society: 'Karnataka Shramik Sahakari',
+    societyId: 'c4444444-4444-4444-4444-444444444444',
+    factor: 1.4,
+    state: 'Karnataka',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Bangalore Suburban (Yelahanka / Hosur Belt)',
+    feederSociety: 'North Peripheral Workers Union',
+    feederSocietyId: 'feed-blr-sub',
+    avgTransitMinutes: 25,
+    distanceKm: 18,
+  },
+  {
+    name: 'Delhi NCR',
+    society: 'Indraprastha Shramik Union',
+    societyId: 'c5555555-5555-5555-5555-555555555555',
+    factor: 1.45,
+    state: 'Delhi',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'NCR Suburban (Noida Ext & Ghaziabad Reserve)',
+    feederSociety: 'Hindon Shramik Cooperative',
+    feederSocietyId: 'feed-del-sub',
+    avgTransitMinutes: 26,
+    distanceKm: 19,
+  },
+  {
+    name: 'Mumbai South',
+    society: 'Maharashtra Kaushalya Sahakari',
+    societyId: 'c6666666-6666-6666-6666-666666666666',
+    factor: 1.5,
+    state: 'Maharashtra',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Mumbai Suburban (Thane / Navi Mumbai Reserve)',
+    feederSociety: 'Thane Creek Labour Society',
+    feederSocietyId: 'feed-mum-sub',
+    avgTransitMinutes: 28,
+    distanceKm: 22,
+  },
+  {
+    name: 'Kolkata Metro',
+    society: 'Bengal Karigar Shramik Society',
+    societyId: 'c7777777-7777-7777-7777-777777777777',
+    factor: 1.25,
+    state: 'West Bengal',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Kolkata Periurban (Howrah & Barasat Reserve)',
+    feederSociety: 'Hooghly Shramik Samiti',
+    feederSocietyId: 'feed-kol-sub',
+    avgTransitMinutes: 20,
+    distanceKm: 14,
+  },
+  {
+    name: 'Hyderabad Cyberabad',
+    society: 'Telangana Artisan Federation',
+    societyId: 'c8888888-8888-8888-8888-888888888888',
+    factor: 1.38,
+    state: 'Telangana',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Hyderabad Suburban (Secunderabad / Medchal)',
+    feederSociety: 'Medchal Kaushalya Union',
+    feederSocietyId: 'feed-hyd-sub',
+    avgTransitMinutes: 22,
+    distanceKm: 16,
+  },
+  {
+    name: 'Chennai Central',
+    society: 'Tamil Nadu Labour Federation',
+    societyId: 'c9999999-9999-9999-9999-999999999999',
+    factor: 1.3,
+    state: 'Tamil Nadu',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Chennai Suburban (Tambaram / Chengalpattu Reserve)',
+    feederSociety: 'Pallavaram Shramik Sangam',
+    feederSocietyId: 'feed-chn-sub',
+    avgTransitMinutes: 24,
+    distanceKm: 17,
+  },
+  {
+    name: 'Ahmedabad West',
+    society: 'Gujarat Shramik Vikas Mandal',
+    societyId: 'caaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    factor: 1.22,
+    state: 'Gujarat',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Ahmedabad Periurban (Sanand / Gandhinagar)',
+    feederSociety: 'Sabarmati Artisan Trust',
+    feederSocietyId: 'feed-ahd-sub',
+    avgTransitMinutes: 19,
+    distanceKm: 13,
+  },
+  {
+    name: 'Chandigarh Tricity',
+    society: 'Punjab-Haryana Cooperative Union',
+    societyId: 'cbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    factor: 1.18,
+    state: 'Punjab',
+    topology: 'EMERGING_CORRIDOR',
+    feederRegion: 'Tricity Suburban (Zirakpur / Dera Bassi Belt)',
+    feederSociety: 'Shivalik Karigar Union',
+    feederSocietyId: 'feed-chd-sub',
+    avgTransitMinutes: 16,
+    distanceKm: 10,
+  },
+  {
+    name: 'Indore City',
+    society: 'Malwa Shramik Sahakari Samiti',
+    societyId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+    factor: 1.12,
+    state: 'Madhya Pradesh',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Indore Suburban (Rau / Pithampur Belt)',
+    feederSociety: 'Nimar Labour Reserve',
+    feederSocietyId: 'feed-ind-sub',
+    avgTransitMinutes: 20,
+    distanceKm: 14,
+  },
+  {
+    name: 'Kochi Urban',
+    society: 'Kerala Worker Welfare Society',
+    societyId: 'cddddddd-dddd-dddd-dddd-dddddddddddd',
+    factor: 1.15,
+    state: 'Kerala',
+    topology: 'EMERGING_CORRIDOR',
+    feederRegion: 'Kochi Suburban (Aluva / Kakkanad Reserve)',
+    feederSociety: 'Periyar Shramik Cooperative',
+    feederSocietyId: 'feed-cok-sub',
+    avgTransitMinutes: 18,
+    distanceKm: 12,
+  },
+  {
+    name: 'Guwahati Central',
+    society: 'Pragjyotish Labour Cooperative',
+    societyId: 'ceeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    factor: 1.05,
+    state: 'Assam',
+    topology: 'URBAN_HOTSPOT',
+    feederRegion: 'Guwahati Suburban (Jalukbari / Dispur Reserve)',
+    feederSociety: 'Kamrup Karigar Society',
+    feederSocietyId: 'feed-gau-sub',
+    avgTransitMinutes: 15,
+    distanceKm: 9,
+  },
 ];
 
 /**
@@ -126,19 +314,29 @@ export const FORECAST_REGIONS: RegionMetadata[] = [
  */
 export function resolveRegionMeta(regionName: string): RegionMetadata {
   const clean = (regionName || 'Jaipur Central').trim();
-  const found = FORECAST_REGIONS.find((r) => r.name.toLowerCase() === clean.toLowerCase() || clean.toLowerCase().includes(r.name.toLowerCase()));
+  const found = FORECAST_REGIONS.find(
+    (r) => r.name.toLowerCase() === clean.toLowerCase() || clean.toLowerCase().includes(r.name.toLowerCase())
+  );
   if (found) return found;
 
   const lower = clean.toLowerCase();
   let factor = 1.1;
-  if (lower.includes('delhi') || lower.includes('mumbai') || lower.includes('bangalore') || lower.includes('kolkata') || lower.includes('hyderabad') || lower.includes('chennai')) {
+  let topology: ZoneTopologyType = 'URBAN_HOTSPOT';
+
+  if (lower.includes('suburb') || lower.includes('ext') || lower.includes('rural') || lower.includes('peri') || lower.includes('belt')) {
+    topology = 'SUBURBAN_RESIDENTIAL';
+    factor = 1.02;
+  } else if (lower.includes('delhi') || lower.includes('mumbai') || lower.includes('bangalore') || lower.includes('kolkata') || lower.includes('hyderabad') || lower.includes('chennai')) {
     factor = 1.4;
+    topology = 'URBAN_HOTSPOT';
   } else if (lower.includes('pune') || lower.includes('jaipur') || lower.includes('ahmedabad') || lower.includes('surat') || lower.includes('lucknow') || lower.includes('patna') || lower.includes('bhopal') || lower.includes('indore') || lower.includes('noida') || lower.includes('gurgaon') || lower.includes('chandigarh')) {
     factor = 1.22;
+    topology = 'URBAN_HOTSPOT';
   } else {
     let hash = 0;
     for (let i = 0; i < clean.length; i++) hash = (hash << 5) - hash + clean.charCodeAt(i);
     factor = 1.0 + (Math.abs(hash) % 18) / 100;
+    topology = hash % 2 === 0 ? 'URBAN_HOTSPOT' : 'SUBURBAN_RESIDENTIAL';
   }
 
   const slug = clean.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 16);
@@ -147,6 +345,12 @@ export function resolveRegionMeta(regionName: string): RegionMetadata {
     society: `${clean} Labour Cooperative Society`,
     societyId: `coop-loc-${slug || 'gen'}`,
     factor: parseFloat(factor.toFixed(2)),
+    topology,
+    feederRegion: `${clean} Suburban Reserve Belt`,
+    feederSociety: `${clean} Suburban Artisan Pool`,
+    feederSocietyId: `feed-${slug || 'sub'}`,
+    avgTransitMinutes: 20,
+    distanceKm: 14,
   };
 }
 
@@ -390,28 +594,23 @@ export async function generateAIStrategicBriefing(
       rebalanceSuggestions: rebalancingPlans.map((p) => `${p.trade}: Move ${p.recommendedWorkersCount} from ${p.fromSocietyName} to ${p.toSocietyName}`),
     };
 
-    const candidateModels = [
-      process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile',
-      'groq/compound-mini',
-      'llama-3.3-70b-versatile',
-    ];
-
+    const model = process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile';
     let aiText = '';
 
-    for (const model of candidateModels) {
-      try {
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              {
-                role: 'system',
-                content: `You are the Lead Workforce & Demand Strategist for ShramNexus, India's premier Cooperative-Owned Digital Service Marketplace.
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(1500),
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: `You are the Lead Workforce & Demand Strategist for ShramNexus, India's premier Cooperative-Owned Digital Service Marketplace.
 Provide a sharp, authoritative, 4-point operational briefing for the Cooperative Federation Administration.
 Output valid JSON adhering strictly to this schema:
 {
@@ -421,25 +620,23 @@ Output valid JSON adhering strictly to this schema:
   "recommendedActions": ["string", "string"],
   "welfareAdvisory": "string"
 }`,
-              },
-              {
-                role: 'user',
-                content: `Analyze this week's workforce and demand forecast metrics: ${JSON.stringify(promptContext)}`,
-              },
-            ],
-            temperature: 0.4,
-            response_format: { type: 'json_object' },
-          }),
-        });
+            },
+            {
+              role: 'user',
+              content: `Analyze this week's workforce and demand forecast metrics: ${JSON.stringify(promptContext)}`,
+            },
+          ],
+          temperature: 0.4,
+          response_format: { type: 'json_object' },
+        }),
+      });
 
-        if (res.ok) {
-          const json = await res.json();
-          aiText = json.choices?.[0]?.message?.content || '';
-          if (aiText) break;
-        }
-      } catch (err) {
-        console.warn(`Groq model ${model} failed, trying next candidate:`, err);
+      if (res.ok) {
+        const json = await res.json();
+        aiText = json.choices?.[0]?.message?.content || '';
       }
+    } catch (err) {
+      // Fast fallback to instant heuristic briefing
     }
 
     if (aiText) {
@@ -461,3 +658,217 @@ Output valid JSON adhering strictly to this schema:
 
   return fallbackBriefing;
 }
+
+export type OptimizationPolicy = 'SLA_PRIORITY' | 'WELFARE_PROXIMITY' | 'MAX_VOLUME';
+
+export interface HotspotCluster {
+  id: string;
+  region: string;
+  topology: ZoneTopologyType;
+  state: string;
+  severityIndex: number; // 0 to 100
+  urgencyLevel: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'BALANCED';
+  primaryTradeDeficit: string;
+  netArtisanDeficit: number;
+  projectedDemandPeak: number;
+  activeSupply: number;
+  surgeMultiplier: number;
+  avgSlaMinutes: number;
+  targetSlaMinutes: number;
+  pairedFeederSociety: string;
+  pairedFeederRegion: string;
+  recommendedDispatchCount: number;
+}
+
+export interface CorridorAllocation {
+  id: string;
+  trade: string;
+  fromRegion: string;
+  fromSocietyName: string;
+  fromSocietyId: string;
+  fromTopology: ZoneTopologyType;
+  toRegion: string;
+  toSocietyName: string;
+  toSocietyId: string;
+  toTopology: ZoneTopologyType;
+  allocatedWorkers: number;
+  transitMinutes: number;
+  distanceKm: number;
+  expectedSlaReductionMinutes: number;
+  projectedReliefPct: number;
+  urgency: 'HIGH' | 'MEDIUM' | 'LOW';
+  welfareStipend: string;
+  rationale: string;
+  status: 'PROPOSED' | 'DISPATCHED' | 'ACTIVE';
+}
+
+export interface HotspotOptimizationSummary {
+  policy: OptimizationPolicy;
+  totalHotspotsIdentified: number;
+  criticalDeficitHotspots: number;
+  totalSuburbanArtisansMobilized: number;
+  overallSlaImprovementPct: number;
+  averageTransitMinutes: number;
+  totalWelfareBonusAllocated: number;
+}
+
+/**
+ * Computes an optimal workforce distribution plan from suburban reserve belts
+ * into high-demand urban core hotspots based on the chosen optimization policy.
+ */
+export function computeHotspotDistributionPlan(
+  forecasts: TradeZoneForecast[],
+  policy: OptimizationPolicy = 'SLA_PRIORITY'
+): {
+  clusters: HotspotCluster[];
+  allocations: CorridorAllocation[];
+  summary: HotspotOptimizationSummary;
+} {
+  const clusters: HotspotCluster[] = [];
+  const allocations: CorridorAllocation[] = [];
+
+  // 1. Group forecasts by region to assess overall district pressure
+  const regionMap = new Map<string, TradeZoneForecast[]>();
+  forecasts.forEach((f) => {
+    const list = regionMap.get(f.region) || [];
+    list.push(f);
+    regionMap.set(f.region, list);
+  });
+
+  // 2. Identify and score Urban Hotspots
+  let clusterCounter = 1;
+  regionMap.forEach((regForecasts, regionName) => {
+    const regMeta = resolveRegionMeta(regionName);
+    const deficitForecasts = regForecasts.filter((f) => f.status === 'Deficit');
+    const totalDeficit = deficitForecasts.reduce((sum, f) => sum + Math.abs(f.netGap), 0);
+    const maxSurge = Math.max(...regForecasts.map((f) => f.surgeMultiplier), 1.0);
+    const peakDemand = Math.max(...regForecasts.map((f) => f.predictedVolume7D), 40);
+    const activeWorkers = regForecasts.reduce((sum, f) => sum + f.currentActiveWorkers, 0);
+
+    // Primary deficit trade
+    const worstTrade = deficitForecasts.sort((a, b) => a.netGap - b.netGap)[0] || regForecasts[0];
+
+    // Compute Hotspot Severity Index (0 - 100)
+    const deficitRatio = totalDeficit > 0 ? Math.min(100, Math.round((totalDeficit / Math.max(1, activeWorkers)) * 100)) : 0;
+    const surgeRatio = Math.round((maxSurge - 1.0) * 100);
+    const baseSla = regMeta.topology === 'URBAN_HOTSPOT' ? 36 : 28;
+    const severityIndex = Math.min(100, Math.round((deficitRatio * 0.45) + (surgeRatio * 0.35) + (totalDeficit > 0 ? 20 : 5)));
+
+    let urgencyLevel: HotspotCluster['urgencyLevel'] = 'BALANCED';
+    if (severityIndex >= 70) urgencyLevel = 'CRITICAL';
+    else if (severityIndex >= 45) urgencyLevel = 'HIGH';
+    else if (severityIndex >= 25) urgencyLevel = 'MODERATE';
+
+    // Target SLA adjustment based on policy
+    let targetSla = 20;
+    if (policy === 'SLA_PRIORITY') targetSla = 14;
+    else if (policy === 'WELFARE_PROXIMITY') targetSla = 18;
+    else targetSla = 16;
+
+    // Mobilization contingent calculation
+    let dispatchMultiplier = 0.75;
+    if (policy === 'SLA_PRIORITY') dispatchMultiplier = 0.90;
+    else if (policy === 'WELFARE_PROXIMITY') dispatchMultiplier = 0.65;
+    const recommendedDispatch = totalDeficit > 0 ? Math.max(2, Math.round(totalDeficit * dispatchMultiplier)) : 0;
+
+    clusters.push({
+      id: `hsc-${clusterCounter++}`,
+      region: regionName,
+      topology: regMeta.topology,
+      state: regMeta.state || 'National Grid',
+      severityIndex,
+      urgencyLevel,
+      primaryTradeDeficit: worstTrade?.tradeName || 'Electrician',
+      netArtisanDeficit: totalDeficit,
+      projectedDemandPeak: peakDemand,
+      activeSupply: activeWorkers,
+      surgeMultiplier: maxSurge,
+      avgSlaMinutes: baseSla + Math.round(totalDeficit * 0.8),
+      targetSlaMinutes: targetSla,
+      pairedFeederSociety: regMeta.feederSociety || `${regionName} Suburban Reserve`,
+      pairedFeederRegion: regMeta.feederRegion || `${regionName} Suburban Belt`,
+      recommendedDispatchCount: recommendedDispatch,
+    });
+  });
+
+  // Sort clusters: critical hotspots first
+  clusters.sort((a, b) => b.severityIndex - a.severityIndex);
+
+  // 3. Build Corridor Allocations for Hotspots
+  let allocCounter = 1;
+  clusters
+    .filter((c) => c.netArtisanDeficit > 0)
+    .slice(0, 8)
+    .forEach((cluster) => {
+      const regMeta = resolveRegionMeta(cluster.region);
+      const baseDistance = regMeta.distanceKm || 14;
+      const baseTransit = regMeta.avgTransitMinutes || 20;
+
+      // Adjust metrics based on optimization policy
+      let finalWorkers = cluster.recommendedDispatchCount;
+      let finalTransit = baseTransit;
+      let finalRelief = 85;
+      let welfareBonus = '+20% Peak Zone Stipend + Transit Card';
+
+      if (policy === 'SLA_PRIORITY') {
+        finalWorkers = Math.max(3, Math.round(cluster.recommendedDispatchCount * 1.15));
+        finalTransit = Math.max(12, Math.round(baseTransit * 0.85)); // express priority route
+        finalRelief = 92;
+        welfareBonus = '+25% Emergency Surge Stipend + Direct Cab Transit';
+      } else if (policy === 'WELFARE_PROXIMITY') {
+        finalWorkers = Math.max(2, Math.round(cluster.recommendedDispatchCount * 0.85));
+        finalTransit = baseTransit;
+        finalRelief = 76;
+        welfareBonus = '+15% Shift Allowance + 45-min Rest Cap Guarantee';
+      } else {
+        finalRelief = 82;
+        welfareBonus = '+18% Cooperative Pool Incentive';
+      }
+
+      const reductionMinutes = Math.round(cluster.avgSlaMinutes - cluster.targetSlaMinutes);
+
+      allocations.push({
+        id: `corridor-${allocCounter++}`,
+        trade: cluster.primaryTradeDeficit,
+        fromRegion: cluster.pairedFeederRegion,
+        fromSocietyName: cluster.pairedFeederSociety,
+        fromSocietyId: regMeta.feederSocietyId || 'feed-sub-auto',
+        fromTopology: 'SUBURBAN_RESIDENTIAL',
+        toRegion: cluster.region,
+        toSocietyName: regMeta.society,
+        toSocietyId: regMeta.societyId,
+        toTopology: cluster.topology,
+        allocatedWorkers: finalWorkers,
+        transitMinutes: finalTransit,
+        distanceKm: baseDistance,
+        expectedSlaReductionMinutes: reductionMinutes,
+        projectedReliefPct: finalRelief,
+        urgency: cluster.urgencyLevel === 'CRITICAL' ? 'HIGH' : cluster.urgencyLevel === 'HIGH' ? 'MEDIUM' : 'LOW',
+        welfareStipend: welfareBonus,
+        rationale: `Deploy ${finalWorkers} ${cluster.primaryTradeDeficit}s along the ${cluster.pairedFeederRegion} ➔ ${cluster.region} corridor. Reduces response latency from ${cluster.avgSlaMinutes}m to ${cluster.targetSlaMinutes}m.`,
+        status: 'PROPOSED',
+      });
+    });
+
+  // 4. Compute overall optimization summary
+  const totalMobilized = allocations.reduce((sum, a) => sum + a.allocatedWorkers, 0);
+  const avgTransit = allocations.length > 0
+    ? Math.round(allocations.reduce((sum, a) => sum + a.transitMinutes, 0) / allocations.length)
+    : 18;
+  const avgSlaRelief = allocations.length > 0
+    ? Math.round(allocations.reduce((sum, a) => sum + a.projectedReliefPct, 0) / allocations.length)
+    : 80;
+
+  const summary: HotspotOptimizationSummary = {
+    policy,
+    totalHotspotsIdentified: clusters.filter((c) => c.severityIndex >= 40).length,
+    criticalDeficitHotspots: clusters.filter((c) => c.urgencyLevel === 'CRITICAL').length,
+    totalSuburbanArtisansMobilized: totalMobilized,
+    overallSlaImprovementPct: avgSlaRelief,
+    averageTransitMinutes: avgTransit,
+    totalWelfareBonusAllocated: totalMobilized * 350, // Rs. 350 welfare stipend per dispatched artisan
+  };
+
+  return { clusters, allocations, summary };
+}
+
