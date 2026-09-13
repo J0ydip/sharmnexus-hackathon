@@ -767,6 +767,9 @@
     top: 0;
     bottom: 0;
     transform: translateX(-100%);
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .coop-sidebar.open {
@@ -774,19 +777,53 @@
   }
 
   .coop-mobile-menu-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: rgba(36, 23, 47, 0.05);
+    font-size: 1.3rem;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .coop-portal-topbar {
+    height: 60px;
+    padding: 0 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .coop-topbar-title h1 {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .coop-topbar-title p {
+    display: none !important;
+  }
+
+  .coop-topbar-badge {
+    display: none !important;
+  }
+
+  .coop-admin-full {
+    display: none !important;
+  }
+
+  .coop-topbar-admin-box {
+    padding: 4px 8px !important;
+    gap: 4px !important;
   }
 
   .coop-dashboard-split {
     grid-template-columns: 1fr;
   }
 
-  .coop-portal-topbar {
-    padding: 0 1.25rem;
-  }
-
   .coop-view-container {
-    padding: 1.25rem;
+    padding: 1rem;
   }
 
   .coop-recommendation-panel {
@@ -801,6 +838,22 @@
 
   .coop-recommendation-actions button {
     width: 100%;
+  }
+}
+
+@media (max-width: 440px) {
+  .coop-topbar-title h1 {
+    font-size: 0.95rem;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .coop-admin-name {
+    font-size: 0.72rem !important;
+  }
+  .coop-portal-topbar {
+    padding: 0 0.5rem;
   }
 }
 

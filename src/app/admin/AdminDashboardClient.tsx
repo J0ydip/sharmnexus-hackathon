@@ -204,6 +204,13 @@ export function AdminDashboardClient() {
   } | null>(null);
   const [actionReason, setActionReason] = useState('Policy Violation');
 
+  // Mobile responsive sidebar drawer state
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const handleTabClick = (tab: any) => {
+    setActiveTab(tab);
+    setMobileSidebarOpen(false);
+  };
+
   const fetchAllData = async () => {
     try {
       const [s, w, c, b, r, e, coops, logs, tickets, tools, vel] = await Promise.all([
@@ -638,8 +645,17 @@ export function AdminDashboardClient() {
 
   return (
     <div className="admin-dashboard-body">
+      {/* Mobile Drawer Backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          className="admin-sidebar-backdrop"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar ${mobileSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <img src="/logo.png" alt="ShramNexus" className="sidebar-logo" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           <h2>Shram<span>Nexus</span></h2>
@@ -651,63 +667,63 @@ export function AdminDashboardClient() {
         <nav className="sidebar-nav mt-4">
           <button
             type="button"
-            onClick={() => setActiveTab('view-overview')}
+            onClick={() => handleTabClick('view-overview')}
             className={`nav-item ${activeTab === 'view-overview' ? 'active' : ''}`}
           >
             📊 Platform Overview
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('view-customers')}
+            onClick={() => handleTabClick('view-customers')}
             className={`nav-item ${activeTab === 'view-customers' ? 'active' : ''}`}
           >
             👥 Customers
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('view-workers')}
+            onClick={() => handleTabClick('view-workers')}
             className={`nav-item ${activeTab === 'view-workers' ? 'active' : ''}`}
           >
             👷‍♂️ Workers
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('view-bookings')}
+            onClick={() => handleTabClick('view-bookings')}
             className={`nav-item ${activeTab === 'view-bookings' ? 'active' : ''}`}
           >
             🧾 Bookings
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('view-earnings')}
+            onClick={() => handleTabClick('view-earnings')}
             className={`nav-item ${activeTab === 'view-earnings' ? 'active' : ''}`}
           >
             💰 Earnings
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('view-reviews')}
+            onClick={() => handleTabClick('view-reviews')}
             className={`nav-item ${activeTab === 'view-reviews' ? 'active' : ''}`}
           >
             ⭐ Reviews
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('view-coops')}
+            onClick={() => handleTabClick('view-coops')}
             className={`nav-item ${activeTab === 'view-coops' ? 'active' : ''}`}
           >
             🏢 Cooperative Federation
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('view-audit')}
+            onClick={() => handleTabClick('view-audit')}
             className={`nav-item ${activeTab === 'view-audit' ? 'active' : ''}`}
           >
             📜 Audit Trail
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('view-support')}
+            onClick={() => handleTabClick('view-support')}
             className={`nav-item ${activeTab === 'view-support' ? 'active' : ''}`}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
           >
@@ -752,82 +768,93 @@ export function AdminDashboardClient() {
       <main className="admin-main">
         {/* Topbar */}
         <header className="admin-topbar">
-          <div>
-            <h1 className="topbar-title">Admin Console</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
-              <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>
-                ShramNexus Master Control &amp; Cooperative Oversight
-              </p>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  fontSize: '0.72rem',
-                  color: 'var(--green)',
-                  background: 'var(--mint)',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontWeight: 700,
-                }}
-              >
+          <div className="admin-topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              type="button"
+              className="admin-mobile-menu-btn"
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+              aria-label="Toggle navigation menu"
+            >
+              ☰
+            </button>
+            <div>
+              <h1 className="topbar-title">Admin Console</h1>
+              <div className="admin-topbar-sub" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', flexWrap: 'wrap' }}>
+                <p className="text-muted admin-topbar-desc" style={{ fontSize: '0.85rem', margin: 0 }}>
+                  ShramNexus Master Control &amp; Cooperative Oversight
+                </p>
                 <span
+                  className="admin-topbar-sync-badge"
                   style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    background: 'var(--green)',
-                    display: 'inline-block',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '0.72rem',
+                    color: 'var(--green)',
+                    background: 'var(--mint)',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontWeight: 700,
                   }}
-                />
-                Live Supabase Sync {lastSynced ? `(${lastSynced})` : ''}
-              </span>
+                >
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: 'var(--green)',
+                      display: 'inline-block',
+                    }}
+                  />
+                  Live Sync {lastSynced ? `(${lastSynced})` : ''}
+                </span>
+              </div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="admin-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Link
               href="/"
-              className="btn btn-outline"
+              className="btn btn-outline admin-back-btn"
               title="Return to Public Customer Landing Page"
               style={{
-                padding: '0.45rem 0.85rem',
-                fontSize: '0.78rem',
+                padding: '0.4rem 0.75rem',
+                fontSize: '0.75rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '4px',
                 borderRadius: '8px',
                 textDecoration: 'none',
                 color: 'inherit',
               }}
             >
-              ← Back to Public Site
+              ← <span className="admin-btn-text">Public Site</span>
             </Link>
             <button
               type="button"
               onClick={handleRefreshAll}
               disabled={isRefreshing}
-              className="btn btn-outline"
+              className="btn btn-outline admin-refresh-btn"
               title="Click to fetch fresh data across all tables from Supabase"
               style={{
-                padding: '0.45rem 0.85rem',
-                fontSize: '0.78rem',
+                padding: '0.4rem 0.75rem',
+                fontSize: '0.75rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '4px',
                 borderRadius: '8px',
                 cursor: isRefreshing ? 'wait' : 'pointer',
               }}
             >
               <span
                 className={isRefreshing ? 'spin' : ''}
-                style={{ display: 'inline-block', fontSize: '1rem', lineHeight: 1 }}
+                style={{ display: 'inline-block', fontSize: '0.95rem', lineHeight: 1 }}
               >
                 ↻
               </span>
-              {isRefreshing ? 'Syncing...' : 'Refresh Live Data'}
+              <span className="admin-btn-text">{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
             </button>
             <div className="topbar-profile">
-              <div className="topbar-avatar">A</div>
+              <div className="topbar-avatar" title="Super Admin">A</div>
               <div className="topbar-user-info">
                 <strong>Super Admin</strong>
                 <small>admin@shramnexus.com</small>

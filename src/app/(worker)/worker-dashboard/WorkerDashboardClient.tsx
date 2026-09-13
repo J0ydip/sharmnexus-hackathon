@@ -920,15 +920,15 @@ export function WorkerDashboardClient() {
 
           <div className="worker-topbar-right">
             {/* Authenticated Worker Profile Badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#b85435', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem' }}>
+            <div className="worker-profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div className="worker-profile-avatar" style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#b85435', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', flexShrink: 0 }}>
                 {workerName ? workerName.charAt(0).toUpperCase() : 'W'}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>
+              <div className="worker-profile-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                <span className="worker-profile-name" style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>
                   {workerName}
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                <span className="worker-profile-skill" style={{ fontSize: '0.68rem', color: '#64748b' }}>
                   {workerSkill.split('&')[0].trim()}
                 </span>
               </div>
@@ -951,10 +951,10 @@ export function WorkerDashboardClient() {
 
             {/* Availability switch */}
             <div className="worker-availability-toggle">
-              <span className={isAvailable ? 'worker-status-active' : 'worker-status-inactive'}>
+              <span className={`worker-avail-text ${isAvailable ? 'worker-status-active' : 'worker-status-inactive'}`}>
                 {isAvailable ? t.avail_online : t.avail_offline}
               </span>
-              <label className="worker-switch">
+              <label className="worker-switch" title={isAvailable ? 'Available for Work' : 'Offline'}>
                 <input
                   type="checkbox"
                   checked={isAvailable}

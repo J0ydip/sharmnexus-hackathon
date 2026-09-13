@@ -175,12 +175,12 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200/80 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-2xs">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
+      <div className="container mx-auto flex h-16 items-center justify-between px-2.5 sm:px-6">
         {/* Left: Mobile Menu & Brand */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Mobile Sheet Nav */}
           <Sheet>
-            <SheetTrigger className="md:hidden inline-flex items-center justify-center rounded-xl text-gray-700 hover:bg-gray-100 h-10 w-10">
+            <SheetTrigger className="md:hidden inline-flex items-center justify-center rounded-xl text-gray-700 hover:bg-gray-100 h-9 w-9">
               <Menu className="h-5 w-5" />
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] p-6">
@@ -266,14 +266,14 @@ export function Navbar() {
           </Sheet>
 
           {/* Logo & Brand */}
-          <Link href={homeLink} className="flex items-center gap-2.5 group">
+          <Link href={homeLink} className="flex items-center gap-2 sm:gap-2.5 group">
             <img
               src="/logo.png"
               alt="ShramNexus Logo"
-              className="w-10 h-10 rounded-xl object-contain shadow-xs border border-amber-200/80 group-hover:scale-105 transition-transform overflow-hidden"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl object-contain shadow-xs border border-amber-200/80 group-hover:scale-105 transition-transform overflow-hidden"
             />
             <div>
-              <span className="text-lg font-black tracking-tight text-gray-900 leading-tight">
+              <span className="text-base sm:text-lg font-black tracking-tight text-gray-900 leading-tight">
                 Shram<span className="text-[#e6aa3b]">Nexus</span>
               </span>
               <span className="hidden sm:inline-block text-[10px] font-bold text-[#24172f] bg-[#fbf7ef] px-2 py-0.5 rounded-md ml-2 border border-[#e6aa3b]/30">
@@ -326,7 +326,7 @@ export function Navbar() {
         </nav>
 
         {/* Right: Notifications, Language, Profile */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2.5">
           {/* Notifications Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger className="relative inline-flex items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 h-9 w-9 transition-colors">
@@ -391,10 +391,10 @@ export function Navbar() {
 
           {/* Language Switcher */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center gap-1 rounded-xl text-gray-600 hover:bg-gray-100 h-9 px-2.5 text-xs font-semibold transition-colors">
+            <DropdownMenuTrigger className="inline-flex items-center justify-center gap-1 rounded-xl text-gray-600 hover:bg-gray-100 h-9 w-9 sm:w-auto sm:px-2.5 text-xs font-semibold transition-colors">
               <Globe className="h-4 w-4 text-gray-500" />
               <span className="hidden sm:inline">{lang.toUpperCase()}</span>
-              <ChevronDown className="h-3 w-3 opacity-50" />
+              <ChevronDown className="hidden sm:inline h-3 w-3 opacity-50" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-xl">
               <DropdownMenuItem onClick={() => switchLanguage('en')} className="text-xs cursor-pointer">
@@ -421,14 +421,14 @@ export function Navbar() {
           {/* User Profile Menu */}
           {user ? (
             <DropdownMenu>
-              <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 hover:bg-gray-100 h-9 px-3 text-xs font-semibold transition-colors">
-                <div className="w-5 h-5 rounded-full bg-[#24172f] text-white flex items-center justify-center font-bold text-[10px]">
+              <DropdownMenuTrigger className="inline-flex items-center justify-center sm:justify-start gap-2 rounded-xl border border-gray-200 bg-gray-50/80 hover:bg-gray-100 h-9 w-9 sm:w-auto p-0 sm:px-3 text-xs font-semibold transition-colors">
+                <div className="w-6 h-6 rounded-full bg-[#24172f] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
                   {user.user_metadata?.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                 </div>
-                <span className="max-w-[100px] truncate text-gray-800 font-medium">
+                <span className="hidden sm:inline-block max-w-[100px] truncate text-gray-800 font-medium">
                   {user.user_metadata?.full_name || user.email?.split('@')[0] || 'My Account'}
                 </span>
-                <ChevronDown className="h-3 w-3 opacity-50" />
+                <ChevronDown className="hidden sm:inline-block h-3 w-3 opacity-50" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5 shadow-xl border border-gray-200">
                 <DropdownMenuLabel className="px-3 py-2">

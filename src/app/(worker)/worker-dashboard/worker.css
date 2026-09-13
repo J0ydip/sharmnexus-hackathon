@@ -921,16 +921,29 @@
 }
 
 @media (max-width: 768px) {
+  .worker-topbar {
+    height: 60px;
+    padding: 0 0.75rem;
+  }
   .worker-sidebar {
     position: fixed;
     height: 100%;
     transform: translateX(-100%);
+    z-index: 999;
   }
   .worker-sidebar.open {
     transform: translateX(0);
   }
   .worker-mobile-menu-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: rgba(36, 23, 47, 0.05);
+    font-size: 1.3rem;
+    flex-shrink: 0;
   }
   .worker-form-grid {
     grid-template-columns: 1fr;
@@ -939,6 +952,41 @@
     grid-template-columns: 1fr;
   }
   .worker-topbar-right {
-    gap: 0.8rem;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+  .worker-profile-skill {
+    display: none !important;
+  }
+  .worker-profile-name {
+    max-width: 75px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem !important;
+  }
+  .worker-avail-text {
+    display: none !important;
+  }
+  .worker-availability-toggle {
+    margin: 0 !important;
+  }
+  .worker-lang-select {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+    max-width: 85px;
+  }
+}
+
+@media (max-width: 440px) {
+  .worker-profile-info {
+    display: none !important;
+  }
+  .worker-profile-badge {
+    padding: 3px !important;
+    border-radius: 50% !important;
+  }
+  .worker-topbar-right {
+    gap: 0.35rem;
   }
 }

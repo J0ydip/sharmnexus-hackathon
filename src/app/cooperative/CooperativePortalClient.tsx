@@ -895,19 +895,20 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <span className="coop-badge coop-badge-gold">
+          <div className="coop-topbar-right" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <span className="coop-badge coop-badge-gold coop-topbar-badge">
               🏛️ {data.society.name}
             </span>
-            <span className="coop-badge coop-badge-verified">
+            <span className="coop-badge coop-badge-verified coop-topbar-badge">
               Live Network
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(36,23,47,0.06)', padding: '5px 12px', borderRadius: '10px' }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--ink)' }}>
-                👤 {data.society.name} Admin
+            <div className="coop-topbar-admin-box" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(36,23,47,0.06)', padding: '5px 12px', borderRadius: '10px' }}>
+              <span className="coop-admin-name" style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--ink)' }}>
+                👤 <span className="coop-admin-full">{data.society.name} </span>Admin
               </span>
               <button
                 type="button"
+                className="coop-logout-btn"
                 onClick={() => {
                   localStorage.removeItem('shramnexus-coop-auth');
                   localStorage.removeItem('shramnexus-auth');
