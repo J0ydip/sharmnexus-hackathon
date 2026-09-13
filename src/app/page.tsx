@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Script from 'next/script';
+import { Languages, Compass, MousePointerClick, Mic, Shapes } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
 import { HelpSupportSection } from '@/components/common/HelpSupportSection';
@@ -518,19 +519,44 @@ export default function LandingPage() {
             <div className="section-kicker" data-i18n="access_kicker">DESIGNED FOR EVERYONE</div>
             <h2 data-i18n-html="access_h2">Technology that speaks<br /><em>your language.</em></h2>
             <div className="lang-pill-row" role="group" aria-label="Choose language">
-                <button className="lang-pill is-active" type="button" data-lang="en">English</button>
-                <button className="lang-pill" type="button" data-lang="hi">हिंदी</button>
-                <button className="lang-pill" type="button" data-lang="bn">বাংলা</button>
-                <button className="lang-pill" type="button" data-lang="mr">मराठी</button>
-                <button className="lang-pill" type="button" data-lang="ta">தமிழ்</button>
-                <button className="lang-pill" type="button" data-lang="te">తెలుగు</button>
+                <button className={`lang-pill ${lang === 'en' ? 'is-active' : ''}`} type="button" data-lang="en" onClick={() => setLang('en')}>English</button>
+                <button className={`lang-pill ${lang === 'hi' ? 'is-active' : ''}`} type="button" data-lang="hi" onClick={() => setLang('hi')}>हिंदी</button>
+                <button className={`lang-pill ${lang === 'bn' ? 'is-active' : ''}`} type="button" data-lang="bn" onClick={() => setLang('bn')}>বাংলা</button>
+                <button className={`lang-pill ${lang === 'mr' ? 'is-active' : ''}`} type="button" data-lang="mr" onClick={() => setLang('mr')}>मराठी</button>
+                <button className={`lang-pill ${lang === 'ta' ? 'is-active' : ''}`} type="button" data-lang="ta" onClick={() => setLang('ta')}>தமிழ்</button>
+                <button className={`lang-pill ${lang === 'te' ? 'is-active' : ''}`} type="button" data-lang="te" onClick={() => setLang('te')}>తెలుగు</button>
             </div>
             <div className="accessibility-grid">
-                <div className="accessibility-item"><span className="accessibility-icon">🌐</span><p>Multilingual interface</p></div>
-                <div className="accessibility-item"><span className="accessibility-icon">🧭</span><p>Simple navigation</p></div>
-                <div className="accessibility-item"><span className="accessibility-icon">👆</span><p>Large touch-friendly controls</p></div>
-                <div className="accessibility-item"><span className="accessibility-icon">🎤</span><p>Voice-assisted service search</p></div>
-                <div className="accessibility-item"><span className="accessibility-icon">🎯</span><p>Easy-to-understand icons</p></div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-lang" aria-hidden="true">
+                        <Languages size={26} strokeWidth={2} />
+                    </div>
+                    <p>Multilingual interface</p>
+                </div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-nav" aria-hidden="true">
+                        <Compass size={26} strokeWidth={2} />
+                    </div>
+                    <p>Simple navigation</p>
+                </div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-touch" aria-hidden="true">
+                        <MousePointerClick size={26} strokeWidth={2} />
+                    </div>
+                    <p>Large touch-friendly controls</p>
+                </div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-voice" aria-hidden="true">
+                        <Mic size={26} strokeWidth={2} />
+                    </div>
+                    <p>Voice-assisted service search</p>
+                </div>
+                <div className="accessibility-item">
+                    <div className="accessibility-icon icon-visual" aria-hidden="true">
+                        <Shapes size={26} strokeWidth={2} />
+                    </div>
+                    <p>Easy-to-understand icons</p>
+                </div>
             </div>
             <a className="button button-dark" href="/auth/login"><span data-i18n="access_explore">Explore ShramNexus</span> <span>↗</span></a>
         </section>
