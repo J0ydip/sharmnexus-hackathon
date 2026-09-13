@@ -1287,33 +1287,10 @@ body:has(.hero) em {
 /* Transformation Center Node */
 .transform-connector {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   position: relative;
-}
-
-.connector-ring-outer {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.connector-ring-outer::before {
-  content: '';
-  position: absolute;
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  border: 2px dashed rgba(230, 170, 59, 0.35);
-  animation: ringRotate 16s linear infinite;
-}
-
-@keyframes ringRotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  align-self: center;
 }
 
 .connector-icon-glow {
@@ -1325,28 +1302,16 @@ body:has(.hero) em {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.45rem;
+  font-size: 1.5rem;
   font-weight: 800;
   box-shadow: 0 10px 25px rgba(217, 111, 77, 0.38), 0 0 0 4px #fbf7ef;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
   cursor: pointer;
 }
 
 .transform-connector:hover .connector-icon-glow {
   transform: scale(1.12);
-}
-
-.connector-caption {
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-align: center;
-  color: #7b6f80;
-  line-height: 1.35;
-}
-
-.connector-caption strong {
-  color: var(--ink);
-  font-weight: 800;
+  box-shadow: 0 14px 32px rgba(217, 111, 77, 0.48), 0 0 0 4px #fbf7ef;
 }
 
 /* =========================================
@@ -2079,7 +2044,7 @@ body:has(.hero) .community-card.cooperative h3,
 ========================================= */
 .accessibility.section-pad {
   padding-top: 2rem;
-  padding-bottom: 2.75rem;
+  padding-bottom: 4.75rem;
 }
 
 .accessibility { text-align: center; }
@@ -2355,7 +2320,7 @@ body:has(.hero) .community-card.cooperative h3,
    Worker Opportunities
 ========================================= */
 .worker-opportunities.section-pad {
-  padding-top: 2.75rem;
+  padding-top: 3.5rem;
   padding-bottom: 5.5rem;
 }
 
@@ -2725,12 +2690,7 @@ body:has(.hero) .community-card.cooperative h3,
   }
   
   .transform-connector {
-    flex-direction: row;
     margin: 0.8rem auto;
-  }
-
-  .connector-ring-outer::before {
-    display: none;
   }
 
   .connector-icon-glow {

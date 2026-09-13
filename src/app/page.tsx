@@ -249,14 +249,8 @@ export default function LandingPage() {
 
             {/* Center Transformation Node */}
             <div className="transform-connector">
-              <div className="connector-ring-outer">
-                <div className="connector-icon-glow">
-                  <span className="connector-arrow">→</span>
-                </div>
-              </div>
-              <div className="connector-caption">
-                TRANSFORMED BY<br />
-                <strong>SHRAMNEXUS</strong>
+              <div className="connector-icon-glow" aria-label="Transformation forward">
+                <span className="connector-arrow">→</span>
               </div>
             </div>
 

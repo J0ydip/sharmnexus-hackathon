@@ -1931,7 +1931,7 @@ em {
 ========================================= */
 .accessibility.section-pad {
   padding-top: 2rem;
-  padding-bottom: 2.75rem;
+  padding-bottom: 4.75rem;
 }
 
 .accessibility { text-align: center; }
@@ -2207,7 +2207,7 @@ em {
    Worker Opportunities
 ========================================= */
 .worker-opportunities.section-pad {
-  padding-top: 2.75rem;
+  padding-top: 3.5rem;
   padding-bottom: 5.5rem;
 }
 
