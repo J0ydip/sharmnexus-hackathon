@@ -40,6 +40,7 @@ import {
   Award,
   Star,
   XCircle,
+  Copy,
 } from 'lucide-react';
 
 interface PageProps {
@@ -61,6 +62,16 @@ export default function BookingTrackingPage({ params }: PageProps) {
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isOtpCopied, setIsOtpCopied] = useState(false);
+
+  const handleCopyOtp = (pin: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(pin);
+      setIsOtpCopied(true);
+      toast.success(`Verification PIN ${pin} copied to clipboard!`);
+      setTimeout(() => setIsOtpCopied(false), 2500);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -373,170 +384,245 @@ export default function BookingTrackingPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12">
       {/* Top Header */}
-      <div className="bg-white border-b border-gray-200/90 py-4 px-4 sm:px-6 sticky top-16 z-40">
-        <div className="container mx-auto max-w-5xl flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/history"
-              className="p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-gray-900">
-                  Track Service #{booking.id}
-                </h1>
-                <BookingStatusBadge status={booking.status} size="sm" />
+      <div className="bg-white border-b border-gray-200/90 sticky top-16 z-40 shadow-xs">
+        <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-3 sm:py-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* Left: Back button + Service Title & Status Badge + Subtitle */}
+            <div className="flex items-start sm:items-center gap-3 min-w-0">
+              <Link
+                href="/history"
+                className="p-2 -ml-1 rounded-xl text-gray-500 hover:text-[#24172f] hover:bg-gray-100 transition-colors shrink-0 mt-0.5 sm:mt-0"
+                title="Back to Bookings"
+              >
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              </Link>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base sm:text-lg font-extrabold text-[#24172f] tracking-tight">
+                    Track Service
+                  </h1>
+                  <span className="font-mono text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200/80 px-2 py-0.5 rounded-lg">
+                    #{booking.id.length > 8 ? booking.id.slice(0, 8) : booking.id}
+                  </span>
+                  <BookingStatusBadge status={booking.status} size="sm" />
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 truncate" suppressHydrationWarning>
+                  <span className="font-semibold text-gray-700 truncate">{booking.service_name}</span>
+                  <span className="text-gray-300">•</span>
+                  <span className="truncate">Scheduled for {booking.scheduled_at}</span>
+                </div>
               </div>
-              <span className="text-[11px] text-gray-500 block" suppressHydrationWarning>
-                {booking.service_name} • Scheduled for {booking.scheduled_at}
-              </span>
             </div>
-          </div>
 
-          {/* Prototype Demo Simulator Button & Cancel Button */}
-          {booking.status !== 'completed' && booking.status !== 'cancelled' && (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setIsCancelModalOpen(true)}
-                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold text-xs h-8 px-3 rounded-xl shadow-xs cursor-pointer"
-              >
-                Cancel Booking
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSimulateNextStatus}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-8 px-3 rounded-xl shadow-xs flex items-center gap-1.5 animate-pulse cursor-pointer"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span className="hidden sm:inline">Simulate Next Status</span>
-                <span className="sm:hidden">Next</span>
-              </Button>
-            </div>
-          )}
+            {/* Right: Actions (Cancel Booking & Prototype Simulator) */}
+            {booking.status !== 'completed' && booking.status !== 'cancelled' && (
+              <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 justify-end sm:justify-start shrink-0">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 font-bold text-xs h-8.5 px-3 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <span>Cancel Booking</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSimulateNextStatus}
+                  className="bg-[#24172f] hover:bg-[#3d2b48] text-[#f5dfad] border border-[#e6aa3b]/30 font-bold text-xs h-8.5 px-3 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  title="Simulate Next Status Progression"
+                >
+                  <Play className="w-3 h-3 text-[#e6aa3b] fill-current shrink-0" />
+                  <span className="hidden sm:inline">Simulate Next Status</span>
+                  <span className="sm:hidden">Next Step</span>
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 pt-6 space-y-6">
-        {/* OTP Security Verification Strip */}
-        {/* Status Verification Strip / Rejection Alert */}
+        {/* OTP Security Verification Strip / Rejection Alert / Completed Verification */}
         {booking.status === 'cancelled' ? (
-          <div className="bg-gradient-to-r from-[#2b1111] via-[#451818] to-[#2b1111] text-white rounded-2xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-5 border border-red-500/40 animate-in fade-in duration-300">
-            <div className="flex items-start sm:items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30">
-                <XCircle className="w-7 h-7 text-red-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-red-300">
-                    Request Declined by Tradesperson
-                  </span>
-                  <span className="text-[10px] font-bold bg-red-900/60 text-red-200 px-2 py-0.5 rounded-full border border-red-500/30">
-                    CANCELLED
-                  </span>
+          <div className="bg-gradient-to-br from-[#2b1111] via-[#3d1616] to-[#200c0c] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md border border-red-500/30 animate-in fade-in duration-300">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30">
+                  <XCircle className="w-6 h-6 text-red-400" />
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-white mt-1">
-                  Tradesperson was unavailable for this booking
-                </h3>
-                <p className="text-xs text-red-200/90 mt-0.5 max-w-xl leading-relaxed">
-                  The cooperative tradesperson declined this service request. <strong>No payment was deducted from your account.</strong> You can request another verified cooperative artisan immediately.
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-red-300">
+                      Request Declined by Tradesperson
+                    </span>
+                    <span className="text-[10px] font-bold bg-red-950/80 text-red-200 px-2 py-0.5 rounded-full border border-red-500/30">
+                      CANCELLED
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                    Tradesperson was unavailable for this booking
+                  </h3>
+                  <p className="text-xs text-red-200/90 mt-1 max-w-xl leading-relaxed">
+                    The cooperative tradesperson declined this service request. <strong className="text-white">No payment was deducted from your account.</strong> You can request another verified cooperative artisan immediately.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-              <Link
-                href="/services"
-                className="bg-[#e6aa3b] hover:bg-[#d96f4d] text-[#24172f] hover:text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all text-center flex items-center justify-center gap-2"
-              >
-                <span>Find Another Tradesperson</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/history"
-                className="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-3 rounded-xl border border-white/20 transition-all text-center"
-              >
-                View Bookings
-              </Link>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-red-500/20">
+                <Link
+                  href="/services"
+                  className="bg-[#e6aa3b] hover:bg-[#d96f4d] text-[#24172f] hover:text-white text-xs font-bold px-4 py-2.5 sm:py-3 rounded-xl shadow-md transition-all text-center flex items-center justify-center gap-2"
+                >
+                  <span>Find Another Artisan</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href="/history"
+                  className="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 sm:py-3 rounded-xl border border-white/20 transition-all text-center"
+                >
+                  View Bookings
+                </Link>
+              </div>
             </div>
           </div>
         ) : booking.status === 'completed' ? (
-          <div className="bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] text-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#e6aa3b]/30">
-            <div className="flex items-start sm:items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0 text-[#f5dfad]">
-                <CheckCircle2 className="w-6 h-6 text-[#e6aa3b]" />
+          <div className="bg-gradient-to-br from-[#24172f] via-[#331f42] to-[#1c1225] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md border border-[#e6aa3b]/30 relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#e6aa3b]">
+                      Service Completed &amp; Verified
+                    </span>
+                    <span className="text-[10px] font-bold bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      WARRANTY ACTIVE
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                    Job verified via Customer Security PIN
+                  </h3>
+                  <p className="text-xs text-[#c8bacb] mt-0.5 leading-relaxed max-w-lg">
+                    Inspection confirmed with artisan. 30-day cooperative workmanship warranty and escrow release are active.
+                  </p>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#e6aa3b] block">
-                  Service Completed &amp; Verified
-                </span>
-                <h3 className="text-base font-bold text-white mt-0.5">
-                  Job verified via Customer Security PIN
-                </h3>
-                <p className="text-xs text-[#c8bacb] mt-0.5">
-                  Inspection confirmed. 30-day cooperative workmanship warranty is now active.
-                </p>
-              </div>
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-start sm:self-auto shrink-0">
-              <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center border border-[#e6aa3b]/30">
-                <span className="text-[10px] uppercase font-bold text-[#f5dfad] block">
-                  Verified PIN
-                </span>
-                <span className="font-mono text-2xl font-black tracking-widest text-[#f5dfad]" suppressHydrationWarning>
-                  {getBookingOtp(booking.id, booking.otp)}
-                </span>
+              {/* Verified PIN badge and QR Code */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white/5 border border-white/10 p-3 sm:p-3.5 rounded-2xl">
+                <div className="flex items-center justify-between sm:justify-center gap-3 px-3.5 py-2 bg-white/10 rounded-xl border border-[#e6aa3b]/30">
+                  <div className="text-left sm:text-center">
+                    <span className="text-[9px] uppercase font-bold text-[#f5dfad] block">
+                      Verified PIN
+                    </span>
+                    <span className="font-mono text-xl sm:text-2xl font-black tracking-widest text-[#f5dfad]" suppressHydrationWarning>
+                      {getBookingOtp(booking.id, booking.otp)}
+                    </span>
+                  </div>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                </div>
+                <ServiceQRCode
+                  bookingId={booking.id}
+                  serviceTitle={booking.service_name || 'Cooperative Service'}
+                  workerName={booking.worker?.full_name}
+                  customerName={booking.customer_name}
+                  otp={getBookingOtp(booking.id, booking.otp)}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all shadow-xs cursor-pointer"
+                />
               </div>
-              <ServiceQRCode
-                bookingId={booking.id}
-                serviceTitle={booking.service_name || 'Cooperative Service'}
-                workerName={booking.worker?.full_name}
-                customerName={booking.customer_name}
-                otp={getBookingOtp(booking.id, booking.otp)}
-              />
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-[#24172f] via-[#3d2b48] to-[#24172f] text-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start sm:items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-6 h-6 text-[#f5dfad]" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#f5dfad] block">
-                  Cooperative Work Completion PIN
-                </span>
-                <h3 className="text-base font-bold text-white mt-0.5">
-                  Share this 4-digit PIN with worker only upon completion
-                </h3>
-                <p className="text-xs text-[#c8bacb] mt-0.5">
-                  Worker must enter this PIN on their dashboard to verify task completion and disburse wages.
-                </p>
-              </div>
-            </div>
+          /* Active Ongoing Booking OTP Card */
+          <div className="bg-gradient-to-br from-[#24172f] via-[#2f1f3d] to-[#1c1225] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md border border-[#e6aa3b]/30 relative overflow-hidden">
+            {/* Subtle background luxury glow */}
+            <div className="absolute -right-16 -bottom-16 w-56 h-56 bg-[#e6aa3b]/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-start sm:self-auto shrink-0">
-              <div className="bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl text-center border border-white/20">
-                <span className="text-[10px] uppercase font-bold text-[#c8bacb] block">
-                  Completion OTP
-                </span>
-                <span className="font-mono text-2xl font-black tracking-widest text-white" suppressHydrationWarning>
-                  {getBookingOtp(booking.id, booking.otp)}
-                </span>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+              {/* Left Info Column */}
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/10 border border-[#e6aa3b]/30 flex items-center justify-center shrink-0 text-[#f5dfad] shadow-inner mt-0.5">
+                  <ShieldCheck className="w-6 h-6 text-[#e6aa3b]" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#f5dfad] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                      Cooperative Handshake PIN
+                    </span>
+                    <span className="text-[10px] text-[#c8bacb] bg-black/20 px-2 py-0.5 rounded-full border border-white/5">
+                      Do not share before completion
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    Share this 4-digit PIN only upon physical job completion
+                  </h3>
+                  <p className="text-xs text-[#c8bacb] max-w-xl leading-relaxed">
+                    Worker enters this PIN on their device to verify quality delivery and disburse cooperative wage payout.
+                  </p>
+                </div>
               </div>
-              <ServiceQRCode
-                bookingId={booking.id}
-                serviceTitle={booking.service_name || 'Cooperative Service'}
-                workerName={booking.worker?.full_name}
-                customerName={booking.customer_name}
-                otp={getBookingOtp(booking.id, booking.otp)}
-              />
+
+              {/* Right OTP Action Card (Fully Responsive for Mobile & Desktop) */}
+              <div className="bg-black/25 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/10 flex flex-col items-center sm:items-end gap-3 w-full lg:w-auto shrink-0">
+                <div className="w-full flex items-center justify-between gap-4">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#c8bacb]">
+                    Completion OTP
+                  </span>
+                  <span className="text-[10px] text-amber-300/80 font-medium">
+                    Secured by Escrow
+                  </span>
+                </div>
+
+                {/* 4 Digit Boxes */}
+                <div className="flex items-center justify-center gap-2 sm:gap-2.5 w-full">
+                  {getBookingOtp(booking.id, booking.otp).split('').map((digit, idx) => (
+                    <div
+                      key={idx}
+                      className="w-11 h-12 sm:w-12 sm:h-13 rounded-xl bg-white/15 border border-[#e6aa3b]/40 backdrop-blur-md flex items-center justify-center font-mono text-2xl sm:text-3xl font-black text-[#f5dfad] shadow-inner select-all"
+                      suppressHydrationWarning
+                    >
+                      {digit}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mobile Button Pair (Copy PIN + Show QR) */}
+                <div className="grid grid-cols-2 gap-2 w-full pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyOtp(getBookingOtp(booking.id, booking.otp))}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/15 transition-all shadow-xs cursor-pointer"
+                    title="Copy 4-digit PIN"
+                  >
+                    {isOtpCopied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-emerald-300">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-[#f5dfad]" />
+                        <span>Copy PIN</span>
+                      </>
+                    )}
+                  </button>
+
+                  <ServiceQRCode
+                    bookingId={booking.id}
+                    serviceTitle={booking.service_name || 'Cooperative Service'}
+                    workerName={booking.worker?.full_name}
+                    customerName={booking.customer_name}
+                    otp={getBookingOtp(booking.id, booking.otp)}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/15 transition-all shadow-xs cursor-pointer w-full"
+                    buttonText="Show QR"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}

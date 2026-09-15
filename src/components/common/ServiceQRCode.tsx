@@ -10,6 +10,8 @@ interface ServiceQRCodeProps {
   customerName?: string;
   serviceTitle?: string;
   otp: string;
+  className?: string;
+  buttonText?: string;
 }
 
 export function ServiceQRCode({
@@ -18,6 +20,8 @@ export function ServiceQRCode({
   customerName,
   serviceTitle,
   otp,
+  className,
+  buttonText,
 }: ServiceQRCodeProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -27,6 +31,7 @@ export function ServiceQRCode({
     bookingId,
     otp,
     worker: workerName || 'Artisan',
+    customer: customerName || 'Customer',
     service: serviceTitle || 'Home Service',
     verifiedAt: new Date().toISOString(),
   });
@@ -36,11 +41,14 @@ export function ServiceQRCode({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all shadow-xs"
+        className={
+          className ||
+          "inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all shadow-xs"
+        }
         title="Display Secure Doorstep QR Code"
       >
-        <QrCode className="w-4 h-4 text-[#f5dfad]" />
-        <span>Show Verification QR</span>
+        <QrCode className="w-4 h-4 text-[#f5dfad] shrink-0" />
+        <span>{buttonText || "Show Verification QR"}</span>
       </button>
 
       {isOpen && (
