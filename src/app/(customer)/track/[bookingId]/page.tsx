@@ -383,72 +383,74 @@ export default function BookingTrackingPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12">
-      {/* Top Header - Compact & Responsive */}
+      {/* Top Header - Senior UI/UX Engineered */}
       <div className="bg-white border-b border-gray-200/80 shadow-xs">
-        <div className="container mx-auto max-w-5xl px-3 sm:px-6 py-2.5 sm:py-3">
-          <div className="flex items-center justify-between gap-2">
-            {/* Left: Back Arrow + Title + ID Chip + Badge */}
-            <div className="flex items-center gap-2 min-w-0">
+        <div className="container mx-auto max-w-5xl px-3 sm:px-6 py-3">
+          {/* Main Top Row: Back button, Title & Clear ID on left, Status Badge on right */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
               <Link
                 href="/history"
-                className="p-1.5 -ml-1 rounded-xl text-gray-500 hover:text-[#24172f] hover:bg-gray-100 active:bg-gray-200 transition-colors shrink-0"
+                className="p-2 -ml-1 rounded-xl text-gray-600 hover:text-[#24172f] hover:bg-gray-100 active:bg-gray-200 transition-colors shrink-0"
                 title="Back to Bookings"
                 aria-label="Back to Bookings"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-700" />
+                <ArrowLeft className="w-5 h-5" />
               </Link>
-              <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
-                <h1 className="text-sm sm:text-base font-extrabold text-[#24172f] tracking-tight whitespace-nowrap">
-                  Track Service
-                </h1>
-                <span className="font-mono text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded-md">
-                  #{booking.id.length > 8 ? booking.id.slice(0, 8) : booking.id}
-                </span>
-                <BookingStatusBadge status={booking.status} size="sm" />
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-extrabold text-[#24172f] tracking-tight whitespace-nowrap">
+                    Track Service
+                  </h1>
+                  <span className="font-mono text-xs font-bold text-amber-900 bg-[#f5dfad]/60 border border-[#e6aa3b]/40 px-2 py-0.5 rounded-md shrink-0">
+                    #{booking.id.length > 8 ? booking.id.slice(0, 8) : booking.id}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-0.5 truncate" suppressHydrationWarning>
+                  <span className="font-semibold text-gray-800">{booking.service_name}</span>
+                  <span className="mx-1 text-gray-300">•</span>
+                  <span>Scheduled {booking.scheduled_at}</span>
+                </p>
               </div>
             </div>
 
-            {/* Right Actions: Compact on mobile, standard on desktop */}
-            {booking.status !== 'completed' && booking.status !== 'cancelled' && (
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsCancelModalOpen(true)}
-                  className="border-red-200 text-red-600 bg-red-50/60 hover:bg-red-100 hover:text-red-700 font-bold text-[11px] h-7 sm:h-8 px-2 sm:px-2.5 rounded-lg shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                  <span>Cancel</span>
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleSimulateNextStatus}
-                  className="bg-[#24172f] hover:bg-[#3d2b48] text-[#f5dfad] border border-[#e6aa3b]/30 font-bold text-[11px] h-7 sm:h-8 px-2 sm:px-2.5 rounded-lg shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                  title="Simulate Next Status"
-                >
-                  <Play className="w-3 h-3 text-[#e6aa3b] fill-current shrink-0" />
-                  <span className="hidden sm:inline">Next Status</span>
-                  <span className="sm:hidden">Next</span>
-                </Button>
-              </div>
-            )}
+            {/* Right: Prominent Status Badge */}
+            <div className="shrink-0 flex items-center gap-2">
+              <BookingStatusBadge status={booking.status} size="sm" />
+            </div>
           </div>
 
-          {/* Subtitle row: Service name & Scheduled time (Compact, single line) */}
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-1 pl-7 sm:pl-8 truncate" suppressHydrationWarning>
-            <span className="font-semibold text-gray-700 truncate">{booking.service_name}</span>
-            <span className="text-gray-300">•</span>
-            <span className="truncate">Scheduled {booking.scheduled_at}</span>
-          </div>
+          {/* Action Row for Active Bookings: Cleanly separated with zero clustering */}
+          {booking.status !== 'completed' && booking.status !== 'cancelled' && (
+            <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setIsCancelModalOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 px-3 py-1.5 rounded-xl border border-red-200 transition-colors cursor-pointer"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                <span>Cancel Booking</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSimulateNextStatus}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#f5dfad] bg-[#24172f] hover:bg-[#3d2b48] active:scale-95 px-3.5 py-1.5 rounded-xl border border-[#e6aa3b]/30 shadow-xs transition-all cursor-pointer"
+                title="Prototype simulator"
+              >
+                <Play className="w-3 h-3 text-[#e6aa3b] fill-current" />
+                <span>Simulate Next Step</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="container mx-auto max-w-5xl px-3 sm:px-6 pt-3 sm:pt-4 space-y-4 sm:space-y-6">
         {/* OTP Security Verification Strip / Rejection Alert / Completed Verification */}
         {booking.status === 'cancelled' ? (
-          <div className="bg-gradient-to-br from-[#2b1111] via-[#3d1616] to-[#200c0c] text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-md border border-red-500/30 animate-in fade-in duration-300">
+          <div className="bg-gradient-to-br from-[#2b1111] via-[#3d1616] to-[#200c0c] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-md border border-red-500/30 animate-in fade-in duration-300">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex items-start sm:items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30">
@@ -490,7 +492,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
             </div>
           </div>
         ) : booking.status === 'completed' ? (
-          <div className="bg-gradient-to-br from-[#24172f] via-[#331f42] to-[#1c1225] text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-md border border-[#e6aa3b]/30 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#24172f] via-[#331f42] to-[#1c1225] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-md border border-[#e6aa3b]/30 relative overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex items-start sm:items-center gap-3">
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
@@ -540,41 +542,41 @@ export default function BookingTrackingPage({ params }: PageProps) {
           </div>
         ) : (
           /* Active Ongoing Booking OTP Card */
-          <div className="bg-gradient-to-br from-[#24172f] via-[#2f1f3d] to-[#1c1225] text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-md border border-[#e6aa3b]/30 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#24172f] via-[#2f1f3d] to-[#1c1225] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-md border border-[#e6aa3b]/30 relative overflow-hidden">
             {/* Subtle background luxury glow */}
             <div className="absolute -right-16 -bottom-16 w-48 h-48 bg-[#e6aa3b]/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-5 relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
               {/* Left Info Column */}
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 min-w-0">
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/10 border border-[#e6aa3b]/30 flex items-center justify-center shrink-0 text-[#f5dfad] shadow-inner mt-0.5">
                   <ShieldCheck className="w-5 h-5 text-[#e6aa3b]" />
                 </div>
                 <div className="space-y-0.5 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#f5dfad] bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#f5dfad] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
                       Doorstep Security PIN
                     </span>
-                    <span className="text-[10px] text-[#c8bacb] bg-black/20 px-2 py-0.5 rounded-full border border-white/5">
+                    <span className="text-[10px] text-[#c8bacb] bg-black/30 px-2 py-0.5 rounded-full border border-white/5">
                       Share at job end
                     </span>
                   </div>
                   <h3 className="text-sm sm:text-base font-bold text-white leading-tight">
                     Share PIN only when physical work is completed
                   </h3>
-                  <p className="text-[11px] text-[#c8bacb] max-w-xl leading-relaxed">
+                  <p className="text-xs text-[#c8bacb] max-w-xl leading-relaxed">
                     Worker enters this PIN on their dashboard to release verified cooperative wages.
                   </p>
                 </div>
               </div>
 
               {/* Right OTP Action Card */}
-              <div className="bg-black/30 backdrop-blur-md rounded-2xl p-2.5 sm:p-3.5 border border-white/10 flex flex-col items-center sm:items-end gap-2.5 w-full sm:w-auto shrink-0">
+              <div className="bg-black/30 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 border border-white/10 flex flex-col items-center sm:items-end gap-2.5 w-full sm:w-auto shrink-0">
                 <div className="w-full flex items-center justify-between gap-3">
-                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#c8bacb]">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#c8bacb]">
                     Completion OTP
                   </span>
-                  <span className="text-[9px] text-amber-300/80 font-medium">
+                  <span className="text-[10px] text-amber-300/90 font-medium">
                     Escrow Protected
                   </span>
                 </div>
@@ -584,7 +586,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                   {getBookingOtp(booking.id, booking.otp).split('').map((digit, idx) => (
                     <div
                       key={idx}
-                      className="w-10 h-11 sm:w-11 sm:h-12 rounded-xl bg-white/15 border border-[#e6aa3b]/40 backdrop-blur-md flex items-center justify-center font-mono text-2xl sm:text-2xl font-black text-[#f5dfad] shadow-inner select-all"
+                      className="w-10 h-11 sm:w-11 sm:h-12 rounded-xl bg-white/15 border border-[#e6aa3b]/40 backdrop-blur-md flex items-center justify-center font-mono text-2xl font-black text-[#f5dfad] shadow-inner select-all"
                       suppressHydrationWarning
                     >
                       {digit}
@@ -597,7 +599,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                   <button
                     type="button"
                     onClick={() => handleCopyOtp(getBookingOtp(booking.id, booking.otp))}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/15 transition-all shadow-xs cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/15 transition-all shadow-xs cursor-pointer"
                     title="Copy 4-digit PIN"
                   >
                     {isOtpCopied ? (
@@ -619,7 +621,7 @@ export default function BookingTrackingPage({ params }: PageProps) {
                     workerName={booking.worker?.full_name}
                     customerName={booking.customer_name}
                     otp={getBookingOtp(booking.id, booking.otp)}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/15 transition-all shadow-xs cursor-pointer w-full"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/15 transition-all shadow-xs cursor-pointer w-full"
                     buttonText="Show QR"
                   />
                 </div>
