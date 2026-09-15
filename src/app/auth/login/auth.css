@@ -163,6 +163,9 @@ html, body {
     position: relative;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .auth-left {
