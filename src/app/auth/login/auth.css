@@ -191,6 +191,10 @@ html, body {
     padding: 50px 45px;
     justify-content: center;
     position: relative;
+    overflow: hidden;       /* prevent children from escaping the panel */
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
 }
 
 .back-to-home {
@@ -419,6 +423,10 @@ html, body {
 .form-container {
     display: none;
     animation: formSlideIn 0.5s var(--transition);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .form-container.active {
@@ -567,6 +575,10 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .form-group {
@@ -801,6 +813,10 @@ input[type="password"]::-ms-clear {
     justify-content: space-between;
     align-items: center;
     font-size: 0.78rem;
+    flex-wrap: wrap;
+    gap: 6px 0;
+    width: 100%;
+    min-width: 0;
 }
 
 .link {
@@ -1034,6 +1050,7 @@ input[type="password"]::-ms-clear {
         flex-direction: column;
         width: 100%;
         box-sizing: border-box;
+        overflow: hidden;
     }
     .back-to-home {
         position: static;
@@ -1053,10 +1070,14 @@ input[type="password"]::-ms-clear {
     .auth-container {
         border-radius: 18px;
         max-width: 100%;
+        width: 100%;
         box-shadow: var(--shadow-md);
     }
     .auth-right {
-        padding: 20px 14px;
+        padding: 20px 16px;   /* increased from 14px to prevent right-clip */
+        overflow: hidden;
+        box-sizing: border-box;
+        width: 100%;
     }
     .form-title {
         font-size: 1.65rem;
