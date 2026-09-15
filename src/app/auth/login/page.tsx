@@ -614,8 +614,10 @@ export default function AuthPage() {
                   gap: '8px',
                   flexWrap: 'wrap'
                 }}>
-                  <span>👤 <strong>Demo Customer</strong> (<code>customer@shramnexus.com</code> / <code>customer123</code>)</span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <span style={{ wordBreak: 'break-word', minWidth: 0, flex: '1 1 180px' }}>
+                    👤 <strong>Demo Customer</strong> (<code style={{ wordBreak: 'break-all' }}>customer@shramnexus.com</code> / <code>customer123</code>)
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={() => {
@@ -689,8 +691,10 @@ export default function AuthPage() {
                   gap: '8px',
                   flexWrap: 'wrap'
                 }}>
-                  <span>🛠️ <strong>Worker Portal</strong>: Sign in with your registered trade account</span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <span style={{ wordBreak: 'break-word', minWidth: 0, flex: '1 1 180px' }}>
+                    🛠️ <strong>Worker Portal</strong>: Sign in with your registered trade account
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={() => {
@@ -788,8 +792,10 @@ export default function AuthPage() {
                   gap: '8px',
                   flexWrap: 'wrap'
                 }}>
-                  <span>🏢 <strong>Cooperative Society Admin</strong> (<code>coop@shramnexus.com</code> / <code>coop123</code>)</span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <span style={{ wordBreak: 'break-word', minWidth: 0, flex: '1 1 180px' }}>
+                    🏢 <strong>Cooperative Society Admin</strong> (<code style={{ wordBreak: 'break-all' }}>coop@shramnexus.com</code> / <code>coop123</code>)
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={() => {

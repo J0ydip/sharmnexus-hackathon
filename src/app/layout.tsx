@@ -32,6 +32,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#24172f',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -57,6 +60,7 @@ export default function RootLayout({
           {children}
         </NavigationWrapper>
         <FloatingAIAssistant />
+        <div id="google_translate_element" style={{ display: 'none', position: 'absolute' }}></div>
         <Toaster />
         <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" strategy="afterInteractive" />
 
@@ -78,6 +82,7 @@ export default function RootLayout({
           strategy="afterInteractive" 
         />
       </body>
+
     </html>
   );
 }

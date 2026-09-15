@@ -8,11 +8,30 @@ import { CustomerDashboard } from '@/components/customer/CustomerDashboard';
 import { HelpSupportSection } from '@/components/common/HelpSupportSection';
 import './landing.css';
 
+const HERO_PHOTOS = [
+  '/images/hero-workers/plumber.jpg',
+  '/images/hero-workers/logistics.jpg',
+  '/images/hero-workers/healthcare.jpg',
+  '/images/hero-workers/delivery.jpg',
+  '/images/hero-workers/carpenter.jpg',
+];
+
 export default function LandingPage() {
   const [lang, setLang] = useState('en');
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [isPhotoHovered, setIsPhotoHovered] = useState(false);
   const supabase = createClient();
+
+  // Auto-slide hero photos smoothly every 2.5s (continuous auto-scroll)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActivePhotoIndex((prev) => (prev + 1) % HERO_PHOTOS.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     async function checkAuth() {
@@ -63,8 +82,40 @@ export default function LandingPage() {
     }
     checkAuth();
 
+    // Read saved language preference
+    const saved = (() => {
+      try { return localStorage.getItem('shramnexus-lang'); } catch { return null; }
+    })();
     const match = document.cookie.match(/googtrans=\/en\/([a-z]{2})/);
-    if (match) setLang(match[1]);
+    const initialLang = saved || (match ? match[1] : null) || 'en';
+    setLang(initialLang);
+
+    // If a non-English language was saved, trigger Google Translate once the widget loads
+    if (initialLang !== 'en') {
+      const applyTranslation = () => {
+        const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
+        if (gtCombo) {
+          gtCombo.value = initialLang;
+          gtCombo.dispatchEvent(new Event('change'));
+          // Hide the Google Translate toolbar
+          setTimeout(() => {
+            const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
+            if (bar) bar.style.display = 'none';
+            document.body.style.top = '0px';
+          }, 500);
+        }
+      };
+      // Try immediately, then retry after a short delay (widget may still be loading)
+      setTimeout(applyTranslation, 1000);
+      setTimeout(applyTranslation, 2500);
+    }
+
+    // Always hide the GT toolbar on mount if present
+    setTimeout(() => {
+      const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
+      if (bar) bar.style.display = 'none';
+      document.body.style.top = '0px';
+    }, 2000);
   }, []);
 
   // When logged in as a customer, render the rich Customer Dashboard & Service Discovery Experience
@@ -85,33 +136,68 @@ export default function LandingPage() {
     <>
 
     <div className="cursor-dot" aria-hidden="true"></div>
-    <nav className="navbar" aria-label="Main navigation">
-      <a className="brand" href="#home" aria-label="ShramNexus home">
+    <nav className={`navbar ${isNavOpen ? 'nav-open' : ''}`} aria-label="Main navigation">
+      <a className="brand" href="#home" aria-label="ShramNexus home" onClick={() => setIsNavOpen(false)}>
         <img src="/logo.png" alt="ShramNexus" className="nav-logo-img" />
         <span className="brand-text">Shram<span>Nexus</span></span>
       </a>
-      <div className="nav-links">
-        <a href="#how-it-works" data-i18n="nav_how">How it works</a>
-        <a href="#services" data-i18n="nav_services">Services</a>
-        <a href="#communities" data-i18n="nav_communities">For communities</a>
-        <a href="#cooperatives" data-i18n="nav_cooperatives">For cooperatives</a>
-        <a href="#support" data-i18n="nav_support">Help &amp; Support</a>
+      <div className="nav-collapse">
+        <div className="nav-links">
+          <a href="#how-it-works" data-i18n="nav_how" onClick={() => setIsNavOpen(false)}>How it works</a>
+          <a href="#services" data-i18n="nav_services" onClick={() => setIsNavOpen(false)}>Services</a>
+          <a href="#communities" data-i18n="nav_communities" onClick={() => setIsNavOpen(false)}>For communities</a>
+          <a href="#cooperatives" data-i18n="nav_cooperatives" onClick={() => setIsNavOpen(false)}>For cooperatives</a>
+          <a href="#support" data-i18n="nav_support" onClick={() => setIsNavOpen(false)}>Help &amp; Support</a>
+        </div>
+        <div className="nav-actions">
+          <select
+            id="nav-language-select"
+            aria-label="Choose language"
+            value={lang}
+            onChange={(e) => {
+              const newLang = e.target.value;
+              setLang(newLang);
+
+              // 1. Instant client-side dictionary translation
+              if (typeof window !== 'undefined') {
+                try { localStorage.setItem('shramnexus-lang', newLang); } catch (err) {}
+                if (typeof (window as any).applyShramNexusLanguage === 'function') {
+                  (window as any).applyShramNexusLanguage(newLang);
+                }
+                window.dispatchEvent(new CustomEvent('shramnexus-lang-change', { detail: newLang }));
+              }
+
+              // 2. Optional Google Translate fallback/cookie sync
+              const gtCombo = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
+              if (gtCombo && gtCombo.value !== newLang) {
+                gtCombo.value = newLang;
+                gtCombo.dispatchEvent(new Event('change'));
+              }
+
+              // Hide Google Translate toolbar
+              setTimeout(() => {
+                const bar = document.querySelector('.skiptranslate') as HTMLElement | null;
+                if (bar) bar.style.display = 'none';
+                document.body.style.top = '0px';
+              }, 400);
+            }}
+          >
+            <option value="en">EN</option>
+            <option value="hi">हिंदी</option>
+            <option value="bn">বাংলা</option>
+            <option value="mr">मराठी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
+          </select>
+          <a className="button button-dark nav-login-btn" href="/auth/login" data-i18n="nav_login" onClick={() => setIsNavOpen(false)}>Log in</a>
+        </div>
       </div>
-      <div className="nav-actions">
-        <select id="nav-language-select" aria-label="Choose language" defaultValue="en">
-          <option value="en">EN</option>
-          <option value="hi">हिंदी</option>
-          <option value="bn">বাংলা</option>
-          <option value="mr">मराठी</option>
-          <option value="ta">தமிழ்</option>
-          <option value="te">తెలుగు</option>
-        </select>
-        <a className="text-link" href="/auth/login" data-i18n="nav_login">Log in</a>
-        <a className="button button-dark button-small" href="/auth/login">
-          <span data-i18n="nav_getstarted">Get started</span> <span>↗</span>
-        </a>
-      </div>
-      <button className="menu-toggle" aria-label="Open menu">
+      <button 
+        className={`menu-toggle ${isNavOpen ? 'is-active' : ''}`} 
+        aria-label={isNavOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isNavOpen}
+        onClick={() => setIsNavOpen(!isNavOpen)}
+      >
         <span></span>
         <span></span>
         <span></span>
@@ -133,36 +219,205 @@ export default function LandingPage() {
                     <div><strong data-i18n="hero_proof_title">Built around local trust</strong><small data-i18n="hero_proof_sub">5,000+ skilled workers already in the network</small></div>
                 </div>
             </div>
-            <div className="hero-product" aria-label="ShramNexus service matching preview">
+            <div className="hero-product" aria-label="ShramNexus verified worker showcase">
                 <div className="product-glow"></div>
-                <div className="product-window">
-                    <div className="window-top"><span className="window-dots"><i></i><i></i><i></i></span><span className="window-title">ShramNexus / Find a professional</span><span>•••</span></div>
-                    <div className="window-body">
-                        <div className="product-greeting"><div><small>GOOD MORNING, PRIYA</small><h2>Who can we help you find?</h2></div><span className="mini-avatar">PS</span></div>
-                        <div className="search-preview"><span>⌕</span><span>Try “plumber for leaking tap”</span><b>⌘ K</b></div>
-                        <div className="product-label-row"><span>RECOMMENDED NEAR YOU</span><a href="/auth/login">View all ↗</a></div>
-                        <div className="match-card">
-                            <div className="match-head"><div className="worker-avatar">RK</div><div><h3>Raj Kumar</h3><p>Verified Plumber</p></div><span className="verified-badge">✓ Verified</span></div>
-                            <div className="match-details"><span>★ <b>4.8</b> rating</span><span>⌖ 1.8 km away</span><span className="available"><i></i> Available today</span></div>
-                            <div className="match-foot">
-                              <div><small>MATCH SCORE</small><strong>94%</strong></div>
-                              <a
-                                href="/services?q=Plumber"
-                                className="button button-dark button-small"
+                <div className="product-window" style={{ width: 'min(100%, 540px)', background: '#ffffff', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(36, 23, 47, 0.14)' }}>
+                    <div className="window-top" style={{ height: '40px', padding: '0 1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f5f2ee', color: '#9b929c', fontSize: '0.65rem' }}>
+                      <span className="window-dots" style={{ display: 'flex', gap: '5px' }}>
+                        <i style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f87171', display: 'inline-block' }}></i>
+                        <i style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', display: 'inline-block' }}></i>
+                        <i style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }}></i>
+                      </span>
+                      <span className="window-title" style={{ fontWeight: 600, letterSpacing: '0.02em', color: '#64748b' }}>ShramNexus</span>
+                      <span style={{ color: '#cbd5e1' }}>•••</span>
+                    </div>
+                    <div className="window-body" style={{ padding: '1.2rem' }}>
+                        {/* Pure Photo Slider - Auto-sliding the provided worker photos, no writing or text */}
+                        <div
+                          className="match-card hero-photo-slider"
+                          onMouseEnter={() => setIsPhotoHovered(true)}
+                          onMouseLeave={() => setIsPhotoHovered(false)}
+                          style={{
+                            position: 'relative',
+                            height: '470px',
+                            borderRadius: '16px',
+                            overflow: 'hidden',
+                            padding: 0,
+                            border: '1px solid rgba(0, 0, 0, 0.08)',
+                            boxShadow: '0 12px 32px rgba(20, 12, 28, 0.12)',
+                            background: '#150d1e',
+                          }}
+                        >
+                          {/* Slide Index Counter Badge on Right */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '14px',
+                              right: '14px',
+                              padding: '4px 10px',
+                              borderRadius: '999px',
+                              background: 'rgba(20, 12, 28, 0.7)',
+                              backdropFilter: 'blur(8px)',
+                              WebkitBackdropFilter: 'blur(8px)',
+                              border: '1px solid rgba(255, 255, 255, 0.22)',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              letterSpacing: '0.04em',
+                              zIndex: 5,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                              pointerEvents: 'none',
+                            }}
+                          >
+                            <span style={{ color: '#fbbf24' }}>{String(activePhotoIndex + 1).padStart(2, '0')}</span>
+                            <span style={{ opacity: 0.45 }}>/</span>
+                            <span style={{ opacity: 0.75 }}>{String(HERO_PHOTOS.length).padStart(2, '0')}</span>
+                          </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              width: `${HERO_PHOTOS.length * 100}%`,
+                              height: '100%',
+                              transform: `translateX(-${activePhotoIndex * (100 / HERO_PHOTOS.length)}%)`,
+                              transition: 'transform 0.75s cubic-bezier(0.25, 1, 0.5, 1)',
+                            }}
+                          >
+                            {HERO_PHOTOS.map((src, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  width: `${100 / HERO_PHOTOS.length}%`,
+                                  height: '100%',
+                                  flexShrink: 0,
+                                  position: 'relative',
+                                }}
                               >
-                                Explore & Book <span>↗</span>
-                              </a>
-                            </div>
+                                <img
+                                  src={src}
+                                  alt={`Worker ${idx + 1}`}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    objectPosition: 'center 22%',
+                                    display: 'block',
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Subtle arrow navigation on hover */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePhotoIndex((prev) => (prev - 1 + HERO_PHOTOS.length) % HERO_PHOTOS.length);
+                            }}
+                            aria-label="Previous"
+                            style={{
+                              position: 'absolute',
+                              left: '10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              background: 'rgba(20, 12, 28, 0.55)',
+                              backdropFilter: 'blur(6px)',
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.95rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              zIndex: 3,
+                              opacity: isPhotoHovered ? 1 : 0,
+                              transition: 'opacity 0.25s ease, background 0.2s ease',
+                            }}
+                          >
+                            ‹
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePhotoIndex((prev) => (prev + 1) % HERO_PHOTOS.length);
+                            }}
+                            aria-label="Next"
+                            style={{
+                              position: 'absolute',
+                              right: '10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              background: 'rgba(20, 12, 28, 0.55)',
+                              backdropFilter: 'blur(6px)',
+                              border: '1px solid rgba(255, 255, 255, 0.25)',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.95rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              zIndex: 3,
+                              opacity: isPhotoHovered ? 1 : 0,
+                              transition: 'opacity 0.25s ease, background 0.2s ease',
+                            }}
+                          >
+                            ›
+                          </button>
+
+                          {/* Minimal sleek pagination dots */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: '12px',
+                              left: 0,
+                              right: 0,
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              gap: '6px',
+                              zIndex: 3,
+                            }}
+                          >
+                            {HERO_PHOTOS.map((_, dotIdx) => (
+                              <button
+                                key={dotIdx}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActivePhotoIndex(dotIdx);
+                                }}
+                                aria-label={`Slide ${dotIdx + 1}`}
+                                style={{
+                                  width: dotIdx === activePhotoIndex ? '22px' : '6px',
+                                  height: '5px',
+                                  borderRadius: '999px',
+                                  background: dotIdx === activePhotoIndex ? '#ffffff' : 'rgba(255, 255, 255, 0.45)',
+                                  boxShadow: dotIdx === activePhotoIndex ? '0 1px 4px rgba(0,0,0,0.5)' : 'none',
+                                  border: 'none',
+                                  padding: 0,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.35s ease',
+                                }}
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="mini-stats"><div><small>NETWORK RATING</small><strong>4.8 <span>★</span></strong></div><div><small>SERVICES COMPLETED</small><strong>25k<span>+</span></strong></div><div><small>COOPERATIVES</small><strong>50<span>+</span></strong></div></div>
                     </div>
                 </div>
-                <div className="floating-chip chip-one"><span className="chip-icon">✓</span><div><strong>Identity verified</strong><small>Trust, before the first booking</small></div></div>
-                <div className="floating-chip chip-two"><span className="chip-icon gold">↗</span><div><strong>Fairer work, locally</strong><small>Powered by cooperatives</small></div></div>
             </div>
         </section>
-
-        <section className="trust-strip" aria-label="ShramNexus network statistics"><div className="metric-calculate"><strong><span className="count-up" data-target="5000">0</span>+</strong><span data-i18n="trust_workers">skilled workers</span></div><div className="metric-calculate"><strong><span className="count-up" data-target="25000">0</span>+</strong><span data-i18n="trust_services">services completed</span></div><div className="metric-calculate"><strong><span className="count-up" data-target="50">0</span>+</strong><span data-i18n="trust_coops">cooperatives</span></div><div className="metric-calculate"><strong><span className="count-up count-decimal" data-target="4.8">0</span><span>★</span></strong><span data-i18n="trust_rating">average rating</span></div><p data-i18n="trust_tagline">One network. Many ways to belong.</p></section>
 
         <section className="problem-solution section-pad" id="about">
           <div className="section-kicker-row">
@@ -555,7 +810,25 @@ export default function LandingPage() {
             <a className="button button-dark" href="/auth/login"><span data-i18n="access_explore">Explore ShramNexus</span> <span>↗</span></a>
         </section>
 
-        <section className="worker-opportunities section-pad" id="worker-opportunities"><div className="worker-opportunities-heading"><div className="section-kicker" data-i18n="worker_kicker">FOR SKILLED WORKERS</div><h2 data-i18n-html="worker_h2">Your skills deserve more<br /><em>opportunities.</em></h2><p data-i18n="worker_p">Build your professional identity, discover jobs, grow your reputation, and access cooperative welfare benefits — all from one platform.</p></div><div className="worker-platform"><div className="worker-profile-card"><div className="profile-top"><div className="profile-avatar">RK</div><div><h3>Raj Kumar</h3><p>✓ Verified Plumber</p><strong>★ 4.8 Rating</strong></div></div><div className="profile-divider"></div><div className="profile-stats"><div><strong>3</strong><span>Today’s Jobs</span></div><div><strong>₹18,450</strong><span>This Month</span></div><div><strong>327</strong><span>Completed</span></div></div><a className="profile-link" href="/auth/login">View professional profile <span>↗</span></a></div><div className="worker-benefits"><a href="/auth/login"><span>▤</span>Digital skill profile<i>↗</i></a><a href="/auth/login"><span>✓</span>Certification verification<i>↗</i></a><a href="/auth/login"><span>▣</span>Job opportunities<i>↗</i></a><a href="/auth/login"><span>₹</span>Earnings tracking<i>↗</i></a><a href="/auth/login"><span>▥</span>Work history<i>↗</i></a><a href="/auth/login"><span>★</span>Ratings &amp; reputation<i>↗</i></a><a href="/auth/login"><span>♧</span>Welfare benefits<i>↗</i></a><a href="/auth/login"><span>✦</span>Skills growth<i>↗</i></a></div></div></section>
+        <section className="worker-opportunities section-pad" id="worker-opportunities">
+          <div className="worker-opportunities-heading">
+            <div className="section-kicker" data-i18n="worker_kicker">FOR SKILLED WORKERS</div>
+            <h2 data-i18n-html="worker_h2">Your skills deserve more<br /><em>opportunities.</em></h2>
+            <p data-i18n="worker_p">Build your professional identity, discover jobs, grow your reputation, and access cooperative welfare benefits — all from one platform.</p>
+          </div>
+          <div className="worker-platform">
+            <div className="worker-benefits">
+              <a href="/auth/login"><span>▤</span>Digital skill profile<i>↗</i></a>
+              <a href="/auth/login"><span>✓</span>Certification verification<i>↗</i></a>
+              <a href="/auth/login"><span>▣</span>Job opportunities<i>↗</i></a>
+              <a href="/auth/login"><span>₹</span>Earnings tracking<i>↗</i></a>
+              <a href="/auth/login"><span>▥</span>Work history<i>↗</i></a>
+              <a href="/auth/login"><span>★</span>Ratings &amp; reputation<i>↗</i></a>
+              <a href="/auth/login"><span>♧</span>Welfare benefits<i>↗</i></a>
+              <a href="/auth/login"><span>✦</span>Skills growth<i>↗</i></a>
+            </div>
+          </div>
+        </section>
 
         <section className="how section-pad" id="how-it-works">
           <div className="section-kicker" data-i18n="how_kicker">SIMPLE BY DESIGN</div>
@@ -674,7 +947,6 @@ export default function LandingPage() {
 
 
 
-      <div id="google_translate_element" style={{ display: 'none' }}></div>
       <Script src="/js/script.js" strategy="afterInteractive" />
     </>
   );

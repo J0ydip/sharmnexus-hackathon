@@ -571,7 +571,6 @@ function BookingFlowContent({ params }: PageProps) {
                         <option value="Morning (09:00 AM - 12:00 PM)">Morning (09:00 AM - 12:00 PM)</option>
                         <option value="Afternoon (12:00 PM - 04:00 PM)">Afternoon (12:00 PM - 04:00 PM)</option>
                         <option value="Evening (04:00 PM - 08:00 PM)">Evening (04:00 PM - 08:00 PM)</option>
-                        <option value="Immediate (Emergency 30 min dispatch)">Immediate (Emergency 30 min dispatch)</option>
                       </select>
                     </div>
                   </div>

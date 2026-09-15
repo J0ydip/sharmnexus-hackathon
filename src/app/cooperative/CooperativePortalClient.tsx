@@ -895,19 +895,20 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <span className="coop-badge coop-badge-gold">
+          <div className="coop-topbar-right" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <span className="coop-badge coop-badge-gold coop-topbar-badge">
               🏛️ {data.society.name}
             </span>
-            <span className="coop-badge coop-badge-verified">
+            <span className="coop-badge coop-badge-verified coop-topbar-badge">
               Live Network
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(36,23,47,0.06)', padding: '5px 12px', borderRadius: '10px' }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--ink)' }}>
-                👤 {data.society.name} Admin
+            <div className="coop-topbar-admin-box" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(36,23,47,0.06)', padding: '5px 12px', borderRadius: '10px' }}>
+              <span className="coop-admin-name" style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--ink)' }}>
+                👤 <span className="coop-admin-full">{data.society.name} </span>Admin
               </span>
               <button
                 type="button"
+                className="coop-logout-btn"
                 onClick={() => {
                   localStorage.removeItem('shramnexus-coop-auth');
                   localStorage.removeItem('shramnexus-auth');
@@ -1113,6 +1114,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                         <th>Worker Name</th>
                         <th>Member ID</th>
                         <th>Trade</th>
+                        <th>Rating</th>
                         <th>Availability</th>
                         <th>Jobs</th>
                         <th>Earnings</th>
@@ -1123,7 +1125,7 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                     <tbody>
                       {filteredWorkers.length === 0 ? (
                         <tr>
-                          <td colSpan={8} className="text-center text-muted" style={{ padding: '3rem 1.5rem' }}>
+                          <td colSpan={9} className="text-center text-muted" style={{ padding: '3rem 1.5rem' }}>
                             <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>👥</div>
                             <strong style={{ fontSize: '1.05rem', color: 'var(--ink)', display: 'block' }}>No Members Onboarded Yet</strong>
                             <p style={{ margin: '0.4rem auto 1.25rem auto', maxWidth: '420px', fontSize: '0.84rem' }}>
@@ -1144,6 +1146,11 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                             <td><strong>{w.name}</strong></td>
                             <td><code>{w.id}</code></td>
                             <td>{w.trade}</td>
+                            <td>
+                              <span style={{ fontWeight: 700, color: '#d97706', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                ★ {w.rating ? w.rating.toFixed(1) : '4.8'}
+                              </span>
+                            </td>
                             <td>
                               <span style={{ color: w.availability === 'Available' ? 'var(--green)' : 'var(--muted)' }}>
                                 ● {w.availability}
@@ -1985,71 +1992,16 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                             </div>
                           ) : (
                             <div>
-                              {userVote ? (
-                                <div>
-                                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                                    <div
-                                      style={{
-                                        flex: 1,
-                                        background: userVote === 'yes' ? 'var(--green)' : 'var(--red)',
-                                        color: '#fff',
-                                        borderRadius: '8px',
-                                        padding: '0.45rem',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        textAlign: 'center',
-                                      }}
-                                    >
-                                      ✓ You Voted {userVote.toUpperCase()}
-                                    </div>
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleVoteProposal(prop.id, userVote === 'yes' ? 'no' : 'yes')}
-                                      style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
-                                    >
-                                      Change vote to {userVote === 'yes' ? 'NO' : 'YES'}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setSelectedProposalForDetails(prop)}
-                                      style={{ background: 'none', border: 'none', color: 'var(--gold)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
-                                    >
-                                      Details ↗
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div>
-                                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                                    <button
-                                      type="button"
-                                      className="coop-btn coop-btn-outline"
-                                      style={{ flex: 1, borderColor: 'var(--green)', color: 'var(--green)' }}
-                                      onClick={() => handleVoteProposal(prop.id, 'yes')}
-                                    >
-                                      👍 Vote YES
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="coop-btn coop-btn-outline"
-                                      style={{ flex: 1, borderColor: 'var(--red)', color: 'var(--red)' }}
-                                      onClick={() => handleVoteProposal(prop.id, 'no')}
-                                    >
-                                      👎 Vote NO
-                                    </button>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className="coop-btn coop-btn-outline w-100 coop-btn-sm"
-                                    style={{ fontSize: '0.75rem' }}
-                                    onClick={() => setSelectedProposalForDetails(prop)}
-                                  >
-                                    View Terms & Justification
-                                  </button>
-                                </div>
-                              )}
+                              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '0.5rem 0.75rem', fontSize: '0.76rem', color: '#1e40af', fontWeight: 600, textAlign: 'center', marginBottom: '0.5rem' }}>
+                                🗳️ Worker Voting Active ({totalVotes} votes cast)
+                              </div>
+                              <button
+                                type="button"
+                                className="coop-btn coop-btn-outline w-100 coop-btn-sm"
+                                onClick={() => setSelectedProposalForDetails(prop)}
+                              >
+                                📊 View Live Tallies & Details ↗
+                              </button>
                             </div>
                           )}
                         </div>
@@ -2558,6 +2510,10 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
                   <strong className="text-green">{selectedWorkerForPass.fairnessScore} / 100 ({selectedWorkerForPass.status})</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                  <span className="text-muted">Customer Rating:</span>
+                  <strong style={{ color: '#d97706' }}>★ {selectedWorkerForPass.rating ? selectedWorkerForPass.rating.toFixed(1) : '4.8'} / 5.0</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
                   <span className="text-muted">Completed Jobs:</span>
                   <strong>{selectedWorkerForPass.jobs} Services</strong>
                 </div>
@@ -2804,35 +2760,19 @@ export function CooperativePortalClient({ initialData }: { initialData: Cooperat
               </small>
             </div>
 
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.65rem 0.85rem', fontSize: '0.78rem', color: '#475569', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>ℹ️</span>
+              <span>Democratic voting on assembly resolutions is conducted directly by verified trade workers in their Worker Dashboard.</span>
+            </div>
+
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button
                 type="button"
-                className="coop-btn coop-btn-outline"
-                style={{ flex: 1 }}
+                className="coop-btn coop-btn-gold w-100"
                 onClick={() => setSelectedProposalForDetails(null)}
               >
-                Close
+                Close Details
               </button>
-              {selectedProposalForDetails.status === 'Active' && (
-                <div style={{ display: 'flex', gap: '0.5rem', flex: 1.5 }}>
-                  <button
-                    type="button"
-                    className="coop-btn coop-btn-outline"
-                    style={{ flex: 1, borderColor: 'var(--green)', color: 'var(--green)' }}
-                    onClick={() => handleVoteProposal(selectedProposalForDetails.id, 'yes')}
-                  >
-                    👍 Vote YES
-                  </button>
-                  <button
-                    type="button"
-                    className="coop-btn coop-btn-outline"
-                    style={{ flex: 1, borderColor: 'var(--red)', color: 'var(--red)' }}
-                    onClick={() => handleVoteProposal(selectedProposalForDetails.id, 'no')}
-                  >
-                    👎 Vote NO
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>

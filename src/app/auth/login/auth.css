@@ -467,13 +467,23 @@ html, body {
     padding: 4px;
     margin-bottom: 20px;
     border: 1px solid var(--border);
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.role-selector::-webkit-scrollbar {
+    display: none;
 }
 
 .role-btn {
     flex: 1;
+    min-width: 0;
     position: relative;
     z-index: 2;
-    padding: 9px 16px;
+    padding: 9px 12px;
     border: none;
     background: transparent;
     font-size: 0.78rem;
@@ -483,6 +493,11 @@ html, body {
     cursor: pointer;
     transition: color 0.3s ease;
     text-align: center;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
 .role-btn.active {
@@ -993,14 +1008,83 @@ input[type="password"]::-ms-clear {
    Responsive Design
    ============================================================================ */
 @media (max-width: 800px) {
+    .auth-wrapper {
+        padding: 1.25rem 1rem;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
     .auth-container {
         grid-template-columns: 1fr;
-        max-width: 460px;
+        max-width: 480px;
+        width: 100%;
+        min-height: auto;
+        border-radius: 22px;
+        overflow: hidden;
     }
     .auth-left {
         display: none;
     }
     .auth-right {
-        padding: 36px 24px;
+        padding: 28px 22px;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .back-to-home {
+        position: static;
+        margin-bottom: 16px;
+        align-self: flex-start;
+        display: inline-flex;
+    }
+    .form-header {
+        margin-bottom: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-wrapper {
+        padding: 10px 8px;
+    }
+    .auth-container {
+        border-radius: 18px;
+        max-width: 100%;
+        box-shadow: var(--shadow-md);
+    }
+    .auth-right {
+        padding: 20px 14px;
+    }
+    .form-title {
+        font-size: 1.65rem;
+    }
+    .role-selector {
+        padding: 3px;
+        margin-bottom: 14px;
+    }
+    .role-btn {
+        padding: 7px 4px;
+        font-size: 0.7rem;
+        letter-spacing: -0.02em;
+        gap: 3px;
+    }
+    .role-btn svg {
+        width: 13px !important;
+        height: 13px !important;
+        margin-right: 1px !important;
+    }
+    .input-wrapper input {
+        font-size: 0.82rem;
+        padding: 10px 38px 10px 36px;
+    }
+    .input-icon {
+        left: 10px;
+    }
+    .toggle-password {
+        right: 10px;
+    }
+    .social-login {
+        flex-direction: column;
     }
 }
