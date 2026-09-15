@@ -818,20 +818,20 @@ export function AdminDashboardClient() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await clearAdminSession();
-    } catch (e) { }
-    try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-    } catch (e) { }
+  const handleLogout = () => {
+    // 1. Wipe all local state immediately (synchronous, instant)
     localStorage.removeItem('shramnexus-admin-auth');
     localStorage.removeItem('shramnexus-auth');
     localStorage.removeItem('sharmnexus-admin-auth');
     localStorage.removeItem('sharmnexus-auth');
     sessionStorage.clear();
     document.cookie = 'admin-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+
+    // 2. Fire server-side cleanup without awaiting (non-blocking)
+    clearAdminSession().catch(() => {});
+    createClient().auth.signOut().catch(() => {});
+
+    // 3. Hard redirect immediately — no waiting for server responses
     window.location.href = '/auth/login';
   };
 

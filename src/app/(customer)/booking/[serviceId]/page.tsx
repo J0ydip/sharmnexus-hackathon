@@ -316,9 +316,9 @@ function BookingFlowContent({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-gray-50/70 pb-20 sm:pb-12">
       {/* Top Header & Breadcrumb */}
-      <div className="bg-white border-b border-gray-200/90 py-4 px-4 sm:px-6 sticky top-16 z-40">
-        <div className="container mx-auto max-w-5xl flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+      <div className="bg-white border-b border-gray-200/90 py-4 px-4 sm:px-6 sticky top-16 z-40 overflow-hidden">
+        <div className="container mx-auto max-w-5xl flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               type="button"
               onClick={() => {
@@ -326,19 +326,19 @@ function BookingFlowContent({ params }: PageProps) {
                 else if (step === 'match') setStep('form');
                 else router.push('/services');
               }}
-              className="p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors shrink-0"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#f0e7d9] text-[#24172f] flex items-center justify-center">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-[#f0e7d9] text-[#24172f] flex items-center justify-center shrink-0">
                 <ServiceCategoryIcon name={currentCategory.icon_url} className="w-4 h-4" />
               </div>
-              <div>
-                <h1 className="text-sm sm:text-base font-bold text-gray-900 leading-tight">
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-base font-bold text-gray-900 leading-tight truncate">
                   Book {currentCategory.name}
                 </h1>
-                <span className="text-[11px] text-gray-500 block">
+                <span className="text-[11px] text-gray-500 block hidden sm:block">
                   Cooperative Verified Service
                 </span>
               </div>
@@ -346,19 +346,19 @@ function BookingFlowContent({ params }: PageProps) {
           </div>
 
           {/* Stepper Indicator */}
-          <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold text-gray-500">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-gray-500 shrink-0">
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
+              className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold transition-colors whitespace-nowrap ${
                 step === 'form'
                   ? 'bg-[#24172f] text-white'
                   : 'bg-[#f5dfad] text-[#24172f]'
               }`}
             >
-              1. Request
+              <span className="hidden sm:inline">1. </span>Request
             </span>
-            <span className="text-gray-300">→</span>
+            <span className="text-gray-300 text-[10px]">›</span>
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
+              className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold transition-colors whitespace-nowrap ${
                 step === 'match'
                   ? 'bg-[#24172f] text-white'
                   : step === 'confirm' || step === 'success'
@@ -366,17 +366,17 @@ function BookingFlowContent({ params }: PageProps) {
                   : 'bg-gray-100 text-gray-400'
               }`}
             >
-              2. Match Workers
+              <span className="hidden sm:inline">2. </span>Match
             </span>
-            <span className="text-gray-300">→</span>
+            <span className="text-gray-300 text-[10px]">›</span>
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
+              className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-bold transition-colors whitespace-nowrap ${
                 step === 'confirm' || step === 'success'
                   ? 'bg-[#24172f] text-white'
                   : 'bg-gray-100 text-gray-400'
               }`}
             >
-              3. Confirm
+              <span className="hidden sm:inline">3. </span>Confirm
             </span>
           </div>
         </div>
@@ -1087,9 +1087,9 @@ function BookingFlowContent({ params }: PageProps) {
 
             {/* Booking Details Card */}
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-left text-xs space-y-2.5">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Booking ID:</span>
-                <span className="font-mono font-bold text-gray-900">{createdBooking.id}</span>
+              <div className="flex justify-between gap-2 items-center">
+                <span className="text-gray-400 shrink-0">Booking ID:</span>
+                <span className="font-mono font-bold text-gray-900 text-right truncate max-w-[160px] sm:max-w-none">{createdBooking.id}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Service:</span>
