@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   title: 'ShramNexus - Professional Services',
   description: 'Book verified professionals for your everyday needs.',
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'ShramNexus',
+  },
   icons: {
     icon: [
       { url: '/logo.png?v=3', sizes: 'any' },

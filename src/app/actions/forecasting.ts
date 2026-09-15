@@ -41,7 +41,7 @@ export interface FullAIForecastPayload {
   };
 }
 
-const AI_FORECAST_CACHE_KEY = 'ai:demand:forecast:v3';
+const AI_FORECAST_CACHE_KEY = 'ai:demand:forecast:v4';
 
 /**
  * Retrieves comprehensive AI Demand Forecast and Workforce Allocation payload.

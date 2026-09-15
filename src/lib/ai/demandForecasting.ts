@@ -571,9 +571,18 @@ export async function generateAIStrategicBriefing(
       `🚰 Plumbing emergency service call volume is tracking 22% higher due to seasonal piping maintenance in high-rise RWAs.`,
       `✨ Deep Home Cleaning demand is elevated for upcoming festival weekends across Lucknow East and Bangalore North.`,
     ],
-    recommendedActions: rebalancingPlans.map(
-      (p) => `Deploy ${p.recommendedWorkersCount} ${p.trade} artisans from ${p.fromSocietyName} ➔ ${p.toSocietyName} (${p.suggestedIncentive}) to resolve ${p.projectedDemandDeficit}-worker deficit.`
-    ),
+    recommendedActions: rebalancingPlans.length > 0
+      ? [...rebalancingPlans]
+          .sort((a, b) => b.projectedDemandDeficit - a.projectedDemandDeficit)
+          .slice(0, 3)
+          .map(
+            (p) => `Deploy ${p.recommendedWorkersCount} ${p.trade} artisans from ${p.fromSocietyName} ➔ ${p.toSocietyName} (${p.suggestedIncentive}) to resolve ${p.projectedDemandDeficit}-worker deficit.`
+          )
+      : [
+          'Deploy 4 electricians from Pune Gig Workers Coop to Jaipur Central surge zone.',
+          'Pre-reserve Heavy Pipe Cutters & Drain Augers in Central Tool Bank.',
+          'Authorize +15% Zone Surge Allowance for high-deficit metropolitan clusters.',
+        ],
     welfareAdvisory: `Allocated ₹${Math.round(totalVolume7D * 450 * 0.10).toLocaleString('en-IN')} towards Cooperative Welfare & Tool Banks. Recommended heat-break rest intervals for field technicians during peak 12:00 - 15:00 hours.`,
     modelConfidenceScore: 94.6,
     generatedAt: nowStr,
@@ -617,7 +626,7 @@ Output valid JSON adhering strictly to this schema:
   "headline": "string",
   "summary": "string",
   "surgeAlerts": ["string", "string"],
-  "recommendedActions": ["string", "string"],
+  "recommendedActions": ["string", "string", "string"],
   "welfareAdvisory": "string"
 }`,
             },
@@ -644,8 +653,12 @@ Output valid JSON adhering strictly to this schema:
       return {
         headline: parsed.headline || fallbackBriefing.headline,
         summary: parsed.summary || fallbackBriefing.summary,
-        surgeAlerts: parsed.surgeAlerts || fallbackBriefing.surgeAlerts,
-        recommendedActions: parsed.recommendedActions || fallbackBriefing.recommendedActions,
+        surgeAlerts: Array.isArray(parsed.surgeAlerts) && parsed.surgeAlerts.length > 0
+          ? parsed.surgeAlerts.slice(0, 3)
+          : fallbackBriefing.surgeAlerts,
+        recommendedActions: Array.isArray(parsed.recommendedActions) && parsed.recommendedActions.length > 0
+          ? parsed.recommendedActions.slice(0, 3)
+          : fallbackBriefing.recommendedActions,
         welfareAdvisory: parsed.welfareAdvisory || fallbackBriefing.welfareAdvisory,
         modelConfidenceScore: 96.2,
         generatedAt: nowStr,
@@ -669,6 +682,7 @@ export interface HotspotCluster {
   severityIndex: number; // 0 to 100
   urgencyLevel: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'BALANCED';
   primaryTradeDeficit: string;
+  primaryDeficitTrade: string;
   netArtisanDeficit: number;
   projectedDemandPeak: number;
   activeSupply: number;
@@ -678,6 +692,12 @@ export interface HotspotCluster {
   pairedFeederSociety: string;
   pairedFeederRegion: string;
   recommendedDispatchCount: number;
+  severityLevel: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'BALANCED';
+  hotspotSeverityIndex: number;
+  demandScore: number;
+  activeWorkers: number;
+  avgSurgeMultiplier: number;
+  feederSuburbs: string[];
 }
 
 export interface CorridorAllocation {
@@ -700,6 +720,9 @@ export interface CorridorAllocation {
   welfareStipend: string;
   rationale: string;
   status: 'PROPOSED' | 'DISPATCHED' | 'ACTIVE';
+  policyScore: number;
+  fromSociety: string;
+  estimatedArrivalMinutes: number;
 }
 
 export interface HotspotOptimizationSummary {
@@ -710,6 +733,11 @@ export interface HotspotOptimizationSummary {
   overallSlaImprovementPct: number;
   averageTransitMinutes: number;
   totalWelfareBonusAllocated: number;
+  totalSurgeHotspots: number;
+  suburbanFeedersActive: number;
+  workersMobilized: number;
+  slaReductionPercent: number;
+  welfareStipendsDistributed: number;
 }
 
 /**
@@ -771,6 +799,8 @@ export function computeHotspotDistributionPlan(
     else if (policy === 'WELFARE_PROXIMITY') dispatchMultiplier = 0.65;
     const recommendedDispatch = totalDeficit > 0 ? Math.max(2, Math.round(totalDeficit * dispatchMultiplier)) : 0;
 
+    const worstTradeName = worstTrade?.tradeName || 'Electrician';
+
     clusters.push({
       id: `hsc-${clusterCounter++}`,
       region: regionName,
@@ -778,7 +808,8 @@ export function computeHotspotDistributionPlan(
       state: regMeta.state || 'National Grid',
       severityIndex,
       urgencyLevel,
-      primaryTradeDeficit: worstTrade?.tradeName || 'Electrician',
+      primaryTradeDeficit: worstTradeName,
+      primaryDeficitTrade: worstTradeName,
       netArtisanDeficit: totalDeficit,
       projectedDemandPeak: peakDemand,
       activeSupply: activeWorkers,
@@ -788,6 +819,12 @@ export function computeHotspotDistributionPlan(
       pairedFeederSociety: regMeta.feederSociety || `${regionName} Suburban Reserve`,
       pairedFeederRegion: regMeta.feederRegion || `${regionName} Suburban Belt`,
       recommendedDispatchCount: recommendedDispatch,
+      severityLevel: urgencyLevel,
+      hotspotSeverityIndex: severityIndex,
+      demandScore: peakDemand,
+      activeWorkers,
+      avgSurgeMultiplier: maxSurge,
+      feederSuburbs: [regMeta.feederRegion || `${regionName} Suburban Belt`],
     });
   });
 
@@ -847,6 +884,9 @@ export function computeHotspotDistributionPlan(
         welfareStipend: welfareBonus,
         rationale: `Deploy ${finalWorkers} ${cluster.primaryTradeDeficit}s along the ${cluster.pairedFeederRegion} ➔ ${cluster.region} corridor. Reduces response latency from ${cluster.avgSlaMinutes}m to ${cluster.targetSlaMinutes}m.`,
         status: 'PROPOSED',
+        policyScore: finalRelief,
+        fromSociety: cluster.pairedFeederSociety,
+        estimatedArrivalMinutes: finalTransit,
       });
     });
 
@@ -859,14 +899,22 @@ export function computeHotspotDistributionPlan(
     ? Math.round(allocations.reduce((sum, a) => sum + a.projectedReliefPct, 0) / allocations.length)
     : 80;
 
+  const feederCount = new Set(allocations.map((a) => a.fromSocietyName)).size;
+  const totalSurgeHotspots = clusters.filter((c) => c.severityIndex >= 40).length;
+
   const summary: HotspotOptimizationSummary = {
     policy,
-    totalHotspotsIdentified: clusters.filter((c) => c.severityIndex >= 40).length,
+    totalHotspotsIdentified: totalSurgeHotspots,
     criticalDeficitHotspots: clusters.filter((c) => c.urgencyLevel === 'CRITICAL').length,
     totalSuburbanArtisansMobilized: totalMobilized,
     overallSlaImprovementPct: avgSlaRelief,
     averageTransitMinutes: avgTransit,
     totalWelfareBonusAllocated: totalMobilized * 350, // Rs. 350 welfare stipend per dispatched artisan
+    totalSurgeHotspots,
+    suburbanFeedersActive: feederCount > 0 ? feederCount : Math.min(clusters.length, 3),
+    workersMobilized: totalMobilized,
+    slaReductionPercent: avgSlaRelief,
+    welfareStipendsDistributed: totalMobilized * 350,
   };
 
   return { clusters, allocations, summary };

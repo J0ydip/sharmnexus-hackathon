@@ -238,6 +238,7 @@ export function AdminDashboardClient() {
   const [detectedCurrentCity, setDetectedCurrentCity] = useState<string | null>(null);
   const [selectedHotspotPolicy, setSelectedHotspotPolicy] = useState<OptimizationPolicy>('SLA_PRIORITY');
   const [mobilizingCorridorId, setMobilizingCorridorId] = useState<string | null>(null);
+  const [showAllFederationActions, setShowAllFederationActions] = useState(false);
 
   const hotspotOptimization = useMemo(() => {
     return computeHotspotDistributionPlan(forecastPayload?.forecasts || [], selectedHotspotPolicy);
@@ -557,7 +558,7 @@ export function AdminDashboardClient() {
             localStorage.removeItem('sharmnexus-auth');
           }
         }
-      } catch (e) {}
+      } catch (e) { }
       setIsAuthorized(true);
       fetchAllData();
     } else {
@@ -813,11 +814,11 @@ export function AdminDashboardClient() {
   const handleLogout = async () => {
     try {
       await clearAdminSession();
-    } catch (e) {}
+    } catch (e) { }
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
-    } catch (e) {}
+    } catch (e) { }
     localStorage.removeItem('shramnexus-admin-auth');
     localStorage.removeItem('shramnexus-auth');
     localStorage.removeItem('sharmnexus-admin-auth');
@@ -1405,9 +1406,8 @@ export function AdminDashboardClient() {
                           </td>
                           <td>
                             <span
-                              className={`badge ${
-                                soc.payoutStatus.includes('Disbursed') ? 'badge-success' : 'badge-req'
-                              }`}
+                              className={`badge ${soc.payoutStatus.includes('Disbursed') ? 'badge-success' : 'badge-req'
+                                }`}
                               style={{ fontSize: '0.72rem' }}
                             >
                               {soc.payoutStatus}
@@ -1666,8 +1666,8 @@ export function AdminDashboardClient() {
                             earningsFilter === 'ALL'
                               ? true
                               : earningsFilter === 'ONLINE'
-                              ? t.method.toLowerCase().includes('upi') || t.method.toLowerCase().includes('online')
-                              : t.method.toLowerCase().includes('escrow') || t.method.toLowerCase().includes('cash');
+                                ? t.method.toLowerCase().includes('upi') || t.method.toLowerCase().includes('online')
+                                : t.method.toLowerCase().includes('escrow') || t.method.toLowerCase().includes('cash');
 
                           const q = earningsSearch.toLowerCase();
                           const matchesSearch =
@@ -1742,8 +1742,8 @@ export function AdminDashboardClient() {
                 customerFilter === 'ALL'
                   ? true
                   : customerFilter === 'ACTIVE'
-                  ? c.status === 'Active'
-                  : c.status !== 'Active';
+                    ? c.status === 'Active'
+                    : c.status !== 'Active';
               return matchesSearch && matchesFilter;
             });
 
@@ -1847,12 +1847,12 @@ export function AdminDashboardClient() {
                 workerFilter === 'ALL'
                   ? true
                   : workerFilter === 'VERIFIED'
-                  ? w.verif === 'Verified'
-                  : workerFilter === 'PENDING'
-                  ? w.verif === 'Pending'
-                  : workerFilter === 'ONLINE'
-                  ? w.status === 'Online'
-                  : w.status === 'Offline';
+                    ? w.verif === 'Verified'
+                    : workerFilter === 'PENDING'
+                      ? w.verif === 'Pending'
+                      : workerFilter === 'ONLINE'
+                        ? w.status === 'Online'
+                        : w.status === 'Offline';
               return matchesSearch && matchesFilter;
             });
 
@@ -2138,12 +2138,12 @@ export function AdminDashboardClient() {
                 bookingFilter === 'ALL'
                   ? true
                   : bookingFilter === 'ONGOING'
-                  ? b.st === 'Ongoing'
-                  : bookingFilter === 'PENDING'
-                  ? b.st === 'Pending'
-                  : bookingFilter === 'COMPLETED'
-                  ? b.st === 'Completed'
-                  : b.st === 'Cancelled';
+                    ? b.st === 'Ongoing'
+                    : bookingFilter === 'PENDING'
+                      ? b.st === 'Pending'
+                      : bookingFilter === 'COMPLETED'
+                        ? b.st === 'Completed'
+                        : b.st === 'Cancelled';
               return matchesSearch && matchesFilter;
             });
 
@@ -2271,8 +2271,8 @@ export function AdminDashboardClient() {
                 coopFilter === 'ALL'
                   ? true
                   : coopFilter === 'ACTIVE'
-                  ? c.status === 'Active'
-                  : c.status === 'Suspended';
+                    ? c.status === 'Active'
+                    : c.status === 'Suspended';
               return matchesSearch && matchesFilter;
             });
 
@@ -2472,13 +2472,12 @@ export function AdminDashboardClient() {
                               </td>
                               <td>
                                 <span
-                                  className={`badge ${
-                                    c.spilloverStatus === 'Surplus Capacity'
+                                  className={`badge ${c.spilloverStatus === 'Surplus Capacity'
                                       ? 'badge-verified'
                                       : c.spilloverStatus === 'Overloaded'
-                                      ? 'badge-req'
-                                      : 'badge-ongoing'
-                                  }`}
+                                        ? 'badge-req'
+                                        : 'badge-ongoing'
+                                    }`}
                                   style={{ fontSize: '0.72rem' }}
                                 >
                                   ● {c.spilloverStatus}
@@ -2560,13 +2559,12 @@ export function AdminDashboardClient() {
                               <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>📍 {c.district}, {c.state}</div>
                             </div>
                             <span
-                              className={`badge ${
-                                c.spilloverStatus === 'Surplus Capacity'
+                              className={`badge ${c.spilloverStatus === 'Surplus Capacity'
                                   ? 'badge-verified'
                                   : c.spilloverStatus === 'Overloaded'
-                                  ? 'badge-req'
-                                  : 'badge-ongoing'
-                              }`}
+                                    ? 'badge-req'
+                                    : 'badge-ongoing'
+                                }`}
                             >
                               {c.spilloverStatus}
                             </span>
@@ -2667,13 +2665,12 @@ export function AdminDashboardClient() {
                               </td>
                               <td>
                                 <span
-                                  className={`badge ${
-                                    t.status === 'Available'
+                                  className={`badge ${t.status === 'Available'
                                       ? 'badge-verified'
                                       : t.status === 'In Use'
-                                      ? 'badge-ongoing'
-                                      : 'badge-req'
-                                  }`}
+                                        ? 'badge-ongoing'
+                                        : 'badge-req'
+                                    }`}
                                 >
                                   ● {t.status}
                                 </span>
@@ -2809,8 +2806,8 @@ export function AdminDashboardClient() {
                                   log.action.includes('remove') || log.action.includes('suspend')
                                     ? 'var(--red)'
                                     : log.action.includes('settle')
-                                    ? 'var(--green)'
-                                    : 'var(--violet)',
+                                      ? 'var(--green)'
+                                      : 'var(--violet)',
                                 textTransform: 'uppercase',
                               }}
                             >
@@ -2871,8 +2868,8 @@ export function AdminDashboardClient() {
                       filter === 'ALL'
                         ? supportTickets.length
                         : filter === 'OPEN'
-                        ? supportTickets.filter((t) => t.status !== 'Resolved').length
-                        : supportTickets.filter((t) => t.status === 'Resolved').length;
+                          ? supportTickets.filter((t) => t.status !== 'Resolved').length
+                          : supportTickets.filter((t) => t.status === 'Resolved').length;
 
                     return (
                       <button
@@ -2946,8 +2943,8 @@ export function AdminDashboardClient() {
                           supportFilter === 'ALL'
                             ? true
                             : supportFilter === 'OPEN'
-                            ? t.status !== 'Resolved'
-                            : t.status === 'Resolved';
+                              ? t.status !== 'Resolved'
+                              : t.status === 'Resolved';
 
                         const q = supportSearch.toLowerCase().trim();
                         const matchSearch =
@@ -2992,13 +2989,12 @@ export function AdminDashboardClient() {
                           </td>
                           <td>
                             <span
-                              className={`badge ${
-                                ticket.role === 'Customer'
+                              className={`badge ${ticket.role === 'Customer'
                                   ? 'badge-ongoing'
                                   : ticket.role === 'Worker'
-                                  ? 'badge-pending'
-                                  : 'badge-success'
-                              }`}
+                                    ? 'badge-pending'
+                                    : 'badge-success'
+                                }`}
                               style={{ fontSize: '0.72rem' }}
                             >
                               {ticket.role}
@@ -3030,9 +3026,8 @@ export function AdminDashboardClient() {
                           </td>
                           <td>
                             <span
-                              className={`badge ${
-                                ticket.status === 'Resolved' ? 'badge-success' : 'badge-pending'
-                              }`}
+                              className={`badge ${ticket.status === 'Resolved' ? 'badge-success' : 'badge-pending'
+                                }`}
                               style={{ fontSize: '0.72rem' }}
                             >
                               {ticket.status === 'Resolved' ? '✓ Resolved' : 'Pending Review'}
@@ -3231,26 +3226,80 @@ export function AdminDashboardClient() {
                       {forecastPayload?.briefing.surgeAlerts.map((alert, idx) => (
                         <li key={`alert-${idx}`}>{alert}</li>
                       )) || (
-                        <>
-                          <li>⚡ Electrician demand in Jaipur Central expected to surge +34% this weekend.</li>
-                          <li>🚰 Emergency plumbing calls tracking 22% higher due to high-rise maintenance.</li>
-                        </>
-                      )}
+                          <>
+                            <li>⚡ Electrician demand in Jaipur Central expected to surge +34% this weekend.</li>
+                            <li>🚰 Emergency plumbing calls tracking 22% higher due to high-rise maintenance.</li>
+                          </>
+                        )}
                     </ul>
                   </div>
 
                   <div className="ai-briefing-box">
-                    <h4>🎯 Recommended Federation Actions</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '8px' }}>
+                      <h4 style={{ margin: 0 }}>🎯 Recommended Federation Actions</h4>
+                      {forecastPayload?.briefing.recommendedActions && forecastPayload.briefing.recommendedActions.length > 3 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllFederationActions(!showAllFederationActions)}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            color: 'var(--gold-soft)',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {showAllFederationActions ? 'Show Top 3' : `+${forecastPayload.briefing.recommendedActions.length - 3} More`}
+                        </button>
+                      )}
+                    </div>
                     <ul className="ai-briefing-list">
-                      {forecastPayload?.briefing.recommendedActions.map((action, idx) => (
-                        <li key={`action-${idx}`}>{action}</li>
-                      )) || (
-                        <>
-                          <li>Deploy 4 electricians from Pune Gig Workers Coop to Jaipur Central surge zone.</li>
-                          <li>Pre-reserve Heavy Pipe Cutters &amp; Drain Augers in Central Tool Bank.</li>
-                        </>
+                      {((forecastPayload?.briefing.recommendedActions && forecastPayload.briefing.recommendedActions.length > 0)
+                        ? (showAllFederationActions
+                            ? forecastPayload.briefing.recommendedActions
+                            : forecastPayload.briefing.recommendedActions.slice(0, 3)
+                          ).map((action, idx) => (
+                            <li key={`action-${idx}`}>{action}</li>
+                          ))
+                        : (
+                            <>
+                              <li>Deploy 4 electricians from Pune Gig Workers Coop to Jaipur Central surge zone.</li>
+                              <li>Pre-reserve Heavy Pipe Cutters &amp; Drain Augers in Central Tool Bank.</li>
+                            </>
+                          )
                       )}
                     </ul>
+
+                    {forecastPayload?.rebalancingPlans && forecastPayload.rebalancingPlans.length > 0 && (
+                      <div style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px dashed rgba(255, 255, 255, 0.12)' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const el = document.getElementById('ai-rebalancing-hub');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            padding: 0,
+                            fontSize: '0.74rem',
+                            color: '#e0d2ff',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <span>⚡ Manage all {forecastPayload.rebalancingPlans.length} Autonomous Rebalancing Proposals</span>
+                          <span>↓</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -3481,7 +3530,7 @@ export function AdminDashboardClient() {
                 {(() => {
                   const currentForecast = forecastPayload?.forecasts.find(
                     (f) => f.tradeName.toLowerCase() === selectedForecastTrade.toLowerCase() &&
-                           f.region.toLowerCase() === selectedForecastRegion.toLowerCase()
+                      f.region.toLowerCase() === selectedForecastRegion.toLowerCase()
                   ) || forecastPayload?.forecasts.find(
                     (f) => f.region.toLowerCase() === selectedForecastRegion.toLowerCase()
                   ) || forecastPayload?.forecasts[0];
@@ -4021,7 +4070,7 @@ export function AdminDashboardClient() {
               </div>
 
               {/* Autonomous Rebalancing Proposal Hub */}
-              <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+              <div id="ai-rebalancing-hub" style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
                     <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', margin: 0, color: 'var(--ink)' }}>
